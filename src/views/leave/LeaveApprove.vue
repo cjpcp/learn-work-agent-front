@@ -42,9 +42,9 @@
           <a-tag v-else-if="currentRecord.leaveType === 'PUBLIC'" color="blue">公假</a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="状态">
-          <a-tag v-if="currentRecord.status === 'PENDING'" color="processing">待审批</a-tag>
-          <a-tag v-else-if="currentRecord.status === 'APPROVED'" color="success">已批准</a-tag>
-          <a-tag v-else-if="currentRecord.status === 'REJECTED'" color="error">已拒绝</a-tag>
+          <a-tag v-if="currentRecord.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
+          <a-tag v-else-if="currentRecord.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
+          <a-tag v-else-if="currentRecord.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="开始日期">
           {{ currentRecord.startDate }}
@@ -65,10 +65,12 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { leaveApi } from '@/api'
 import type { LeaveApplication, PageRequest, ApprovalRequest } from '@/types'
 
+const route = useRoute()
 const loading = ref(false)
 const dataSource = ref<LeaveApplication[]>([])
 const approveVisible = ref(false)
@@ -185,5 +187,29 @@ const handleView = async (record: LeaveApplication) => {
 
 onMounted(() => {
   loadData()
+  // 检查 URL 中是否有 applicationId 参数，如果有则自动打开详情
+  const applicationId = route.query.applicationId
+  if (applicationId) {
+    const id = parseInt(applicationId as string, 10)
+    if (!isNaN(id)) {
+      // 延迟一点执行，确保列表数据已加载
+      setTimeout(() => {
+        const record = dataSource.value.find(item => item.id === id)
+        if (record) {
+          handleView(record)
+        } else {
+          // 如果列表中没找到，直接通过 API 获取详情
+          leaveApi.getApplication(id).then(response => {
+            if (response.data) {
+              currentRecord.value = response.data
+              viewVisible.value = true
+            }
+          }).catch(() => {
+            message.error('获取详情失败')
+          })
+        }
+      }, 300)
+    }
+  }
 })
 </script>

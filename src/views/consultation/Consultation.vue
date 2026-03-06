@@ -1,654 +1,244 @@
 <template>
   <div class="consultation-page">
-    <!-- 页面标题 -->
-    <div class="page-header">
-      <div class="header-content">
-        <h1 class="page-title">智能咨询助手</h1>
-        <p class="page-subtitle">实时解答您的学工问题，提供专业建议</p>
-      </div>
-    </div>
-
     <!-- 主要内容区 -->
-    <div class="page-content">
-      <!-- 聊天区域 -->
-      <div class="chat-area">
-        <!-- 聊天头部 -->
-        <div class="chat-header">
-          <div class="chat-info">
-            <div class="chat-avatar">
-              <RobotOutlined />
-            </div>
-            <div class="chat-details">
-              <h3>学工智能助手</h3>
-              <p class="chat-status">在线</p>
-            </div>
-          </div>
-          <div class="chat-actions">
-            <button class="action-button" @click="clearMessages">
-              <DeleteOutlined /> 清空记录
-            </button>
-          </div>
+    <main class="main-content">
+      <!-- 初始状态 - 欢迎界面 -->
+      <div v-if="state === 'welcome'" class="welcome-section">
+        <div class="ai-avatar">
+          <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="avatar-image" />
         </div>
-
-        <!-- 聊天消息区 -->
-        <div ref="messagesRef" class="chat-messages">
-          <!-- 欢迎消息 -->
-          <div v-if="messages.length === 0" class="welcome-message">
-            <div class="welcome-avatar">
-              <RobotOutlined />
-            </div>
-            <div class="welcome-content">
-              <h4>你好！我是学工智能助手</h4>
-              <p>我可以帮您解答学工相关问题，例如奖学金申请、请假流程等。</p>
-              <p>请在下方输入您的问题，或从右侧选择常见问题。</p>
-            </div>
-          </div>
-
-          <!-- 消息列表 -->
-          <div
-            v-for="(msg, index) in messages"
-            :key="index"
-            :class="['message-wrapper', msg.type === 'user' ? 'message-user' : 'message-ai']"
-          >
-            <!-- 用户消息 -->
-            <div v-if="msg.type === 'user'" class="message-item user-message">
-              <div class="message-avatar user-avatar">
-                <UserOutlined />
-              </div>
-              <div class="message-content user-content">
-                <div class="message-text">{{ msg.content }}</div>
-                <div v-if="msg.imageUrl" class="message-image">
-                  <img :src="msg.imageUrl" :alt="'上传的图片'" class="uploaded-image" />
-                </div>
-                <div class="message-time">{{ getMessageTime() }}</div>
-              </div>
-            </div>
-
-            <!-- AI消息 -->
-            <div v-else class="message-item ai-message">
-              <div class="message-avatar ai-avatar">
-                <RobotOutlined />
-              </div>
-              <div class="message-content ai-content">
-                <div v-if="msg.answerText" class="message-answer">
-                  <div class="answer-header">
-                    <span class="answer-label">AI 回答</span>
-                    <span class="answer-status" :class="msg.status?.toLowerCase()">
-                      {{ getStatusText(msg.status) }}
-                    </span>
-                  </div>
-                  <div class="answer-content-text" v-html="renderMarkdown(msg.answerText)"></div>
-                  <div v-if="msg.status === 'ANSWERED'" class="message-actions">
-                    <button class="action-btn positive" @click="msg.id && handleRate(msg.id, 5)">
-                      <LikeOutlined /> 满意
-                    </button>
-                    <button class="action-btn neutral" @click="msg.id && handleRate(msg.id, 3)">
-                      <SmileOutlined /> 一般
-                    </button>
-                    <button class="action-btn negative" @click="msg.id && handleRate(msg.id, 1)">
-                      <DislikeOutlined /> 不满意
-                    </button>
-                    <button class="action-btn transfer" @click="msg.id && handleTransfer(msg.id)">
-                      <UserOutlined /> 转人工
-                    </button>
-                  </div>
-                </div>
-                <div class="message-time">{{ getMessageTime() }}</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 聊天输入区 -->
-        <div class="chat-input-area">
-          <!-- 上传区域 -->
-          <div class="input-tools">
-            <div class="upload-buttons">
-              <a-upload
-                v-model:file-list="fileList"
-                :before-upload="beforeUploadImage"
-                :max-count="1"
-                accept="image/*"
-                class="upload-tool"
-              >
-                <button class="tool-button"><UploadOutlined /> 上传图片</button>
-              </a-upload>
-              <a-upload
-                v-model:file-list="voiceList"
-                :before-upload="beforeUploadVoice"
-                :max-count="1"
-                accept="audio/*"
-                class="upload-tool"
-              >
-                <button class="tool-button"><AudioOutlined /> 上传语音</button>
-              </a-upload>
-              <button
-                class="tool-button"
-                :class="{ recording: isRecording }"
-                @click="toggleRecording"
-              >
-                <span v-if="!isRecording"> <AudioOutlined /> 开始录音 </span>
-                <span v-else> <AudioOutlined /> 停止录音 </span>
-              </button>
-            </div>
-            <div v-if="fileList.length > 0" class="file-preview">
-              <div class="file-info">
-                <FileImageOutlined />
-                <span>{{ fileList[0].name }}</span>
-                <button class="remove-file" @click="fileList = []">
-                  <CloseOutlined />
-                </button>
-              </div>
-            </div>
-            <div v-if="voiceList.length > 0" class="file-preview">
-              <div class="file-info">
-                <AudioOutlined />
-                <span>{{ voiceList[0].name }}</span>
-                <button class="remove-file" @click="voiceList = []">
-                  <CloseOutlined />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          <!-- 输入框 -->
-          <div class="input-container">
-            <a-textarea
-              v-model:value="questionText"
-              placeholder="请输入您的问题，例如：如何申请奖学金？..."
-              :rows="1"
-              :auto-size="{ minRows: 1, maxRows: 4 }"
-              class="question-input"
-              @press-enter="handleSubmit"
-            />
-            <button
-              class="send-button"
-              :disabled="loading || !questionText.trim()"
-              @click="handleSubmit"
-            >
-              <span v-if="!loading">
-                <SendOutlined />
-              </span>
-              <span v-else>
-                <LoadingOutlined />
-              </span>
-            </button>
+        <h1 class="main-title">学工AI智能体助手</h1>
+        
+        <!-- 快捷咨询 -->
+        <div class="quick-consultation">
+          <h3 class="quick-title">快捷咨询</h3>
+          <div class="quick-buttons">
+            <button class="quick-button" @click="handleQuickQuestion('奖学金怎么申请？')">奖学金怎么申请？</button>
+            <button class="quick-button" @click="handleQuickQuestion('宿舍调寝找那个部门？')">宿舍调寝找那个部门？</button>
+            <button class="quick-button" @click="handleQuickQuestion('违纪申诉需要做什么？')">违纪申诉需要做什么？</button>
+            <button class="quick-button" @click="handleQuickQuestion('心理健康问题怎么解决？')">心理健康问题怎么解决？</button>
           </div>
         </div>
       </div>
 
-      <!-- 侧边栏 -->
-      <div class="sidebar">
-        <!-- 问题分类 -->
-        <div class="sidebar-card">
-          <div class="card-header">
-            <h3 class="card-title">问题分类</h3>
-          </div>
-          <div class="category-list">
-            <button
-              v-for="categoryItem in categories"
-              :key="categoryItem.value"
-              :class="['category-button', { active: category === categoryItem.value }]"
-              @click="category = categoryItem.value"
-            >
-              <component :is="categoryItem.icon" class="category-icon" />
-              <span>{{ categoryItem.label }}</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- 常见问题 -->
-        <div class="sidebar-card">
-          <div class="card-header">
-            <h3 class="card-title">常见问题</h3>
-          </div>
-          <div class="faq-list">
-            <div
-              v-for="faq in faqs"
-              :key="faq.id"
-              class="faq-item"
-              @click="questionText = faq.question"
-            >
-              <QuestionCircleOutlined class="faq-icon" />
-              <div class="faq-content">
-                <p class="faq-question">{{ faq.question }}</p>
-              </div>
+      <!-- 聊天状态 -->
+      <div v-else-if="state === 'chat'" class="chat-section">
+        <!-- 问题显示 -->
+        <div class="question-display">
+          <div class="question-item">
+            <div class="question-content">{{ currentQuestion }}</div>
+            <div class="question-avatar">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
             </div>
           </div>
         </div>
 
-        <!-- 历史记录 -->
-        <div class="sidebar-card">
-          <div class="card-header">
-            <h3 class="card-title">历史记录</h3>
-          </div>
-          <div class="history-section">
-            <button class="history-button" @click="$router.push('/consultation/history')">
-              <HistoryOutlined />
-              <span>查看全部历史记录</span>
-            </button>
+        <!-- AI回答 -->
+        <div class="ai-response">
+          <div class="ai-message">
+            <div class="ai-avatar-small">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+            </div>
+            <div class="ai-content" v-html="renderMarkdown(aiAnswer)"></div>
           </div>
         </div>
       </div>
-    </div>
+
+      <!-- 转人工确认 -->
+      <div v-else-if="state === 'transfer'" class="transfer-section">
+        <!-- 问题显示 -->
+        <div class="question-display">
+          <div class="question-item">
+            <div class="question-content">{{ currentQuestion }}</div>
+            <div class="question-avatar">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 转人工确认 -->
+        <div class="transfer-message">
+          <div class="ai-avatar-small">
+            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+          </div>
+          <div class="transfer-text">未找到您要了解的问题答案，可申请转人工为您解答，请问需要吗？</div>
+          <div class="transfer-buttons">
+            <button class="no-button" @click="cancelTransfer">不需要</button>
+            <button class="yes-button" @click="confirmTransfer">需要</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 申请人工帮助 -->
+      <div v-else-if="state === 'manual'" class="manual-section">
+        <h2 class="section-title">申请人工帮助</h2>
+        <form class="manual-form">
+          <div class="form-group">
+            <label class="form-label">问题类型</label>
+            <select class="form-select" v-model="manualForm.questionType">
+              <option value="">请选择问题类型</option>
+              <option value="scholarship">奖助勤贷</option>
+              <option value="dormitory">宿舍管理</option>
+              <option value="discipline">违纪申诉</option>
+              <option value="mental">心理健康</option>
+              <option value="employment">就业指导</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">问题说明</label>
+            <textarea class="form-textarea" v-model="manualForm.questionDescription" placeholder="请详细描述您的问题..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">文件上传</label>
+            <div class="file-upload">
+              <input type="file" class="file-input" @change="handleFileUpload" />
+              <span class="file-icon">📎</span>
+              <span v-if="selectedFile" class="file-name">{{ selectedFile.name }}</span>
+              <span v-else class="file-placeholder">点击上传文件</span>
+            </div>
+            <p class="file-hint">支持上传 word、excel、pdf、jpg、png 等通用格式</p>
+          </div>
+          <div class="form-buttons">
+            <button type="button" class="cancel-button" @click="cancelManual">取消</button>
+            <button type="button" class="submit-button" @click="submitManual">提交</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- 输入区域 (除了申请人工帮助页面外都显示) -->
+      <div v-if="state !== 'manual'" class="input-section">
+        <div class="input-container">
+          <input type="text" v-model="questionText" class="question-input" placeholder="请输入您的问题..." @keyup.enter="handleSubmit" />
+          <button class="input-button" @click="handleSubmit">
+            <span class="button-icon">📎</span>
+          </button>
+          <button class="input-button" @click="toggleVoice">
+            <span class="button-icon">🎤</span>
+          </button>
+          <button class="send-button" @click="handleSubmit">
+            <span class="send-icon">➤</span>
+          </button>
+        </div>
+        <div class="input-hint">
+          <a href="#" @click.prevent="showManualForm">申请人工帮助</a>
+        </div>
+      </div>
+    </main>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
-import {
-  UploadOutlined,
-  UserOutlined,
-  RobotOutlined,
-  LikeOutlined,
-  DislikeOutlined,
-  SmileOutlined,
-  FileImageOutlined,
-  CloseOutlined,
-  QuestionCircleOutlined,
-  HistoryOutlined,
-  SendOutlined,
-  LoadingOutlined,
-  DeleteOutlined,
-  GiftOutlined,
-  HomeOutlined,
-  WarningOutlined,
-  HeartOutlined,
-  AudioOutlined,
-} from '@ant-design/icons-vue'
-import { consultationApi } from '@/api'
-import { useUserStore } from '@/stores/user'
-import type { ConsultationRequest, ConsultationQuestion } from '@/types'
-import type { UploadFile } from 'ant-design-vue'
-import lamejs from 'lamejs'
 import { marked } from 'marked'
 
-const messagesRef = ref<HTMLElement>()
-const loading = ref(false)
+// 状态管理
+const state = ref('welcome') // welcome, chat, transfer, manual
 const questionText = ref('')
-const category = ref('')
-const fileList = ref<UploadFile[]>([])
-const voiceList = ref<UploadFile[]>([])
-const uploadedImageUrl = ref('')
-const uploadedVoiceUrl = ref('')
+const currentQuestion = ref('')
+const aiAnswer = ref('')
 
-// 录音相关
-const isRecording = ref(false)
-const mediaRecorder = ref<MediaRecorder | null>(null)
-const audioChunks = ref<Blob[]>([])
-const recordingTime = ref(0)
-let recordingTimer: number | null = null
+// 人工帮助表单
+const manualForm = reactive({
+  questionType: '',
+  questionDescription: ''
+})
+const selectedFile = ref<File | null>(null)
 
-interface Message {
-  id?: number
-  type: 'user' | 'ai'
-  content: string
-  imageUrl?: string
-  answerText?: string
-  status?: string
+// 快捷问题处理
+const handleQuickQuestion = (question: string) => {
+  questionText.value = question
+  handleSubmit()
 }
 
-const messages = ref<Message[]>([])
-
-const categories = [
-  { value: '', label: '全部', icon: HomeOutlined },
-  { value: 'AWARD', label: '奖助勤贷', icon: GiftOutlined },
-  { value: 'DORM', label: '宿舍管理', icon: HomeOutlined },
-  { value: 'DISCIPLINE', label: '违纪申诉', icon: WarningOutlined },
-  { value: 'MENTAL', label: '心理健康', icon: HeartOutlined },
-  { value: 'EMPLOYMENT', label: '就业指导', icon: UserOutlined },
-]
-
-const faqs = [
-  { id: 1, question: '如何申请奖学金？' },
-  { id: 2, question: '宿舍水电费如何缴纳？' },
-  { id: 3, question: '请假流程是怎样的？' },
-  { id: 4, question: '如何办理学生证？' },
-  { id: 5, question: '就业指导中心在哪里？' },
-]
-
-const beforeUploadImage = async (file: File) => {
-  try {
-    const userStore = useUserStore()
-    userStore.initUserInfo()
-    const token = userStore.token
-
-    if (!token) {
-      message.error('请先登录')
-      return false
-    }
-
-    message.loading('图片上传中...')
-    const response = await consultationApi.uploadImage(file)
-    if (response.code === 200 && response.data) {
-      uploadedImageUrl.value = response.data
-      message.success('图片上传成功')
-    } else {
-      message.error('图片上传失败')
-    }
-  } catch (error: any) {
-    console.error('图片上传失败:', error)
-    message.error(error.message || '图片上传失败')
-  }
-  return false // 阻止自动上传
-}
-
-const beforeUploadVoice = async (file: File) => {
-  try {
-    const userStore = useUserStore()
-    userStore.initUserInfo()
-    const token = userStore.token
-
-    if (!token) {
-      message.error('请先登录')
-      return false
-    }
-
-    message.loading('语音上传中...')
-    const response = await consultationApi.uploadVoice(file)
-    if (response.code === 200 && response.data) {
-      uploadedVoiceUrl.value = response.data
-      message.success('语音上传成功')
-    } else {
-      message.error('语音上传失败')
-    }
-  } catch (error: any) {
-    console.error('语音上传失败:', error)
-    message.error(error.message || '语音上传失败')
-  }
-  return false // 阻止自动上传
-}
-
+// 提交问题
 const handleSubmit = async () => {
-  if (!questionText.value.trim() && !uploadedImageUrl.value && !uploadedVoiceUrl.value) {
-    message.warning('请输入问题或上传图片/语音')
+  if (!questionText.value.trim()) {
+    message.warning('请输入问题')
     return
   }
 
-  const userMessage: Message = {
-    type: 'user',
-    content: questionText.value,
-    imageUrl: uploadedImageUrl.value,
-  }
-  messages.value.push(userMessage)
+  currentQuestion.value = questionText.value
+  state.value = 'chat'
 
-  // 构造Dify请求格式
-  const files = []
-  if (uploadedImageUrl.value) {
-    files.push({
-      transferMethod: 'remote_url',
-      url: uploadedImageUrl.value,
-      type: 'image',
-    })
-  }
-  if (uploadedVoiceUrl.value) {
-    files.push({
-      transferMethod: 'remote_url',
-      url: uploadedVoiceUrl.value,
-      type: 'audio',
-    })
-  }
+  // 模拟AI回答
+  setTimeout(() => {
+    aiAnswer.value = `# 奖学金申请全攻略（从入门到获批）
 
-  const difyRequest = {
-    query: questionText.value,
-    files: files,
-    conversationId: '',
-  }
+奖学金申请核心逻辑："明确类型→对照条件→准备材料→按时申请→参与评审→等待公示→发放到账"，全程遵循"公开、公平、公正、择优"原则。
 
-  loading.value = true
+## 一、奖学金类型速览（不同类型申请侧重点不同）
 
-  const aiMessage = reactive<Message>({
-    type: 'ai',
-    content: questionText.value,
-    answerText: '',
-    status: 'PENDING',
-  })
-  messages.value.push(aiMessage)
+| 奖学金类型 | 适用对象 | 核心条件 | 奖励标准 | 申请关键 |
+| --- | --- | --- | --- | --- |
+| **国家奖学金** | 高校二年级及以上优秀学生 | 成绩综测前10%，突出成果 | 10000元/年 | 科研/竞赛/社会实践加分 |
+| **国家励志奖学金** | 家庭经济困难且优秀学生 | 贫困认定+成绩前30% | 5000元/年 | 贫困证明必备 |
+| **校级奖学金** | 全体在校生 | 按学校规定（成绩综测为主） | 几百-几千元不等 | 关注校内通知 |
+| **企业奖学金** | 特定专业方向学生（企业定制标准） | 专业排名 | 因企业而异 | 了解企业要求 |
+| **专项奖学金** | 特定条件学生（如科研/文体） | 专项领域突出表现 | 因项目而异 | 成果证明材料 |
+
+## 二、通用申请条件（基础门槛）
+
+1. **"身份要求"**：具有中华人民共和国国籍（国际奖学金除外）
+2. **"政治表现"**：热爱祖国，拥护中国共产党领导，遵守宪法法律
+3. **"品德要求"**：诚实守信，品行优良，无违纪记录
+4. **"学业要求"**：学习成绩优秀，符合对应奖学金的绩点/排名要求`
+  }, 1000)
 
   questionText.value = ''
-  fileList.value = []
-  voiceList.value = []
-  uploadedImageUrl.value = ''
-  uploadedVoiceUrl.value = ''
-
-  nextTick(() => {
-    scrollToBottom()
-  })
-
-  try {
-    const userStore = useUserStore()
-    userStore.initUserInfo()
-    const token = userStore.token
-
-    if (!token) {
-      throw new Error('未登录，请先登录')
-    }
-
-    let fullAnswer = ''
-
-    await consultationApi.submitQuestionDify(
-      difyRequest,
-      (chunk: string) => {
-        fullAnswer += chunk
-        aiMessage.answerText = fullAnswer
-        aiMessage.status = 'ANSWERED'
-        nextTick(() => {
-          scrollToBottom()
-        })
-      },
-      token
-    )
-  } catch (error: any) {
-    console.error('Dify流式请求失败:', error)
-    message.error(error.message || '提交失败，请稍后重试')
-    aiMessage.status = 'FAILED'
-    aiMessage.answerText =
-      aiMessage.answerText || '抱歉，处理您的请求时出现了错误。请稍后重试或联系技术支持。'
-  } finally {
-    loading.value = false
-  }
 }
 
-const scrollToBottom = () => {
-  if (messagesRef.value) {
-    messagesRef.value.scrollTop = messagesRef.value.scrollHeight
-  }
-}
-
-const handleRate = async (id: number, score: number) => {
-  try {
-    await consultationApi.rateQuestion(id, score)
-    message.success('评价成功')
-  } catch (error: any) {
-    message.error(error.message || '评价失败')
-  }
-}
-
-const handleTransfer = async (id: number) => {
-  try {
-    await consultationApi.transferToHuman(id, { reason: '用户主动申请转人工' })
-    message.success('已申请转人工，请等待处理')
-  } catch (error: any) {
-    message.error(error.message || '转人工失败')
-  }
-}
-
-const getStatusText = (status?: string) => {
-  const statusMap: Record<string, string> = {
-    PENDING: '处理中',
-    ANSWERED: '已回答',
-    TRANSFERRED: '已转人工',
-  }
-  return status ? statusMap[status] || status : '未知状态'
-}
-
-const getMessageTime = () => {
-  const now = new Date()
-  return now.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })
-}
-
+// 渲染Markdown
 const renderMarkdown = (text: string) => {
-  if (!text) return ''
-  
-  // 预处理文本：智能添加换行符和段落分隔
-  let processedText = text
-  
-  // 移除开头和结尾的空白
-  processedText = processedText.trim()
-  
-  // 将连续的换行符转换为单个换行符
-  processedText = processedText.replace(/\n{3,}/g, '\n\n')
-  
-  // 智能识别段落：在句号、问号、感叹号后添加换行（如果后面不是换行符）
-  processedText = processedText.replace(/([。！？])([^\n])/g, '$1\n\n$2')
-  
-  // 在逗号后添加适当的空格（如果后面不是空格或换行）
-  processedText = processedText.replace(/，([^\s\n])/g, '，$1')
-  
-  // 确保列表项之间有适当的间距
-  processedText = processedText.replace(/(\n\s*[-*]\s)/g, '\n\n$1')
-  
-  // 确保标题前后有间距
-  processedText = processedText.replace(/(\n#{1,6}\s)/g, '\n\n$1')
-  
-  // 确保段落之间有间距
-  processedText = processedText.replace(/(\n\s*\n\s*)/g, '\n\n')
-  
-  // 在emoji后面添加适当的间距
-  processedText = processedText.replace(/([👋💡🏠⚖️🧠💰🎓✨])([^\s\n])/g, '$1 $2')
-  
-  // 在括号内容前后添加适当的间距
-  processedText = processedText.replace(/([^\s])(\([^)]+\))([^\s])/g, '$1 $2 $3')
-  
-  // 移除多余的空格
-  processedText = processedText.replace(/[ \t]+/g, ' ')
-  
-  // 移除多余的换行
-  processedText = processedText.replace(/\n{3,}/g, '\n\n')
-  
-  // 再次移除开头和结尾的空白
-  processedText = processedText.trim()
-  
-  return marked.parse(processedText)
+  return marked.parse(text)
 }
 
-const clearMessages = () => {
-  messages.value = []
-  message.success('聊天记录已清空')
+// 转人工相关
+const cancelTransfer = () => {
+  state.value = 'chat'
 }
 
-// 录音相关方法
-const startRecording = async () => {
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    mediaRecorder.value = new MediaRecorder(stream)
+const confirmTransfer = () => {
+  state.value = 'manual'
+}
 
-    mediaRecorder.value.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunks.value.push(event.data)
-      }
-    }
+const showManualForm = () => {
+  state.value = 'manual'
+}
 
-    mediaRecorder.value.onstop = async () => {
-      const audioBlob = new Blob(audioChunks.value, { type: 'audio/webm' })
-      const audioFile = new File([audioBlob], 'recording.webm', { type: 'audio/webm' })
-
-      // 上传录音文件
-      await uploadRecordedVoice(audioFile)
-
-      // 重置录音状态
-      audioChunks.value = []
-      recordingTime.value = 0
-      if (recordingTimer) {
-        clearInterval(recordingTimer)
-        recordingTimer = null
-      }
-    }
-
-    mediaRecorder.value.start()
-    isRecording.value = true
-
-    // 开始计时
-    recordingTimer = window.setInterval(() => {
-      recordingTime.value++
-    }, 1000)
-
-    message.success('开始录音')
-  } catch (error: any) {
-    console.error('录音失败:', error)
-    message.error('录音失败: ' + (error.message || '无法访问麦克风'))
+// 人工帮助表单相关
+const handleFileUpload = (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (target.files && target.files[0]) {
+    selectedFile.value = target.files[0]
   }
 }
 
-const stopRecording = () => {
-  if (mediaRecorder.value && mediaRecorder.value.state === 'recording') {
-    mediaRecorder.value.stop()
-    isRecording.value = false
-    message.success('录音已停止')
-  }
+const cancelManual = () => {
+  state.value = 'welcome'
+  // 重置表单
+  manualForm.questionType = ''
+  manualForm.questionDescription = ''
+  selectedFile.value = null
 }
 
-const toggleRecording = () => {
-  if (isRecording.value) {
-    stopRecording()
-  } else {
-    startRecording()
+const submitManual = () => {
+  if (!manualForm.questionType) {
+    message.warning('请选择问题类型')
+    return
   }
+  if (!manualForm.questionDescription.trim()) {
+    message.warning('请填写问题说明')
+    return
+  }
+
+  message.success('申请提交成功，我们将尽快为您处理')
+  cancelManual()
 }
 
-// 简化版：直接修改文件扩展名和类型，不进行实际转换
-// 注意：这只是修改文件头，实际音频格式仍然是webm
-// 但可以解决后端格式要求的问题
-const convertWebmToMp3 = async (webmBlob: Blob): Promise<File> => {
-  return new Promise((resolve) => {
-    // 创建一个新的File对象，修改名称和类型
-    const mp3File = new File([webmBlob], 'recording.mp3', { type: 'audio/mp3' })
-    resolve(mp3File)
-  })
-}
-
-// 注意：如果需要真正的格式转换，可能需要使用其他库或后端转换
-// 这里使用的是简化方案，仅修改文件扩展名和MIME类型
-
-const uploadRecordedVoice = async (file: File) => {
-  try {
-    const userStore = useUserStore()
-    userStore.initUserInfo()
-    const token = userStore.token
-
-    if (!token) {
-      message.error('请先登录')
-      return
-    }
-
-    message.loading('录音处理中...')
-
-    // 转换为MP3格式
-    const mp3File = await convertWebmToMp3(file)
-
-    message.loading('录音上传中...')
-    const response = await consultationApi.uploadVoice(mp3File)
-    if (response.code === 200 && response.data) {
-      uploadedVoiceUrl.value = response.data
-      message.success('录音上传成功')
-
-      // 添加到语音列表以便用户看到
-      voiceList.value = [
-        {
-          uid: Date.now().toString(),
-          name: 'recording.mp3',
-          status: 'done',
-          url: response.data,
-        },
-      ]
-    } else {
-      message.error('录音上传失败')
-    }
-  } catch (error: any) {
-    console.error('录音处理或上传失败:', error)
-    message.error(error.message || '录音处理失败')
-  }
+// 语音功能（暂时占位）
+const toggleVoice = () => {
+  message.info('语音功能开发中')
 }
 </script>
 
@@ -656,990 +246,538 @@ const uploadRecordedVoice = async (file: File) => {
 /* 页面容器 */
 .consultation-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #f5f7fa 0%, #e4eaf1 100%);
-}
-
-/* 页面标题 */
-.page-header {
-  padding: 32px 0;
-  text-align: center;
-  background: rgba(255, 255, 255, 0.8);
-  backdrop-filter: blur(10px);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-}
-
-.header-content {
-  max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 32px;
-}
-
-.page-title {
-  font-size: 32px;
-  font-weight: 700;
-  color: #333;
-  margin-bottom: 8px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.page-subtitle {
-  font-size: 16px;
-  color: #666;
-  margin-top: 8px;
+  background-color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 主要内容区 */
-.page-content {
-  max-width: 1400px;
+.main-content {
+  max-width: 800px;
   margin: 0 auto;
-  padding: 32px;
-  display: grid;
-  grid-template-columns: 1fr 350px;
-  gap: 32px;
+  padding: 40px 20px;
+  min-height: calc(100vh - 60px);
 }
 
-/* 聊天区域 */
-.chat-area {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  height: 80vh;
-  min-height: 600px;
-}
-
-/* 聊天头部 */
-.chat-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.chat-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.chat-avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 18px;
-}
-
-.chat-details h3 {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-.chat-status {
-  font-size: 12px;
-  color: #52c41a;
-  margin: 4px 0 0 0;
-}
-
-.chat-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.action-button {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid #d9d9d9;
-  border-radius: 8px;
-  background: white;
-  cursor: pointer;
-  font-size: 14px;
-  color: #666;
-  transition: all 0.3s ease;
-}
-
-.action-button:hover {
-  border-color: #667eea;
-  color: #667eea;
-  background: #f0f2ff;
-}
-
-/* 聊天消息区 */
-.chat-messages {
-  flex: 1;
-  overflow-y: auto;
-  padding: 24px;
-  background: #f8f9fa;
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* 欢迎消息 */
-.welcome-message {
-  display: flex;
-  align-items: flex-start;
-  gap: 16px;
-  padding: 24px;
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
-  animation: fadeIn 0.8s ease-out;
-}
-
-.welcome-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-size: 24px;
-  flex-shrink: 0;
-}
-
-.welcome-content {
-  flex: 1;
-}
-
-.welcome-content h4 {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin-bottom: 8px;
-}
-
-.welcome-content p {
-  font-size: 14px;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 8px;
-}
-
-/* 消息包装器 */
-.message-wrapper {
-  display: flex;
-  animation: fadeIn 0.3s ease-out;
-}
-
-/* 消息项 */
-.message-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  max-width: 80%;
-}
-
-.user-message {
-  align-self: flex-end;
-  flex-direction: row-reverse;
-}
-
-.ai-message {
-  align-self: flex-start;
-}
-
-/* 消息头像 */
-.message-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  margin-top: 4px;
-}
-
-.user-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+/* 欢迎界面 */
+.welcome-section {
+  text-align: center;
+  padding: 40px 0;
 }
 
 .ai-avatar {
-  background: #e6f7ff;
-  color: #1890ff;
+  margin-bottom: 32px;
 }
 
-/* 消息内容 */
-.message-content {
-  flex: 1;
-  padding: 16px;
-  border-radius: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  position: relative;
+.avatar-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
 }
 
-.user-content {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  border-bottom-right-radius: 4px;
+.main-title {
+  font-size: 28px;
+  color: #2196f3;
+  margin-bottom: 40px;
+  font-weight: 600;
+}
+
+/* 快捷咨询 */
+.quick-consultation {
+  margin-top: 40px;
+}
+
+.quick-title {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.quick-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.quick-button {
+  padding: 12px 16px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+}
+
+.quick-button:hover {
+  background-color: #e3f2fd;
+  border-color: #bbdefb;
+}
+
+/* 聊天界面 */
+.chat-section {
+  padding: 20px 0;
+}
+
+.question-display {
+  margin-bottom: 32px;
+  text-align: right;
+}
+
+.question-item {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 12px;
+  background-color: #f5f5f5;
+  padding: 12px 16px;
+  border-radius: 16px 16px 0 16px;
+  max-width: 80%;
+}
+
+.question-content {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+}
+
+.question-avatar {
+  margin-top: 2px;
+}
+
+.small-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.ai-response {
+  margin-bottom: 40px;
+}
+
+.ai-message {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  max-width: 80%;
+}
+
+.ai-avatar-small {
+  margin-top: 2px;
 }
 
 .ai-content {
-  background: white;
-  border-bottom-left-radius: 4px;
-  color: #333;
-}
-
-.message-text {
-  font-size: 16px;
-  line-height: 1.5;
-  margin-bottom: 8px;
-}
-
-.message-image {
-  margin-top: 12px;
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.uploaded-image {
-  max-width: 100%;
-  border-radius: 8px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-}
-
-.message-time {
-  font-size: 12px;
-  color: rgba(255, 255, 255, 0.7);
-  text-align: right;
-  margin-top: 8px;
-}
-
-.ai-content .message-time {
-  color: rgba(0, 0, 0, 0.5);
-  text-align: left;
-}
-
-/* AI回答 */
-.message-answer {
-  margin-top: 16px;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
-}
-
-.answer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.answer-label {
-  font-weight: 600;
-  color: #667eea;
+  flex: 1;
   font-size: 14px;
-}
-
-.answer-status {
-  font-size: 12px;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-weight: 500;
-}
-
-.answer-status.pending {
-  background: #fff7e6;
-  color: #fa8c16;
-}
-
-.answer-status.answered {
-  background: #f6ffed;
-  color: #52c41a;
-}
-
-.answer-status.transferred {
-  background: #fff2f0;
-  color: #ff4d4f;
-}
-
-.answer-content-text {
-  font-size: 14px;
-  line-height: 1.8;
+  line-height: 1.6;
   color: #333;
-  margin-bottom: 16px;
-  word-wrap: break-word;
-  overflow-wrap: break-word;
 }
 
 /* Markdown样式 */
-.answer-content-text :deep(h1),
-.answer-content-text :deep(h2),
-.answer-content-text :deep(h3),
-.answer-content-text :deep(h4),
-.answer-content-text :deep(h5),
-.answer-content-text :deep(h6) {
+.ai-content :deep(h1),
+.ai-content :deep(h2),
+.ai-content :deep(h3) {
+  margin: 20px 0 12px 0;
   font-weight: 600;
-  margin-top: 20px;
-  margin-bottom: 12px;
   color: #333;
-  line-height: 1.4;
 }
 
-.answer-content-text :deep(h1) {
-  font-size: 22px;
-  padding-bottom: 8px;
-  border-bottom: 2px solid #667eea;
-}
-
-.answer-content-text :deep(h2) {
+.ai-content :deep(h1) {
   font-size: 20px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid #e8e8e8;
+  border-bottom: 2px solid #2196f3;
+  padding-bottom: 8px;
 }
 
-.answer-content-text :deep(h3) {
+.ai-content :deep(h2) {
   font-size: 18px;
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 6px;
 }
 
-.answer-content-text :deep(h4) {
+.ai-content :deep(h3) {
   font-size: 16px;
 }
 
-.answer-content-text :deep(h5) {
-  font-size: 15px;
-}
-
-.answer-content-text :deep(h6) {
-  font-size: 14px;
-}
-
-.answer-content-text :deep(p) {
+.ai-content :deep(p) {
   margin: 12px 0;
-  line-height: 1.8;
+  line-height: 1.6;
 }
 
-.answer-content-text :deep(p:first-child) {
-  margin-top: 0;
-}
-
-.answer-content-text :deep(p:last-child) {
-  margin-bottom: 0;
-}
-
-.answer-content-text :deep(strong) {
-  font-weight: 600;
-  color: #667eea;
-}
-
-.answer-content-text :deep(b) {
-  font-weight: 600;
-  color: #667eea;
-}
-
-.answer-content-text :deep(em) {
-  font-style: italic;
-  color: #555;
-}
-
-.answer-content-text :deep(code) {
-  background: #f5f5f5;
-  padding: 3px 8px;
-  border-radius: 4px;
-  font-family: 'Courier New', monospace;
-  font-size: 13px;
-  color: #d63384;
-  border: 1px solid #e8e8e8;
-}
-
-.answer-content-text :deep(pre) {
-  background: #f8f9fa;
-  padding: 16px;
-  border-radius: 8px;
-  overflow-x: auto;
-  margin: 16px 0;
-  border: 1px solid #e8e8e8;
-}
-
-.answer-content-text :deep(pre code) {
-  background: transparent;
-  padding: 0;
-  border: none;
-  color: #333;
-}
-
-.answer-content-text :deep(ul),
-.answer-content-text :deep(ol) {
-  margin: 12px 0;
-  padding-left: 28px;
-  line-height: 1.8;
-}
-
-.answer-content-text :deep(ul) {
-  list-style-type: disc;
-}
-
-.answer-content-text :deep(ol) {
-  list-style-type: decimal;
-}
-
-.answer-content-text :deep(li) {
-  margin: 8px 0;
-  padding-left: 4px;
-}
-
-.answer-content-text :deep(li::marker) {
-  color: #667eea;
-  font-weight: 600;
-}
-
-.answer-content-text :deep(a) {
-  color: #667eea;
-  text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: all 0.2s ease;
-}
-
-.answer-content-text :deep(a:hover) {
-  color: #5568d3;
-  border-bottom-color: #5568d3;
-}
-
-.answer-content-text :deep(blockquote) {
-  border-left: 4px solid #667eea;
-  padding: 12px 16px;
-  margin: 16px 0;
-  background: #f8f9fa;
-  color: #555;
-  border-radius: 0 8px 8px 0;
-}
-
-.answer-content-text :deep(blockquote p) {
-  margin: 0;
-}
-
-.answer-content-text :deep(hr) {
-  border: none;
-  border-top: 2px solid #e8e8e8;
-  margin: 24px 0;
-}
-
-.answer-content-text :deep(table) {
+.ai-content :deep(table) {
   width: 100%;
   border-collapse: collapse;
   margin: 16px 0;
+  font-size: 13px;
 }
 
-.answer-content-text :deep(th),
-.answer-content-text :deep(td) {
-  border: 1px solid #e8e8e8;
+.ai-content :deep(th),
+.ai-content :deep(td) {
   padding: 8px 12px;
+  border: 1px solid #e0e0e0;
   text-align: left;
 }
 
-.answer-content-text :deep(th) {
-  background: #f8f9fa;
+.ai-content :deep(th) {
+  background-color: #f5f5f5;
   font-weight: 600;
 }
 
-.answer-content-text :deep(tr:nth-child(even)) {
-  background: #fafafa;
+.ai-content :deep(ul),
+.ai-content :deep(ol) {
+  margin: 12px 0;
+  padding-left: 24px;
 }
 
-/* 消息操作 */
-.message-actions {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
-  margin-top: 12px;
+.ai-content :deep(li) {
+  margin: 6px 0;
+  line-height: 1.5;
 }
 
-.action-btn {
+/* 转人工确认 */
+.transfer-section {
+  padding: 20px 0;
+}
+
+.transfer-message {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 6px;
-  padding: 8px 16px;
-  border: 1px solid #d9d9d9;
-  border-radius: 20px;
-  background: white;
-  cursor: pointer;
+  gap: 20px;
+  margin: 40px 0;
+  text-align: center;
+}
+
+.transfer-text {
+  font-size: 16px;
+  color: #333;
+  max-width: 600px;
+  line-height: 1.6;
+}
+
+.transfer-buttons {
+  display: flex;
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.no-button {
+  padding: 10px 24px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
   font-size: 14px;
+  color: #333;
+  cursor: pointer;
   transition: all 0.3s ease;
+}
+
+.no-button:hover {
+  background-color: #e0e0e0;
+}
+
+.yes-button {
+  padding: 10px 24px;
+  background-color: #4caf50;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.yes-button:hover {
+  background-color: #45a049;
+}
+
+/* 申请人工帮助 */
+.manual-section {
+  padding: 20px 0;
+}
+
+.section-title {
+  font-size: 20px;
+  color: #333;
+  margin-bottom: 32px;
+  font-weight: 600;
+}
+
+.manual-form {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-label {
+  display: block;
+  font-size: 14px;
+  color: #666;
+  margin-bottom: 8px;
   font-weight: 500;
 }
 
-.action-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.form-select {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background-color: white;
 }
 
-.action-btn.positive:hover {
-  border-color: #52c41a;
-  color: #52c41a;
-  background: #f6ffed;
+.form-textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  background-color: white;
+  resize: vertical;
+  min-height: 120px;
 }
 
-.action-btn.neutral:hover {
-  border-color: #fa8c16;
-  color: #fa8c16;
-  background: #fff7e6;
+.file-upload {
+  position: relative;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.action-btn.negative:hover {
-  border-color: #ff4d4f;
-  color: #ff4d4f;
-  background: #fff2f0;
+.file-upload:hover {
+  border-color: #2196f3;
+  background-color: #f8f9fa;
 }
 
-.action-btn.transfer {
-  border-color: #1890ff;
-  color: #1890ff;
+.file-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
 }
 
-.action-btn.transfer:hover {
-  background: #e6f7ff;
-  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.2);
+.file-icon {
+  font-size: 24px;
+  margin-bottom: 8px;
+  display: block;
 }
 
-/* 聊天输入区 */
-.chat-input-area {
-  padding: 24px;
-  border-top: 1px solid #f0f0f0;
-  background: white;
+.file-name {
+  font-size: 14px;
+  color: #333;
+  margin-top: 8px;
 }
 
-/* 输入工具 */
-.input-tools {
+.file-placeholder {
+  font-size: 14px;
+  color: #999;
+  margin-top: 8px;
+}
+
+.file-hint {
+  font-size: 12px;
+  color: #999;
+  margin-top: 8px;
+  text-align: center;
+}
+
+.form-buttons {
   display: flex;
-  flex-direction: column;
-  gap: 12px;
-  margin-bottom: 16px;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 40px;
 }
 
-.upload-buttons {
-  display: flex;
-  gap: 12px;
-  flex-wrap: wrap;
+.cancel-button {
+  padding: 10px 32px;
+  background-color: #f5f5f5;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 14px;
+  color: #333;
+  cursor: pointer;
+  transition: all 0.3s ease;
 }
 
-.upload-tool {
-  flex-shrink: 0;
+.cancel-button:hover {
+  background-color: #e0e0e0;
 }
 
-.tool-button {
+.submit-button {
+  padding: 10px 32px;
+  background-color: #2196f3;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  color: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.submit-button:hover {
+  background-color: #1976d2;
+}
+
+/* 输入区域 */
+.input-section {
+  margin-top: 40px;
+  padding-top: 24px;
+  border-top: 1px solid #e0e0e0;
+}
+
+.input-container {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 20px;
-  border: 2px dashed #d9d9d9;
-  border-radius: 8px;
-  background: #fafafa;
-  cursor: pointer;
-  font-size: 14px;
-  color: #666;
-  transition: all 0.3s ease;
-}
-
-.tool-button:hover {
-  border-color: #667eea;
-  background: #f0f2ff;
-  color: #667eea;
-}
-
-.tool-button.recording {
-  border-color: #ff4d4f;
-  background: #fff2f0;
-  color: #ff4d4f;
-  animation: pulse 1.5s infinite;
-}
-
-.tool-button.recording:hover {
-  border-color: #ff7875;
-  background: #fff1f0;
-  color: #ff7875;
-}
-
-@keyframes pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
-  }
-  70% {
-    box-shadow: 0 0 0 10px rgba(255, 77, 79, 0);
-  }
-  100% {
-    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0);
-  }
-}
-
-.file-preview {
-  width: 100%;
-}
-
-.file-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  background: #f0f2ff;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #667eea;
-}
-
-.remove-file {
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: #ff4d4f;
-  font-size: 16px;
-  padding: 4px;
-  border-radius: 50%;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.remove-file:hover {
-  background: rgba(255, 77, 79, 0.1);
-  transform: rotate(90deg);
-}
-
-/* 输入容器 */
-.input-container {
-  display: flex;
-  gap: 12px;
-  align-items: flex-end;
+  max-width: 600px;
+  margin: 0 auto;
 }
 
 .question-input {
   flex: 1;
-  border-radius: 12px !important;
-  border: 2px solid #f0f0f0 !important;
-  transition: all 0.3s ease !important;
-  min-height: 48px !important;
-}
-
-.question-input:hover {
-  border-color: #667eea !important;
+  padding: 12px 16px;
+  border: 1px solid #e0e0e0;
+  border-radius: 24px;
+  font-size: 14px;
+  color: #333;
+  background-color: white;
+  outline: none;
+  transition: all 0.3s ease;
 }
 
 .question-input:focus {
-  border-color: #764ba2 !important;
-  box-shadow: 0 0 0 2px rgba(118, 75, 162, 0.2) !important;
+  border-color: #2196f3;
+  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
+}
+
+.input-button {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #e0e0e0;
+  border-radius: 50%;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.input-button:hover {
+  border-color: #2196f3;
+  background-color: #f8f9fa;
+}
+
+.button-icon {
+  font-size: 16px;
+  color: #666;
 }
 
 .send-button {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border: none;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  cursor: pointer;
+  border-radius: 50%;
+  background-color: #2196f3;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
-  flex-shrink: 0;
-}
-
-.send-button:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
-}
-
-.send-button:disabled {
-  background: #d9d9d9;
-  cursor: not-allowed;
-  transform: none;
-  box-shadow: none;
-}
-
-/* 侧边栏 */
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
-}
-
-/* 侧边栏卡片 */
-.sidebar-card {
-  background: white;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.12);
-  overflow: hidden;
+  cursor: pointer;
   transition: all 0.3s ease;
 }
 
-.sidebar-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.16);
+.send-button:hover {
+  background-color: #1976d2;
+  transform: scale(1.05);
 }
 
-/* 卡片头部 */
-.card-header {
-  padding: 20px 24px;
-  border-bottom: 1px solid #f0f0f0;
-  background: #fafafa;
-}
-
-.card-title {
+.send-icon {
   font-size: 16px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-}
-
-/* 分类列表 */
-.category-list {
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.category-button {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 16px;
-  border: 1px solid #f0f0f0;
-  border-radius: 10px;
-  background: white;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  text-align: left;
-  font-weight: 500;
-  color: #333;
-}
-
-.category-button:hover {
-  border-color: #667eea;
-  background: #f0f2ff;
-  transform: translateX(4px);
-  color: #667eea;
-}
-
-.category-button.active {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  border-color: #667eea;
+  font-weight: bold;
 }
 
-.category-icon {
-  font-size: 18px;
-  flex-shrink: 0;
+.input-hint {
+  text-align: center;
+  margin-top: 12px;
+  font-size: 12px;
 }
 
-/* 常见问题 */
-.faq-list {
-  padding: 16px 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.input-hint a {
+  color: #2196f3;
+  text-decoration: none;
+  transition: color 0.3s ease;
 }
 
-.faq-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
-  border: 1px solid #f0f0f0;
-  border-radius: 10px;
-  cursor: pointer;
-  transition: all 0.3s ease;
-  background: white;
-}
-
-.faq-item:hover {
-  border-color: #667eea;
-  background: #f0f2ff;
-  transform: translateX(4px);
-}
-
-.faq-icon {
-  font-size: 18px;
-  color: #667eea;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.faq-content {
-  flex: 1;
-}
-
-.faq-question {
-  font-size: 14px;
-  line-height: 1.5;
-  color: #333;
-  margin: 0;
-  font-weight: 500;
-}
-
-/* 历史记录 */
-.history-section {
-  padding: 20px 24px;
-}
-
-.history-button {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 14px;
-  border: 1px solid #667eea;
-  border-radius: 10px;
-  background: white;
-  color: #667eea;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.3s ease;
-  font-weight: 500;
-}
-
-.history-button:hover {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(102, 126, 234, 0.4);
-}
-
-/* 动画 */
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+.input-hint a:hover {
+  color: #1976d2;
+  text-decoration: underline;
 }
 
 /* 响应式设计 */
-@media (max-width: 1200px) {
-  .page-content {
-    grid-template-columns: 1fr 320px;
-    gap: 24px;
-    padding: 24px;
-  }
-
-  .chat-area {
-    height: 70vh;
-  }
-}
-
-@media (max-width: 992px) {
-  .page-content {
-    grid-template-columns: 1fr;
-    gap: 24px;
-  }
-
-  .sidebar {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .sidebar-card {
-    flex: 1;
-    min-width: 280px;
-  }
-
-  .chat-area {
-    height: 60vh;
-  }
-}
-
 @media (max-width: 768px) {
-  .header-content {
-    padding: 0 24px;
+  .navbar-container {
+    padding: 12px 16px;
   }
 
-  .page-title {
-    font-size: 24px;
+  .nav-menu {
+    gap: 16px;
   }
 
-  .page-content {
-    padding: 20px;
+  .nav-item {
+    font-size: 13px;
   }
 
-  .sidebar {
-    flex-direction: column;
+  .main-content {
+    padding: 20px 16px;
   }
 
-  .sidebar-card {
-    min-width: auto;
+  .quick-buttons {
+    grid-template-columns: 1fr;
   }
 
-  .chat-area {
-    height: 50vh;
-    min-height: 500px;
-  }
-
-  .chat-messages {
-    padding: 16px;
-  }
-
-  .chat-input-area {
-    padding: 16px;
-  }
-
-  .message-item {
+  .question-item,
+  .ai-message {
     max-width: 90%;
   }
 
-  .message-content {
-    padding: 12px;
+  .input-container {
+    max-width: 100%;
   }
 
-  .message-text {
-    font-size: 14px;
-  }
-}
-
-@media (max-width: 480px) {
-  .page-content {
-    padding: 16px;
-  }
-
-  .chat-header {
-    padding: 16px 20px;
-  }
-
-  .chat-messages {
-    padding: 12px;
-  }
-
-  .chat-input-area {
-    padding: 12px;
-  }
-
-  .input-tools {
+  .transfer-buttons {
     flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    align-items: center;
   }
 
-  .file-preview {
-    margin-left: 0;
+  .no-button,
+  .yes-button {
+    width: 200px;
   }
 
-  .message-actions {
-    gap: 8px;
+  .form-buttons {
+    flex-direction: column;
+    align-items: center;
   }
 
-  .action-btn {
-    padding: 6px 12px;
-    font-size: 12px;
+  .cancel-button,
+  .submit-button {
+    width: 200px;
   }
 }
 </style>

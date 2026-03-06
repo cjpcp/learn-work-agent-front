@@ -17,6 +17,8 @@ import type {
   AwardApplication,
   Notification,
   UnreadCountResponse,
+  ProcessItem,
+  ProcessListResponse,
 } from '@/types'
 
 // 认证相关API
@@ -311,5 +313,15 @@ export const notificationApi = {
   },
   deleteNotification: (id: number): Promise<Result<void>> => {
     return request.delete(`/notifications/${id}`)
+  },
+}
+
+// 流程代办相关API
+export const processApi = {
+  getProcessList: (): Promise<Result<ProcessListResponse>> => {
+    return request.get('/process/list')
+  },
+  getProcessDetail: (id: string): Promise<Result<ProcessItem>> => {
+    return request.get(`/process/${id}`)
   },
 }

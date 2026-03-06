@@ -33,6 +33,11 @@ const router = createRouter({
           component: () => import('@/views/consultation/ConsultationHistory.vue'),
         },
         {
+          path: '/process',
+          name: 'ProcessService',
+          component: () => import('@/views/process/ProcessService.vue'),
+        },
+        {
           path: '/leave',
           name: 'Leave',
           component: () => import('@/views/leave/LeaveList.vue'),

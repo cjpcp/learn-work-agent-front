@@ -155,3 +155,18 @@ export interface Notification {
 export interface UnreadCountResponse {
   count: number
 }
+
+// 流程代办相关
+export interface ProcessItem {
+  id: string
+  name: string
+  type: string
+  createTime: string
+  status: string
+  description: string
+}
+
+export interface ProcessListResponse {
+  pending: ProcessItem[]
+  completed: ProcessItem[]
+}
