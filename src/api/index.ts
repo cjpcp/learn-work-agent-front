@@ -1,65 +1,72 @@
+import type { AwardApplication, ConsultationQuestion, PageRequest, PageResult, Result } from '@/types'
 import request from '@/utils/request'
-import { useUserStore } from '@/stores/user'
-import type {
-  Result,
-  PageRequest,
-  PageResult,
-  LoginRequest,
-  LoginResponse,
-  User,
-  ConsultationRequest,
-  ConsultationQuestion,
-  TransferToHumanRequest,
-  LeaveApplicationRequest,
-  LeaveApplication,
-  ApprovalRequest,
-  AwardApplicationRequest,
-  AwardApplication,
-  Notification,
-  UnreadCountResponse,
-  ProcessItem,
-  ProcessListResponse,
-} from '@/types'
+import type { AxiosProgressEvent } from 'axios'
+
+export interface ConsultationRequest {
+  questionText: string
+  questionType: 'TEXT' | 'IMAGE' | 'VOICE'
+  category?: string
+  imageUrl?: string
+  voiceUrl?: string
+}
+
+export interface TransferToHumanRequest {
+  questionType: string
+  questionDescription: string
+  attachmentUrl?: string
+}
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface RegisterRequest {
+  username: string
+  password: string
+  realName: string
+  studentId: string
+  email: string
+  phone: string
+}
 
 // 认证相关API
 export const authApi = {
-  login: (data: LoginRequest): Promise<Result<LoginResponse>> => {
+  // 登录
+  login: (data: LoginRequest): Promise<Result<{ token: string; userId: number; username: string; realName: string; role: string }>> => {
     return request.post('/auth/login', data)
   },
-  register: (data: User): Promise<Result<User>> => {
+
+  // 注册
+  register: (data: RegisterRequest): Promise<Result<void>> => {
     return request.post('/auth/register', data)
   },
 }
 
-// 咨询相关API
 export const consultationApi = {
   submitQuestion: (data: ConsultationRequest): Promise<Result<ConsultationQuestion>> => {
     return request.post('/consultation/questions', data)
   },
+
   submitQuestionStream: async (
     data: ConsultationRequest,
     onChunk: (chunk: string) => void,
     token: string
   ): Promise<void> => {
-    console.log('开始流式请求，数据:', data)
-
-    if (!token) {
-      throw new Error('Token is required for streaming request')
-    }
-
-    const url = '/api/v1/consultation/questions/stream'
-
     try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-          Accept: 'text/event-stream',
-          'Cache-Control': 'no-cache',
-        },
-        body: JSON.stringify(data),
-      })
+      console.log('开始流式请求，数据:', data)
+
+      const response = await fetch(
+        `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/consultation/questions/stream`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(data),
+        }
+      )
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -86,28 +93,53 @@ export const consultationApi = {
 
           buffer += decoder.decode(value, { stream: true })
 
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
+          // 处理SSE数据：寻找以\n\n结尾的完整事件
+          let eventEndIndex
+          while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
+            const event = buffer.substring(0, eventEndIndex)
+            buffer = buffer.substring(eventEndIndex + 2)
 
-          for (const line of lines) {
-            const trimmedLine = line.trim()
-            if (trimmedLine.startsWith('data:')) {
-              const chunkData = trimmedLine.substring(5).trim()
-              if (chunkData) {
-                console.log('收到数据块:', chunkData)
-                onChunk(chunkData)
+            // 解析SSE事件中的data字段
+            const lines = event.split('\n')
+            for (const line of lines) {
+              if (line.startsWith('data:')) {
+                const jsonStr = line.substring(5).trim()
+                if (jsonStr && jsonStr !== '[DONE]') {
+                  try {
+                    const data = JSON.parse(jsonStr)
+                    if (data.answer) {
+                      console.log('收到数据块:', data.answer)
+                      onChunk(data.answer)
+                    }
+                  } catch (e) {
+                    // 如果不是JSON格式，直接返回原始内容
+                    console.log('收到非JSON数据块:', jsonStr)
+                    onChunk(jsonStr)
+                  }
+                }
               }
             }
           }
         }
 
+        // 处理剩余的数据
         if (buffer.trim()) {
-          const trimmedBuffer = buffer.trim()
-          if (trimmedBuffer.startsWith('data:')) {
-            const chunkData = trimmedBuffer.substring(5).trim()
-            if (chunkData) {
-              console.log('收到数据块:', chunkData)
-              onChunk(chunkData)
+          const lines = buffer.split('\n')
+          for (const line of lines) {
+            if (line.startsWith('data:')) {
+              const jsonStr = line.substring(5).trim()
+              if (jsonStr && jsonStr !== '[DONE]') {
+                try {
+                  const data = JSON.parse(jsonStr)
+                  if (data.answer) {
+                    console.log('收到最后数据块:', data.answer)
+                    onChunk(data.answer)
+                  }
+                } catch (e) {
+                  console.log('收到最后非JSON数据块:', jsonStr)
+                  onChunk(jsonStr)
+                }
+              }
             }
           }
         }
@@ -159,169 +191,62 @@ export const consultationApi = {
       },
     })
   },
-  submitQuestionDify: async (
-    data: any,
-    onChunk: (chunk: string) => void,
-    token: string
-  ): Promise<void> => {
-    console.log('开始Dify流式请求，数据:', data)
-
-    if (!token) {
-      throw new Error('Token is required for streaming request')
-    }
-
-    const url = '/api/v1/consultation/dify/chat'
-
-    try {
-      const response = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-          Accept: 'text/event-stream',
-          'Cache-Control': 'no-cache',
-        },
-        body: JSON.stringify(data),
-      })
-
-      if (!response.ok) {
-        const errorText = await response.text()
-        console.error('请求失败，状态码:', response.status, '错误信息:', errorText)
-        throw new Error(`请求失败: ${response.status} ${response.statusText}`)
-      }
-
-      const reader = response.body?.getReader()
-      const decoder = new TextDecoder('utf-8')
-      let buffer = ''
-
-      if (!reader) {
-        throw new Error('无法获取响应流')
-      }
-
-      try {
-        while (true) {
-          const { done, value } = await reader.read()
-
-          if (done) {
-            console.log('Dify流式读取完成')
-            break
-          }
-
-          buffer += decoder.decode(value, { stream: true })
-
-          const lines = buffer.split('\n')
-          buffer = lines.pop() || ''
-
-          for (const line of lines) {
-            const trimmedLine = line.trim()
-            if (trimmedLine.startsWith('data:')) {
-              const chunkData = trimmedLine.substring(5).trim()
-              if (chunkData) {
-                console.log('收到Dify数据块:', chunkData)
-                onChunk(chunkData)
-              }
-            }
-          }
-        }
-
-        if (buffer.trim()) {
-          const trimmedBuffer = buffer.trim()
-          if (trimmedBuffer.startsWith('data:')) {
-            const chunkData = trimmedBuffer.substring(5).trim()
-            if (chunkData) {
-              console.log('收到Dify数据块:', chunkData)
-              onChunk(chunkData)
-            }
-          }
-        }
-      } catch (readError) {
-        console.error('读取Dify流数据失败:', readError)
-        throw readError
-      }
-
-      console.log('Dify流式请求完成')
-    } catch (error) {
-      console.error('Dify流式请求异常:', error)
-      throw error
-    }
-  },
 }
 
-// 请假相关API
-export const leaveApi = {
-  submitApplication: (data: LeaveApplicationRequest): Promise<Result<LeaveApplication>> => {
-    return request.post('/leave/applications', data)
-  },
-  getApplication: (id: number): Promise<Result<LeaveApplication>> => {
-    return request.get(`/leave/applications/${id}`)
-  },
-  getMyApplications: (params: PageRequest): Promise<Result<PageResult<LeaveApplication>>> => {
-    return request.get('/leave/applications/my', { params })
-  },
-  getPendingApplications: (params: PageRequest): Promise<Result<PageResult<LeaveApplication>>> => {
-    return request.get('/leave/applications/pending', { params })
-  },
-  approveApplication: (id: number, data: ApprovalRequest): Promise<Result<void>> => {
-    return request.post(`/leave/applications/${id}/approve`, data)
-  },
-  generateLeaveSlip: (id: number): Promise<Result<void>> => {
-    return request.post(`/leave/applications/${id}/generate-slip`)
-  },
-  downloadLeaveSlip: (id: number): void => {
-    window.open(`/api/v1/leave/applications/${id}/download-slip`, '_blank')
-  },
-  cancelLeave: (id: number): Promise<Result<void>> => {
-    return request.post(`/leave/applications/${id}/cancel`)
-  },
-}
-
-// 奖助相关API
+// 奖助申请相关API
 export const awardApi = {
-  submitApplication: (data: AwardApplicationRequest): Promise<Result<AwardApplication>> => {
-    return request.post('/award/applications', data)
+  // 提交奖助申请
+  submitApplication: (data: FormData): Promise<Result<void>> => {
+    return request.post('/award/applications', data, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
   },
-  getApplication: (id: number): Promise<Result<AwardApplication>> => {
+
+  // 获取申请列表
+  getApplications: (): Promise<Result<AwardApplication[]>> => {
+    return request.get('/award/applications/my')
+  },
+
+  // 获取申请详情
+  getApplicationDetail: (id: number): Promise<Result<AwardApplication>> => {
     return request.get(`/award/applications/${id}`)
   },
-  getMyApplications: (params: PageRequest): Promise<Result<PageResult<AwardApplication>>> => {
-    return request.get('/award/applications/my', { params })
+
+  // 审批申请（教师/管理员）
+  approveApplication: (id: number, approved: boolean, comment?: string): Promise<Result<void>> => {
+    return request.post(`/award/applications/${id}/approve`, { approved, comment })
   },
-  getPendingApplications: (params: PageRequest): Promise<Result<PageResult<AwardApplication>>> => {
-    return request.get('/award/applications/pending', { params })
-  },
-  approveApplication: (id: number, data: ApprovalRequest): Promise<Result<void>> => {
-    return request.post(`/award/applications/${id}/approve`, data)
+
+  // 获取待审批列表（教师/管理员）
+  getPendingApplications: (): Promise<Result<AwardApplication[]>> => {
+    return request.get('/award/applications/pending')
   },
 }
 
-// 通知相关API
-export const notificationApi = {
-  getNotifications: (params: PageRequest): Promise<Result<PageResult<Notification>>> => {
-    return request.get('/notifications', { params })
-  },
-  getUnreadNotifications: (): Promise<Result<Notification[]>> => {
-    return request.get('/notifications/unread')
-  },
-  getUnreadCount: (): Promise<Result<UnreadCountResponse>> => {
-    return request.get('/notifications/unread/count')
-  },
-  markAsRead: (id: number): Promise<Result<void>> => {
-    return request.put(`/notifications/${id}/read`)
-  },
-  markAllAsRead: (): Promise<Result<void>> => {
-    return request.put('/notifications/read-all')
-  },
-  deleteNotification: (id: number): Promise<Result<void>> => {
-    return request.delete(`/notifications/${id}`)
-  },
-}
+// 文件上传API
+export const fileApi = {
+  // 上传文件
+  upload: (
+    file: File,
+    type: 'image' | 'document' | 'voice',
+    onProgress?: (progress: number) => void
+  ): Promise<Result<string>> => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('type', type)
 
-// 流程代办相关API
-export const processApi = {
-  getProcessList: (): Promise<Result<ProcessListResponse>> => {
-    return request.get('/process/list')
-  },
-  getProcessDetail: (id: string): Promise<Result<ProcessItem>> => {
-    return request.get(`/process/${id}`)
+    return request.post('/files/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+      onUploadProgress: (progressEvent: AxiosProgressEvent) => {
+        if (onProgress && progressEvent.total) {
+          const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total)
+          onProgress(progress)
+        }
+      },
+    })
   },
 }

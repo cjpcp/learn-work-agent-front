@@ -22,55 +22,70 @@
       </div>
 
       <!-- 聊天状态 -->
-      <div v-else-if="state === 'chat'" class="chat-section">
-        <!-- 问题显示 -->
-        <div class="question-display">
-          <div class="question-item">
-            <div class="question-content">{{ currentQuestion }}</div>
-            <div class="question-avatar">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
+      <div v-else class="chat-section">
+        <!-- 历史对话列表 -->
+        <div v-for="(conversation, index) in conversationHistory" :key="index" class="conversation-item">
+          <!-- 问题显示 -->
+          <div class="question-display">
+            <div class="question-item">
+              <div class="question-content">{{ conversation.question }}</div>
+              <div class="question-avatar">
+                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
+              </div>
+            </div>
+          </div>
+
+          <!-- AI回答 -->
+          <div class="ai-response">
+            <div class="ai-message">
+              <div class="ai-avatar-small">
+                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+              </div>
+              <div class="ai-content-plain">{{ conversation.answer }}</div>
             </div>
           </div>
         </div>
 
-        <!-- AI回答 -->
-        <div class="ai-response">
-          <div class="ai-message">
-            <div class="ai-avatar-small">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+        <!-- 当前对话 -->
+        <div v-if="currentQuestion" class="conversation-item current">
+          <!-- 问题显示 -->
+          <div class="question-display">
+            <div class="question-item">
+              <div class="question-content">{{ currentQuestion }}</div>
+              <div class="question-avatar">
+                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
+              </div>
             </div>
-            <div class="ai-content" v-html="renderMarkdown(aiAnswer)"></div>
           </div>
-        </div>
-      </div>
 
-      <!-- 转人工确认 -->
-      <div v-else-if="state === 'transfer'" class="transfer-section">
-        <!-- 问题显示 -->
-        <div class="question-display">
-          <div class="question-item">
-            <div class="question-content">{{ currentQuestion }}</div>
-            <div class="question-avatar">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
+          <!-- AI回答 -->
+          <div class="ai-response">
+            <div class="ai-message">
+              <div class="ai-avatar-small">
+                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+              </div>
+              <div class="ai-content-plain">{{ aiAnswer }}</div>
             </div>
           </div>
         </div>
 
         <!-- 转人工确认 -->
-        <div class="transfer-message">
-          <div class="ai-avatar-small">
-            <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
-          </div>
-          <div class="transfer-text">未找到您要了解的问题答案，可申请转人工为您解答，请问需要吗？</div>
-          <div class="transfer-buttons">
-            <button class="no-button" @click="cancelTransfer">不需要</button>
-            <button class="yes-button" @click="confirmTransfer">需要</button>
+        <div v-if="state === 'transfer'" class="transfer-section">
+          <div class="transfer-message">
+            <div class="ai-avatar-small">
+              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+            </div>
+            <div class="transfer-text">未找到您要了解的问题答案，可申请转人工为您解答，请问需要吗？</div>
+            <div class="transfer-buttons">
+              <button class="no-button" @click="cancelTransfer">不需要</button>
+              <button class="yes-button" @click="confirmTransfer">需要</button>
+            </div>
           </div>
         </div>
       </div>
 
       <!-- 申请人工帮助 -->
-      <div v-else-if="state === 'manual'" class="manual-section">
+      <div v-if="state === 'manual'" class="manual-section">
         <h2 class="section-title">申请人工帮助</h2>
         <form class="manual-form">
           <div class="form-group">
@@ -128,15 +143,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, nextTick } from 'vue'
 import { message } from 'ant-design-vue'
 import { marked } from 'marked'
+import { consultationApi } from '@/api'
+import { useUserStore } from '@/stores/user'
+
+interface Conversation {
+  question: string
+  answer: string
+}
 
 // 状态管理
 const state = ref('welcome') // welcome, chat, transfer, manual
 const questionText = ref('')
 const currentQuestion = ref('')
 const aiAnswer = ref('')
+const isStreaming = ref(false) // 是否正在流式接收
+const conversationHistory = ref<Conversation[]>([]) // 对话历史记录
 
 // 人工帮助表单
 const manualForm = reactive({
@@ -158,38 +182,62 @@ const handleSubmit = async () => {
     return
   }
 
+  // 如果有当前对话，先保存到历史记录
+  if (currentQuestion.value && aiAnswer.value) {
+    conversationHistory.value.push({
+      question: currentQuestion.value,
+      answer: aiAnswer.value
+    })
+  }
+
   currentQuestion.value = questionText.value
   state.value = 'chat'
+  aiAnswer.value = '' // 清空之前的回答
+  isStreaming.value = true // 开始流式接收
 
-  // 模拟AI回答
-  setTimeout(() => {
-    aiAnswer.value = `# 奖学金申请全攻略（从入门到获批）
+  const userStore = useUserStore()
+  const token = userStore.token
 
-奖学金申请核心逻辑："明确类型→对照条件→准备材料→按时申请→参与评审→等待公示→发放到账"，全程遵循"公开、公平、公正、择优"原则。
+  if (!token) {
+    message.error('请先登录')
+    return
+  }
 
-## 一、奖学金类型速览（不同类型申请侧重点不同）
-
-| 奖学金类型 | 适用对象 | 核心条件 | 奖励标准 | 申请关键 |
-| --- | --- | --- | --- | --- |
-| **国家奖学金** | 高校二年级及以上优秀学生 | 成绩综测前10%，突出成果 | 10000元/年 | 科研/竞赛/社会实践加分 |
-| **国家励志奖学金** | 家庭经济困难且优秀学生 | 贫困认定+成绩前30% | 5000元/年 | 贫困证明必备 |
-| **校级奖学金** | 全体在校生 | 按学校规定（成绩综测为主） | 几百-几千元不等 | 关注校内通知 |
-| **企业奖学金** | 特定专业方向学生（企业定制标准） | 专业排名 | 因企业而异 | 了解企业要求 |
-| **专项奖学金** | 特定条件学生（如科研/文体） | 专项领域突出表现 | 因项目而异 | 成果证明材料 |
-
-## 二、通用申请条件（基础门槛）
-
-1. **"身份要求"**：具有中华人民共和国国籍（国际奖学金除外）
-2. **"政治表现"**：热爱祖国，拥护中国共产党领导，遵守宪法法律
-3. **"品德要求"**：诚实守信，品行优良，无违纪记录
-4. **"学业要求"**：学习成绩优秀，符合对应奖学金的绩点/排名要求`
-  }, 1000)
-
+  // 立即清空文本框
   questionText.value = ''
+
+  try {
+    await consultationApi.submitQuestionStream(
+      {
+        questionText: currentQuestion.value,
+        questionType: 'TEXT',
+        category: undefined,
+        imageUrl: undefined,
+        voiceUrl: undefined,
+      },
+      (chunk: string) => {
+        // 收到流式数据块，追加到回答中
+        if (chunk.startsWith('错误:')) {
+          message.error(chunk)
+          return
+        }
+        // 直接追加到回答，不使用打字机效果
+        aiAnswer.value += chunk
+      },
+      token
+    )
+    isStreaming.value = false // 流式接收完成
+  } catch (error: any) {
+    console.error('咨询请求失败:', error)
+    message.error('咨询请求失败: ' + (error.message || '未知错误'))
+    // 如果失败，显示转人工选项
+    state.value = 'transfer'
+  }
 }
 
-// 渲染Markdown
+// 直接解析Markdown，不做额外格式化
 const renderMarkdown = (text: string) => {
+  if (!text) return ''
   return marked.parse(text)
 }
 
@@ -279,74 +327,86 @@ const toggleVoice = () => {
   font-size: 28px;
   color: #2196f3;
   margin-bottom: 40px;
-  font-weight: 600;
 }
 
-/* 快捷咨询 */
 .quick-consultation {
-  margin-top: 40px;
+  margin-top: 60px;
 }
 
 .quick-title {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 16px;
-  font-weight: 500;
+  font-size: 18px;
+  color: #666;
+  margin-bottom: 24px;
 }
 
 .quick-buttons {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-  max-width: 500px;
+  gap: 16px;
+  max-width: 600px;
   margin: 0 auto;
 }
 
 .quick-button {
-  padding: 12px 16px;
+  padding: 16px 24px;
   background-color: #f5f5f5;
   border: 1px solid #e0e0e0;
   border-radius: 8px;
   font-size: 14px;
   color: #333;
   cursor: pointer;
-  transition: all 0.3s ease;
-  text-align: left;
+  transition: all 0.3s;
 }
 
 .quick-button:hover {
-  background-color: #e3f2fd;
-  border-color: #bbdefb;
+  background-color: #2196f3;
+  color: white;
+  border-color: #2196f3;
 }
 
-/* 聊天界面 */
+/* 聊天区域 */
 .chat-section {
-  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
 }
 
-.question-display {
+.conversation-item {
+  margin-bottom: 24px;
+}
+
+.conversation-item.current {
   margin-bottom: 32px;
-  text-align: right;
+}
+
+/* 问题显示 */
+.question-display {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 16px;
 }
 
 .question-item {
-  display: inline-flex;
+  display: flex;
   align-items: flex-start;
   gap: 12px;
-  background-color: #f5f5f5;
-  padding: 12px 16px;
-  border-radius: 16px 16px 0 16px;
   max-width: 80%;
+  margin-left: auto;
 }
 
 .question-content {
+  background-color: #2196f3;
+  color: white;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-bottom-right-radius: 4px;
   font-size: 14px;
-  line-height: 1.5;
-  color: #333;
+  line-height: 1.6;
+  word-wrap: break-word;
 }
 
 .question-avatar {
-  margin-top: 2px;
+  flex-shrink: 0;
 }
 
 .small-avatar {
@@ -356,124 +416,76 @@ const toggleVoice = () => {
   object-fit: cover;
 }
 
+/* AI回答 */
 .ai-response {
-  margin-bottom: 40px;
+  display: flex;
+  justify-content: flex-start;
+  margin-bottom: 16px;
 }
 
 .ai-message {
   display: flex;
-  gap: 12px;
   align-items: flex-start;
+  gap: 12px;
   max-width: 80%;
 }
 
 .ai-avatar-small {
-  margin-top: 2px;
+  flex-shrink: 0;
 }
 
-.ai-content {
+.ai-content-plain {
   flex: 1;
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.8;
   color: #333;
-}
-
-/* Markdown样式 */
-.ai-content :deep(h1),
-.ai-content :deep(h2),
-.ai-content :deep(h3) {
-  margin: 20px 0 12px 0;
-  font-weight: 600;
-  color: #333;
-}
-
-.ai-content :deep(h1) {
-  font-size: 20px;
-  border-bottom: 2px solid #2196f3;
-  padding-bottom: 8px;
-}
-
-.ai-content :deep(h2) {
-  font-size: 18px;
-  border-bottom: 1px solid #e0e0e0;
-  padding-bottom: 6px;
-}
-
-.ai-content :deep(h3) {
-  font-size: 16px;
-}
-
-.ai-content :deep(p) {
-  margin: 12px 0;
-  line-height: 1.6;
-}
-
-.ai-content :deep(table) {
-  width: 100%;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: 13px;
-}
-
-.ai-content :deep(th),
-.ai-content :deep(td) {
-  padding: 8px 12px;
-  border: 1px solid #e0e0e0;
-  text-align: left;
-}
-
-.ai-content :deep(th) {
-  background-color: #f5f5f5;
-  font-weight: 600;
-}
-
-.ai-content :deep(ul),
-.ai-content :deep(ol) {
-  margin: 12px 0;
-  padding-left: 24px;
-}
-
-.ai-content :deep(li) {
-  margin: 6px 0;
-  line-height: 1.5;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 转人工确认 */
 .transfer-section {
-  padding: 20px 0;
+  margin-top: 24px;
 }
 
 .transfer-message {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  margin: 40px 0;
-  text-align: center;
+  align-items: flex-start;
+  gap: 12px;
+  max-width: 80%;
 }
 
 .transfer-text {
-  font-size: 16px;
-  color: #333;
-  max-width: 600px;
+  flex: 1;
+  background-color: #fff3e0;
+  color: #e65100;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border-bottom-left-radius: 4px;
+  font-size: 14px;
   line-height: 1.6;
 }
 
 .transfer-buttons {
   display: flex;
-  gap: 20px;
-  margin-top: 20px;
+  gap: 12px;
+  margin-top: 12px;
+  margin-left: 44px;
+}
+
+.no-button, .yes-button {
+  padding: 8px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
 .no-button {
-  padding: 10px 24px;
   background-color: #f5f5f5;
+  color: #666;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .no-button:hover {
@@ -481,137 +493,123 @@ const toggleVoice = () => {
 }
 
 .yes-button {
-  padding: 10px 24px;
-  background-color: #4caf50;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
+  background-color: #2196f3;
   color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  border: none;
 }
 
 .yes-button:hover {
-  background-color: #45a049;
+  background-color: #1976d2;
 }
 
 /* 申请人工帮助 */
 .manual-section {
-  padding: 20px 0;
+  background-color: #f9f9f9;
+  padding: 32px;
+  border-radius: 12px;
+  margin-top: 24px;
 }
 
 .section-title {
   font-size: 20px;
   color: #333;
-  margin-bottom: 32px;
-  font-weight: 600;
-}
-
-.manual-form {
-  max-width: 600px;
-  margin: 0 auto;
-}
-
-.form-group {
   margin-bottom: 24px;
 }
 
+.manual-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 .form-label {
-  display: block;
   font-size: 14px;
   color: #666;
-  margin-bottom: 8px;
   font-weight: 500;
 }
 
-.form-select {
-  width: 100%;
+.form-select, .form-textarea {
   padding: 10px 12px;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
+  border-radius: 6px;
   font-size: 14px;
-  color: #333;
-  background-color: white;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.form-select:focus, .form-textarea:focus {
+  outline: none;
+  border-color: #2196f3;
 }
 
 .form-textarea {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  background-color: white;
-  resize: vertical;
   min-height: 120px;
+  resize: vertical;
 }
 
 .file-upload {
-  position: relative;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 20px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px;
+  border: 1px dashed #e0e0e0;
+  border-radius: 6px;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s;
 }
 
 .file-upload:hover {
   border-color: #2196f3;
-  background-color: #f8f9fa;
 }
 
 .file-input {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  opacity: 0;
-  cursor: pointer;
+  display: none;
 }
 
 .file-icon {
-  font-size: 24px;
-  margin-bottom: 8px;
-  display: block;
+  font-size: 20px;
 }
 
 .file-name {
   font-size: 14px;
   color: #333;
-  margin-top: 8px;
 }
 
 .file-placeholder {
   font-size: 14px;
   color: #999;
-  margin-top: 8px;
 }
 
 .file-hint {
   font-size: 12px;
   color: #999;
-  margin-top: 8px;
-  text-align: center;
+  margin-top: 4px;
 }
 
 .form-buttons {
   display: flex;
-  justify-content: center;
-  gap: 20px;
-  margin-top: 40px;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.cancel-button, .submit-button {
+  padding: 10px 32px;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
 }
 
 .cancel-button {
-  padding: 10px 32px;
   background-color: #f5f5f5;
+  color: #666;
   border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  font-size: 14px;
-  color: #333;
-  cursor: pointer;
-  transition: all 0.3s ease;
 }
 
 .cancel-button:hover {
@@ -619,14 +617,9 @@ const toggleVoice = () => {
 }
 
 .submit-button {
-  padding: 10px 32px;
   background-color: #2196f3;
-  border: none;
-  border-radius: 8px;
-  font-size: 14px;
   color: white;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  border: none;
 }
 
 .submit-button:hover {
@@ -635,17 +628,22 @@ const toggleVoice = () => {
 
 /* 输入区域 */
 .input-section {
-  margin-top: 40px;
-  padding-top: 24px;
-  border-top: 1px solid #e0e0e0;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: white;
+  padding: 16px 20px;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 100;
 }
 
 .input-container {
+  max-width: 800px;
+  margin: 0 auto;
   display: flex;
   align-items: center;
-  gap: 8px;
-  max-width: 600px;
-  margin: 0 auto;
+  gap: 12px;
 }
 
 .question-input {
@@ -654,130 +652,56 @@ const toggleVoice = () => {
   border: 1px solid #e0e0e0;
   border-radius: 24px;
   font-size: 14px;
-  color: #333;
-  background-color: white;
-  outline: none;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s;
 }
 
 .question-input:focus {
+  outline: none;
   border-color: #2196f3;
-  box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.1);
 }
 
-.input-button {
-  width: 36px;
-  height: 36px;
-  border: 1px solid #e0e0e0;
+.input-button, .send-button {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
-  background-color: white;
+  border: none;
+  background-color: #f5f5f5;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  transition: all 0.3s;
 }
 
 .input-button:hover {
-  border-color: #2196f3;
-  background-color: #f8f9fa;
-}
-
-.button-icon {
-  font-size: 16px;
-  color: #666;
+  background-color: #e0e0e0;
 }
 
 .send-button {
-  width: 36px;
-  height: 36px;
-  border: none;
-  border-radius: 50%;
   background-color: #2196f3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.3s ease;
+  color: white;
 }
 
 .send-button:hover {
   background-color: #1976d2;
-  transform: scale(1.05);
 }
 
-.send-icon {
-  font-size: 16px;
-  color: white;
-  font-weight: bold;
+.button-icon, .send-icon {
+  font-size: 18px;
 }
 
 .input-hint {
   text-align: center;
-  margin-top: 12px;
-  font-size: 12px;
+  margin-top: 8px;
 }
 
 .input-hint a {
   color: #2196f3;
   text-decoration: none;
-  transition: color 0.3s ease;
+  font-size: 12px;
 }
 
 .input-hint a:hover {
-  color: #1976d2;
   text-decoration: underline;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .navbar-container {
-    padding: 12px 16px;
-  }
-
-  .nav-menu {
-    gap: 16px;
-  }
-
-  .nav-item {
-    font-size: 13px;
-  }
-
-  .main-content {
-    padding: 20px 16px;
-  }
-
-  .quick-buttons {
-    grid-template-columns: 1fr;
-  }
-
-  .question-item,
-  .ai-message {
-    max-width: 90%;
-  }
-
-  .input-container {
-    max-width: 100%;
-  }
-
-  .transfer-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .no-button,
-  .yes-button {
-    width: 200px;
-  }
-
-  .form-buttons {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .cancel-button,
-  .submit-button {
-    width: 200px;
-  }
 }
 </style>
