@@ -33,20 +33,6 @@ const router = createRouter({
           component: () => import('@/views/consultation/ConsultationHistory.vue'),
         },
         {
-          path: '/consultation/transfers',
-          name: 'HumanTransferList',
-          component: () => import('@/views/consultation/HumanTransferList.vue'),
-        },
-        {
-          path: '/consultation/process',
-          name: 'HumanProcess',
-          component: () => import('@/views/consultation/HumanProcess.vue'),
-          meta: {
-            requiresAuth: true,
-            roles: ['COUNSELOR', 'ADMIN']
-          },
-        },
-        {
           path: '/process',
           name: 'ProcessService',
           component: () => import('@/views/process/ProcessService.vue'),
@@ -109,12 +95,12 @@ router.beforeEach((to, from, next) => {
     next('/login')
   } else if ((to.path === '/login' || to.path === '/register') && userStore.isLoggedIn()) {
     next('/')
-  } else if (to.meta.roles && to.meta.roles.length > 0) {
+  } else if (to.meta.roles && Array.isArray(to.meta.roles) && to.meta.roles.length > 0) {
     // 检查角色权限
     if (!userStore.isLoggedIn()) {
       next('/login')
     } else {
-      const hasRole = to.meta.roles.some((role: string) => userStore.role === role)
+      const hasRole = (to.meta.roles as string[]).some((role: string) => userStore.role === role)
       if (hasRole) {
         next()
       } else {

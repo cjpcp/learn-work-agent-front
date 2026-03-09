@@ -26,10 +26,9 @@
                 <a-menu-item key="1" @click="$router.push('/consultation')"
                   >智能咨询助手</a-menu-item
                 >
-                <a-menu-item v-if="userStore.isCounselor() || userStore.isAdmin()" key="2" @click="$router.push('/consultation/process')">人工处理中心</a-menu-item>
-                <a-menu-item key="3" @click="$router.push('/process')">流程代办服务</a-menu-item>
-                <a-menu-item key="4" @click="$router.push('/leave/apply')">请假办理</a-menu-item>
-                <a-menu-item key="5" @click="$router.push('/award/apply')"
+                <a-menu-item key="2" @click="$router.push('/process')">流程代办服务</a-menu-item>
+                <a-menu-item key="3" @click="$router.push('/leave/apply')">请假办理</a-menu-item>
+                <a-menu-item key="4" @click="$router.push('/award/apply')"
                   >奖助申请办理</a-menu-item
                 >
               </a-menu>
