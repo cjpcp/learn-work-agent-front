@@ -87,51 +87,87 @@
           key="human"
           tab="人工处理中心"
         >
-          <a-table
-            :columns="humanProcessColumns"
-            :data-source="humanProcessData"
-            :loading="humanProcessLoading"
-            :pagination="humanProcessPagination"
-            row-key="id"
-            @change="handleHumanProcessTableChange"
-          >
-            <template #bodyCell="{ column, record }">
-              <template v-if="column.key === 'status'">
-                <a-tag v-if="record.status === 'PENDING'">待处理</a-tag>
-                <a-tag v-else-if="record.status === 'PROCESSING'" color="processing">处理中</a-tag>
-                <a-tag v-else-if="record.status === 'COMPLETED'" color="success">已完成</a-tag>
-              </template>
-              <template v-else-if="column.key === 'transferType'">
-                {{ record.transferType === 'MANUAL' ? '手动申请' : '自动转接' }}
-              </template>
-              <template v-else-if="column.key === 'transferReason'">
-                {{ formatTransferReason(record.transferReason) }}
-              </template>
-              <template v-else-if="column.key === 'action'">
-                <a-button
-                  v-if="record.status === 'PENDING'"
-                  type="primary"
-                  size="small"
-                  @click="handleAssign(record)"
-                  >分配</a-button
-                >
-                <a-button
-                  v-else-if="record.status === 'PROCESSING'"
-                  type="primary"
-                  size="small"
-                  @click="handleReply(record)"
-                  >回复</a-button
-                >
-                <a-button type="link" size="small" @click="handleViewTransfer(record)"
-                  >查看</a-button
-                >
-              </template>
-            </template>
-          </a-table>
+          <a-tabs v-model:active-key="humanActiveTab" class="sub-tabs">
+            <a-tab-pane key="pending" tab="待完成">
+              <a-table
+                :columns="humanProcessColumns"
+                :data-source="humanProcessData"
+                :loading="humanProcessLoading"
+                :pagination="humanProcessPagination"
+                row-key="id"
+                @change="handleHumanProcessTableChange"
+              >
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.key === 'status'">
+                    <a-tag v-if="record.status === 'PENDING'">待处理</a-tag>
+                    <a-tag v-else-if="record.status === 'PROCESSING'" color="processing">处理中</a-tag>
+                    <a-tag v-else-if="record.status === 'COMPLETED'" color="success">已完成</a-tag>
+                  </template>
+                  <template v-else-if="column.key === 'transferType'">
+                    {{ record.transferType === 'MANUAL' ? '手动申请' : '自动转接' }}
+                  </template>
+                  <template v-else-if="column.key === 'transferReason'">
+                    {{ formatTransferReason(record.transferReason) }}
+                  </template>
+                  <template v-else-if="column.key === 'action'">
+                    <a-button
+                      v-if="record.status === 'PENDING'"
+                      type="primary"
+                      size="small"
+                      @click="handleProcess(record)"
+                      >处理</a-button
+                    >
+                    <a-button
+                      v-else-if="record.status === 'PROCESSING'"
+                      type="primary"
+                      size="small"
+                      @click="handleReply(record)"
+                      >回复</a-button
+                    >
+                    <a-button type="link" size="small" @click="handleViewTransfer(record)"
+                      >查看</a-button
+                    >
+                  </template>
+                </template>
+              </a-table>
+            </a-tab-pane>
+            <a-tab-pane key="completed" tab="我完成的">
+              <a-table
+                :columns="completedProcessColumns"
+                :data-source="completedProcessData"
+                :loading="completedProcessLoading"
+                :pagination="completedProcessPagination"
+                row-key="id"
+                @change="handleCompletedProcessTableChange"
+              >
+                <template #bodyCell="{ column, record }">
+                  <template v-if="column.key === 'status'">
+                    <a-tag v-if="record.status === 'PENDING'">待处理</a-tag>
+                    <a-tag v-else-if="record.status === 'PROCESSING'" color="processing">处理中</a-tag>
+                    <a-tag v-else-if="record.status === 'COMPLETED'" color="success">已完成</a-tag>
+                  </template>
+                  <template v-else-if="column.key === 'transferType'">
+                    {{ record.transferType === 'MANUAL' ? '手动申请' : '自动转接' }}
+                  </template>
+                  <template v-else-if="column.key === 'transferReason'">
+                    {{ formatTransferReason(record.transferReason) }}
+                  </template>
+                  <template v-else-if="column.key === 'staffReply'">
+                    {{ record.staffReply || '无' }}
+                  </template>
+                  <template v-else-if="column.key === 'action'">
+                    <a-button type="link" size="small" @click="handleViewTransfer(record)"
+                      >查看</a-button
+                    >
+                  </template>
+                </template>
+              </a-table>
+            </a-tab-pane>
+          </a-tabs>
         </a-tab-pane>
 
-        <!-- 我的转人工记录标签页 -->
-        <a-tab-pane key="transfers" tab="我的转人工记录">
+        <!-- 我的转人工记录标签页（仅非辅导员和非管理员可见） -->
+        <a-tab-pane v-if="!userStore.isCounselor() && !userStore.isAdmin()" key="transfers" tab="我的转人工记录">
           <a-table
             :columns="transferColumns"
             :data-source="transferData"
@@ -243,19 +279,6 @@
       </a-spin>
     </a-modal>
 
-    <!-- 分配工作人员模态框 -->
-    <a-modal v-model:open="assignVisible" title="分配工作人员" :footer="null">
-      <a-form :model="assignForm" layout="vertical">
-        <a-form-item label="工作人员ID">
-          <a-input v-model:value="assignForm.staffId" placeholder="请输入工作人员ID" />
-        </a-form-item>
-      </a-form>
-      <div class="modal-footer">
-        <a-button @click="assignVisible = false">取消</a-button>
-        <a-button type="primary" @click="submitAssign">确定</a-button>
-      </div>
-    </a-modal>
-
     <!-- 回复模态框 -->
     <a-modal v-model:open="replyVisible" title="回复问题" width="800px" :footer="null">
       <a-form :model="replyForm" layout="vertical">
@@ -314,7 +337,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
 import { processApi, leaveApi, awardApi, consultationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
@@ -322,6 +345,7 @@ import type { ProcessItem, LeaveApplication, AwardApplication, PageRequest } fro
 
 const userStore = useUserStore()
 const activeTab = ref('process')
+const humanActiveTab = ref('pending')
 
 // 流程代办相关
 const pendingProcesses = ref<ProcessItem[]>([])
@@ -340,16 +364,21 @@ const humanProcessPagination = reactive({
   pageSize: 10,
   total: 0,
 })
-const assignVisible = ref(false)
 const replyVisible = ref(false)
 const currentTransfer = ref<any>(null)
 const currentTransferId = ref<number>(0)
-const assignForm = reactive({
-  staffId: '',
-})
 const replyForm = reactive({
   questionText: '',
   reply: '',
+})
+
+// 已完成记录相关
+const completedProcessLoading = ref(false)
+const completedProcessData = ref<any[]>([])
+const completedProcessPagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
 })
 
 const humanProcessColumns = [
@@ -386,6 +415,55 @@ const humanProcessColumns = [
     title: '操作',
     key: 'action',
     width: 200,
+  },
+]
+
+const completedProcessColumns = [
+  {
+    title: '问题ID',
+    dataIndex: 'questionId',
+    key: 'questionId',
+  },
+  {
+    title: '转接类型',
+    dataIndex: 'transferType',
+    key: 'transferType',
+    width: 120,
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    key: 'status',
+    width: 100,
+  },
+  {
+    title: '转接原因',
+    dataIndex: 'transferReason',
+    key: 'transferReason',
+    ellipsis: true,
+  },
+  {
+    title: '回复内容',
+    dataIndex: 'staffReply',
+    key: 'staffReply',
+    ellipsis: true,
+  },
+  {
+    title: '创建时间',
+    dataIndex: 'createTime',
+    key: 'createTime',
+    width: 180,
+  },
+  {
+    title: '处理时间',
+    dataIndex: 'processTime',
+    key: 'processTime',
+    width: 180,
+  },
+  {
+    title: '操作',
+    key: 'action',
+    width: 120,
   },
 ]
 
@@ -493,6 +571,29 @@ const loadHumanProcessData = async () => {
   }
 }
 
+// 加载已完成记录数据
+const loadCompletedProcessData = async () => {
+  if (!(userStore.isCounselor() || userStore.isAdmin())) return
+
+  completedProcessLoading.value = true
+  try {
+    const params: PageRequest = {
+      pageNum: completedProcessPagination.current,
+      pageSize: completedProcessPagination.pageSize,
+    }
+    const response = await consultationApi.getCompletedTransfers(params)
+    if (response.data) {
+      completedProcessData.value = response.data.records
+      completedProcessPagination.total = response.data.total
+    }
+  } catch (error: any) {
+    console.error('加载已完成记录失败', error)
+    message.error('加载数据失败: ' + (error.message || '未知错误'))
+  } finally {
+    completedProcessLoading.value = false
+  }
+}
+
 // 加载转人工记录数据
 const loadTransferData = async () => {
   transferLoading.value = true
@@ -553,27 +654,17 @@ const handleHumanProcessTableChange = (pag: any) => {
   loadHumanProcessData()
 }
 
-const handleAssign = (record: any) => {
-  currentTransferId.value = record.id
-  assignForm.staffId = ''
-  assignVisible.value = true
+const handleCompletedProcessTableChange = (pag: any) => {
+  completedProcessPagination.current = pag.current
+  completedProcessPagination.pageSize = pag.pageSize
+  loadCompletedProcessData()
 }
 
-const submitAssign = async () => {
-  if (!assignForm.staffId) {
-    message.warning('请输入工作人员ID')
-    return
-  }
-
-  try {
-    await consultationApi.assignStaff(currentTransferId.value, parseInt(assignForm.staffId))
-    message.success('分配成功')
-    assignVisible.value = false
-    loadHumanProcessData()
-  } catch (error: any) {
-    console.error('分配失败', error)
-    message.error('分配失败: ' + (error.message || '未知错误'))
-  }
+const handleProcess = (record: any) => {
+  currentTransferId.value = record.id
+  replyForm.questionText = record.transferReason?.split('\n问题描述: ')[1] || ''
+  replyForm.reply = ''
+  replyVisible.value = true
 }
 
 const handleReply = (record: any) => {
@@ -590,10 +681,19 @@ const submitReply = async () => {
   }
 
   try {
-    await consultationApi.replyToTransfer(currentTransferId.value, replyForm.reply)
+    // 如果是PENDING状态，先分配给当前用户，然后直接完成处理
+    const record = humanProcessData.value.find(item => item.id === currentTransferId.value)
+    if (record && record.status === 'PENDING') {
+      await consultationApi.processTransfer(currentTransferId.value, replyForm.reply)
+    } else {
+      await consultationApi.replyToTransfer(currentTransferId.value, replyForm.reply)
+    }
     message.success('回复成功')
     replyVisible.value = false
-    loadHumanProcessData()
+    loadHumanProcessData() // 重新加载待完成数据
+    if (humanActiveTab.value === 'completed') {
+      loadCompletedProcessData() // 如果当前在已完成标签页，也重新加载
+    }
   } catch (error: any) {
     console.error('回复失败', error)
     message.error('回复失败: ' + (error.message || '未知错误'))
@@ -635,8 +735,28 @@ const handleViewTransferDetail = async (record: any) => {
 
 onMounted(() => {
   loadProcesses()
-  loadHumanProcessData()
-  loadTransferData()
+  if (userStore.isCounselor() || userStore.isAdmin()) {
+    if (humanActiveTab.value === 'pending') {
+      loadHumanProcessData()
+    } else {
+      loadCompletedProcessData()
+    }
+  }
+  // 只有非辅导员和非管理员用户才加载转人工记录
+  if (!userStore.isCounselor() && !userStore.isAdmin()) {
+    loadTransferData()
+  }
+})
+
+// 监听人工处理中心标签页变化
+watch(humanActiveTab, (newTab) => {
+  if (userStore.isCounselor() || userStore.isAdmin()) {
+    if (newTab === 'pending') {
+      loadHumanProcessData()
+    } else if (newTab === 'completed') {
+      loadCompletedProcessData()
+    }
+  }
 })
 </script>
 

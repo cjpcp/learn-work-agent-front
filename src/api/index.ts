@@ -242,8 +242,16 @@ export const consultationApi = {
       params: { reply },
     })
   },
+  processTransfer: (id: number, reply: string): Promise<Result<void>> => {
+    return request.post(`/consultation/transfers/${id}/process`, null, {
+      params: { reply },
+    })
+  },
   getStaffTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
     return request.get('/consultation/transfers/staff', { params })
+  },
+  getCompletedTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
+    return request.get('/consultation/transfers/completed', { params })
   },
 }
 
