@@ -1,15 +1,9 @@
 <template>
   <div class="award-apply-container">
     <div class="page-header">
-      <a-page-header
-        title="申请奖助"
-        sub-title="请填写奖助申请信息"
-        @back="$router.back()"
-      >
+      <a-page-header title="申请奖助" sub-title="请填写奖助申请信息" @back="$router.back()">
         <template #extra>
-          <a-button type="primary" @click="$router.push('/award')">
-            申请记录
-          </a-button>
+          <a-button type="primary" @click="$router.push('/award')"> 申请记录 </a-button>
         </template>
       </a-page-header>
     </div>
@@ -47,11 +41,7 @@
         <a-row :gutter="24">
           <a-col :span="24">
             <a-form-item name="reason" label="申请原因">
-              <a-textarea
-                v-model:value="form.reason"
-                :rows="4"
-                placeholder="请输入申请原因"
-              />
+              <a-textarea v-model:value="form.reason" :rows="4" placeholder="请输入申请原因" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -77,12 +67,8 @@
         </a-row>
         <a-form-item>
           <a-space>
-            <a-button type="primary" html-type="submit" :loading="loading">
-              提交申请
-            </a-button>
-            <a-button @click="$router.back()">
-              取消
-            </a-button>
+            <a-button type="primary" html-type="submit" :loading="loading"> 提交申请 </a-button>
+            <a-button @click="$router.back()"> 取消 </a-button>
           </a-space>
         </a-form-item>
       </a-form>

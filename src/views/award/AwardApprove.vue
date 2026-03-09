@@ -195,19 +195,22 @@ onMounted(() => {
     if (!isNaN(id)) {
       // 延迟一点执行，确保列表数据已加载
       setTimeout(() => {
-        const record = dataSource.value.find(item => item.id === id)
+        const record = dataSource.value.find((item) => item.id === id)
         if (record) {
           handleView(record)
         } else {
           // 如果列表中没找到，直接通过 API 获取详情
-          awardApi.getApplication(id).then(response => {
-            if (response.data) {
-              currentRecord.value = response.data
-              viewVisible.value = true
-            }
-          }).catch(() => {
-            message.error('获取详情失败')
-          })
+          awardApi
+            .getApplication(id)
+            .then((response) => {
+              if (response.data) {
+                currentRecord.value = response.data
+                viewVisible.value = true
+              }
+            })
+            .catch(() => {
+              message.error('获取详情失败')
+            })
         }
       }, 300)
     }

@@ -139,6 +139,11 @@ const handleView = (record: ConsultationQuestion) => {
 
 const getCategoryName = (category?: string) => {
   const map: Record<string, string> = {
+    scholarship: '奖助勤贷',
+    dormitory: '宿舍管理',
+    discipline: '违纪申诉',
+    mental: '心理健康',
+    employment: '就业指导',
     AWARD: '奖助勤贷',
     DORM: '宿舍管理',
     DISCIPLINE: '违纪申诉',

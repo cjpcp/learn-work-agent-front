@@ -9,9 +9,7 @@
         </div>
         <nav class="nav-menu">
           <a-dropdown placement="bottom">
-            <a class="nav-item" @click.prevent>
-              首页
-            </a>
+            <a class="nav-item" @click.prevent> 首页 </a>
             <template #overlay>
               <a-menu>
                 <a-menu-item key="1" @click="$router.push('/consultation')">首页</a-menu-item>
@@ -25,10 +23,15 @@
             </a>
             <template #overlay>
               <a-menu>
-                <a-menu-item key="1" @click="$router.push('/consultation')">智能咨询助手</a-menu-item>
-                <a-menu-item key="2" @click="$router.push('/process')">流程代办服务</a-menu-item>
-                <a-menu-item key="3" @click="$router.push('/leave/apply')">请假办理</a-menu-item>
-                <a-menu-item key="4" @click="$router.push('/award/apply')">奖助申请办理</a-menu-item>
+                <a-menu-item key="1" @click="$router.push('/consultation')"
+                  >智能咨询助手</a-menu-item
+                >
+                <a-menu-item v-if="userStore.isCounselor() || userStore.isAdmin()" key="2" @click="$router.push('/consultation/process')">人工处理中心</a-menu-item>
+                <a-menu-item key="3" @click="$router.push('/process')">流程代办服务</a-menu-item>
+                <a-menu-item key="4" @click="$router.push('/leave/apply')">请假办理</a-menu-item>
+                <a-menu-item key="5" @click="$router.push('/award/apply')"
+                  >奖助申请办理</a-menu-item
+                >
               </a-menu>
             </template>
           </a-dropdown>
@@ -105,14 +108,16 @@
         <div class="user-info">
           <a-dropdown placement="bottomRight">
             <div class="user-profile">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户头像" class="user-avatar" />
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square"
+                alt="用户头像"
+                class="user-avatar"
+              />
               <span class="user-name">{{ userStore.realName || 'JayLiu' }}</span>
             </div>
             <template #overlay>
               <a-menu>
-                <a-menu-item key="logout" @click="handleLogout">
-                  退出登录
-                </a-menu-item>
+                <a-menu-item key="logout" @click="handleLogout"> 退出登录 </a-menu-item>
               </a-menu>
             </template>
           </a-dropdown>
@@ -153,15 +158,15 @@ const handleLogout = () => {
   router.push('/login')
 }
 
-onMounted(() => {
-})
+onMounted(() => {})
 </script>
 
 <style scoped>
 .app-container {
   min-height: 100vh;
   background-color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   display: flex;
   flex-direction: column;
 }

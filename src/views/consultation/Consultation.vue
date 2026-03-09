@@ -2,6 +2,10 @@
   <div class="consultation-page">
     <!-- 主要内容区 -->
     <main class="main-content">
+      <!-- 顶部操作栏 -->
+      <div class="top-actions">
+        <a-button type="primary" @click="navigateToHistory">咨询历史</a-button>
+      </div>
       <!-- 初始状态 - 欢迎界面 -->
       <div v-if="state === 'welcome'" class="welcome-section">
         <div class="ai-avatar">
@@ -122,13 +126,31 @@
 
       <!-- 输入区域 (除了申请人工帮助页面外都显示) -->
       <div v-if="state !== 'manual'" class="input-section">
+        <!-- 已上传文件列表 -->
+        <div v-if="uploadedFiles.length > 0" class="uploaded-files-container">
+          <div v-for="(file, index) in uploadedFiles" :key="index" class="uploaded-file-item">
+            <svg class="file-icon-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M13 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V9L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M13 2V9H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span class="file-name">{{ file.name }}</span>
+            <button class="remove-file-btn" @click="removeUploadedFile(index)">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+        </div>
         <div class="input-container">
           <input type="text" v-model="questionText" class="question-input" placeholder="请输入您的问题..." @keyup.enter="handleSubmit" />
-          <button class="input-button" @click="handleSubmit">
-            <span class="button-icon">📎</span>
+          <input type="file" ref="chatFileInput" class="chat-file-input" @change="handleChatFileUpload" multiple />
+          <button class="input-button" @click="triggerChatFileUpload">
+            <svg class="button-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21.1525 10.8995L12.1369 19.9151C10.0866 21.9653 6.7625 21.9653 4.71225 19.9151C2.662 17.8648 2.662 14.5407 4.71225 12.4904L13.7279 3.47483C15.0947 2.108 17.2198 2.108 18.5866 3.47483C19.9534 4.84167 19.9534 6.96675 18.5866 8.33358L10.3797 16.5405C9.69633 17.2238 8.59637 17.2238 7.91304 16.5405C7.22971 15.8572 7.22971 14.7572 7.91304 14.0739L14.914 7.07295" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </button>
-          <button class="input-button" @click="toggleVoice">
-            <span class="button-icon">🎤</span>
+          <button class="input-button" @click="toggleVoice" :class="{ 'recording': isRecording }">
+            <span class="button-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
           </button>
           <button class="send-button" @click="handleSubmit">
             <span class="send-icon">➤</span>
@@ -148,6 +170,8 @@ import { message } from 'ant-design-vue'
 import { marked } from 'marked'
 import { consultationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { useRouter } from 'vue-router'
+import type { FileInput } from '@/types'
 
 interface Conversation {
   question: string
@@ -160,7 +184,13 @@ const questionText = ref('')
 const currentQuestion = ref('')
 const aiAnswer = ref('')
 const isStreaming = ref(false) // 是否正在流式接收
-const conversationHistory = ref<Conversation[]>([]) // 对话历史记录
+const conversationHistory = ref<Conversation[]>([])
+const router = useRouter()
+
+// 导航到咨询历史页面
+const navigateToHistory = () => {
+  router.push('/consultation/history')
+}
 
 // 人工帮助表单
 const manualForm = reactive({
@@ -168,6 +198,23 @@ const manualForm = reactive({
   questionDescription: ''
 })
 const selectedFile = ref<File | null>(null)
+
+// 已上传文件列表
+interface UploadedFile {
+  name: string
+  url: string
+  type: string
+}
+const uploadedFiles = ref<UploadedFile[]>([])
+
+// 准备文件列表用于提交
+const prepareFilesForSubmit = (): FileInput[] => {
+  return uploadedFiles.value.map(file => ({
+    transferMethod: 'remote_url',
+    url: file.url,
+    type: file.type
+  }))
+}
 
 // 快捷问题处理
 const handleQuickQuestion = (question: string) => {
@@ -206,6 +253,9 @@ const handleSubmit = async () => {
   // 立即清空文本框
   questionText.value = ''
 
+  // 准备文件列表
+  const files = prepareFilesForSubmit()
+
   try {
     await consultationApi.submitQuestionStream(
       {
@@ -214,6 +264,7 @@ const handleSubmit = async () => {
         category: undefined,
         imageUrl: undefined,
         voiceUrl: undefined,
+        files: files.length > 0 ? files : undefined,
       },
       (chunk: string) => {
         // 收到流式数据块，追加到回答中
@@ -227,6 +278,8 @@ const handleSubmit = async () => {
       token
     )
     isStreaming.value = false // 流式接收完成
+    // 清空已上传文件
+    uploadedFiles.value = []
   } catch (error: any) {
     console.error('咨询请求失败:', error)
     message.error('咨询请求失败: ' + (error.message || '未知错误'))
@@ -270,7 +323,7 @@ const cancelManual = () => {
   selectedFile.value = null
 }
 
-const submitManual = () => {
+const submitManual = async () => {
   if (!manualForm.questionType) {
     message.warning('请选择问题类型')
     return
@@ -280,13 +333,261 @@ const submitManual = () => {
     return
   }
 
-  message.success('申请提交成功，我们将尽快为您处理')
-  cancelManual()
+  const userStore = useUserStore()
+  const token = userStore.token
+
+  if (!token) {
+    message.error('请先登录')
+    return
+  }
+
+  try {
+    let attachmentUrl: string | undefined = undefined
+
+    // 上传文件（如果有）
+    if (selectedFile.value) {
+      const result = await consultationApi.uploadFile(selectedFile.value)
+      if (result.code === 200 && result.data) {
+        attachmentUrl = result.data
+      } else {
+        message.error('文件上传失败: ' + result.message)
+        return
+      }
+    }
+
+    // 创建问题
+    const questionResult = await consultationApi.submitQuestion({
+      questionText: manualForm.questionDescription,
+      questionType: 'TEXT',
+      category: manualForm.questionType,
+      files: attachmentUrl ? [{ transferMethod: 'remote_url', url: attachmentUrl, type: selectedFile.value?.type.startsWith('image/') ? 'image' : 'document' }] : undefined
+    })
+
+    if (questionResult.code === 200 && questionResult.data && questionResult.data.id) {
+      const questionId = questionResult.data.id
+
+      // 转移给人工处理
+      await consultationApi.transferToHuman(questionId, {
+        reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentUrl ? '\n附件: ' + attachmentUrl : ''}`
+      })
+
+      message.success('申请提交成功，我们将尽快为您处理')
+      cancelManual()
+    } else {
+      message.error('创建问题失败: ' + questionResult.message)
+    }
+  } catch (error: any) {
+    console.error('提交人工帮助申请失败:', error)
+    message.error('提交申请失败: ' + (error.message || '未知错误'))
+  }
 }
 
-// 语音功能（暂时占位）
-const toggleVoice = () => {
-  message.info('语音功能开发中')
+// 语音功能
+const isRecording = ref(false)
+const mediaRecorder = ref<MediaRecorder | null>(null)
+const audioChunks = ref<Blob[]>([])
+
+const toggleVoice = async () => {
+  if (isRecording.value) {
+    // 停止录音
+    stopRecording()
+  } else {
+    // 开始录音
+    await startRecording()
+  }
+}
+
+const startRecording = async () => {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    const recorder = new MediaRecorder(stream)
+    
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunks.value.push(event.data)
+      }
+    }
+    
+    recorder.onstop = () => {
+      processRecording()
+    }
+    
+    recorder.start()
+    mediaRecorder.value = recorder
+    isRecording.value = true
+    message.info('开始录音...')
+  } catch (error) {
+    console.error('录音失败:', error)
+    message.error('录音失败，请检查麦克风权限')
+  }
+}
+
+const stopRecording = () => {
+  if (mediaRecorder.value) {
+    mediaRecorder.value.stop()
+    isRecording.value = false
+    message.info('录音结束，正在处理...')
+  }
+}
+
+const processRecording = async () => {
+    if (audioChunks.value.length === 0) {
+      message.warning('录音内容为空')
+      return
+    }
+    
+    const audioBlob = new Blob(audioChunks.value, { type: 'audio/mp3' })
+    audioChunks.value = []
+    
+    try {
+      // 上传音频文件
+      const userStore = useUserStore()
+      const token = userStore.token
+      
+      if (!token) {
+        message.error('请先登录')
+        return
+      }
+      
+      // 创建一个File对象以便上传
+      const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mp3' })
+      const result = await consultationApi.uploadVoice(audioFile)
+      if (result.code === 200 && result.data) {
+        // 提交语音问题
+        await submitVoiceQuestion(result.data)
+      } else {
+        message.error('语音上传失败: ' + result.message)
+      }
+    } catch (error: any) {
+      console.error('处理录音失败:', error)
+      message.error('处理录音失败: ' + (error.message || '未知错误'))
+    }
+  }
+
+const submitVoiceQuestion = async (voiceUrl: string) => {
+  // 如果有当前对话，先保存到历史记录
+  if (currentQuestion.value && aiAnswer.value) {
+    conversationHistory.value.push({
+      question: currentQuestion.value,
+      answer: aiAnswer.value
+    })
+  }
+  
+  currentQuestion.value = '语音问题'
+  state.value = 'chat'
+  aiAnswer.value = '' // 清空之前的回答
+  isStreaming.value = true // 开始流式接收
+  
+  const userStore = useUserStore()
+  const token = userStore.token
+  
+  if (!token) {
+    message.error('请先登录')
+    return
+  }
+  
+  // 准备文件列表
+  const files = prepareFilesForSubmit()
+  
+  try {
+    await consultationApi.submitQuestionStream(
+      {
+        questionText: '语音问题',
+        questionType: 'VOICE',
+        category: undefined,
+        imageUrl: undefined,
+        voiceUrl: voiceUrl,
+        files: files.length > 0 ? files : undefined,
+      },
+      (chunk: string) => {
+        // 收到流式数据块，追加到回答中
+        if (chunk.startsWith('错误:')) {
+          message.error(chunk)
+          return
+        }
+        // 直接追加到回答，不使用打字机效果
+        aiAnswer.value += chunk
+      },
+      token
+    )
+    isStreaming.value = false // 流式接收完成
+    // 清空已上传文件
+    uploadedFiles.value = []
+  } catch (error: any) {
+    console.error('咨询请求失败:', error)
+    message.error('咨询请求失败: ' + (error.message || '未知错误'))
+    // 如果失败，显示转人工选项
+    state.value = 'transfer'
+  }
+}
+
+// 聊天区域文件上传
+const chatFileInput = ref<HTMLInputElement | null>(null)
+const isUploading = ref(false)
+
+const triggerChatFileUpload = () => {
+  chatFileInput.value?.click()
+}
+
+const handleChatFileUpload = async (event: Event) => {
+  const target = event.target as HTMLInputElement
+  if (!target.files || target.files.length === 0) return
+
+  const userStore = useUserStore()
+  const token = userStore.token
+
+  if (!token) {
+    message.error('请先登录')
+    return
+  }
+
+  isUploading.value = true
+
+  try {
+    for (let i = 0; i < target.files.length; i++) {
+      const file = target.files[i]
+
+      // 检查文件类型
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+      const maxSize = 10 * 1024 * 1024 // 10MB
+
+      if (!allowedTypes.includes(file.type)) {
+        message.warning(`文件 ${file.name} 类型不支持`)
+        continue
+      }
+
+      if (file.size > maxSize) {
+        message.warning(`文件 ${file.name} 大小超过10MB限制`)
+        continue
+      }
+
+      // 上传文件
+      const result = await consultationApi.uploadFile(file)
+      if (result.code === 200 && result.data) {
+        uploadedFiles.value.push({
+          name: file.name,
+          url: result.data,
+          type: file.type.startsWith('image/') ? 'image' : 'document'
+        })
+        message.success(`文件 ${file.name} 上传成功`)
+      } else {
+        message.error(`文件 ${file.name} 上传失败: ${result.message}`)
+      }
+    }
+  } catch (error: any) {
+    console.error('文件上传失败:', error)
+    message.error('文件上传失败: ' + (error.message || '未知错误'))
+  } finally {
+    isUploading.value = false
+    // 清空input，允许重复选择同一文件
+    if (chatFileInput.value) {
+      chatFileInput.value.value = ''
+    }
+  }
+}
+
+const removeUploadedFile = (index: number) => {
+  uploadedFiles.value.splice(index, 1)
 }
 </script>
 
@@ -305,6 +606,14 @@ const toggleVoice = () => {
   padding: 40px 20px;
   min-height: calc(100vh - 60px);
 }
+
+/* 顶部操作栏 */
+.top-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 24px;
+}
+
 
 /* 欢迎界面 */
 .welcome-section {
@@ -638,6 +947,62 @@ const toggleVoice = () => {
   z-index: 100;
 }
 
+/* 已上传文件列表 */
+.uploaded-files-container {
+  max-width: 800px;
+  margin: 0 auto 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.uploaded-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: #f5f5f5;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #333;
+}
+
+.file-icon-small {
+  width: 16px;
+  height: 16px;
+  color: #666;
+}
+
+.file-name {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.remove-file-btn {
+  width: 18px;
+  height: 18px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #999;
+  transition: color 0.3s;
+}
+
+.remove-file-btn:hover {
+  color: #666;
+}
+
+.remove-file-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
 .input-container {
   max-width: 800px;
   margin: 0 auto;
@@ -677,6 +1042,24 @@ const toggleVoice = () => {
   background-color: #e0e0e0;
 }
 
+.input-button.recording {
+  background-color: #ff4757;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(255, 71, 87, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 71, 87, 0);
+  }
+}
+
 .send-button {
   background-color: #2196f3;
   color: white;
@@ -688,6 +1071,16 @@ const toggleVoice = () => {
 
 .button-icon, .send-icon {
   font-size: 18px;
+}
+
+.button-icon-svg {
+  width: 20px;
+  height: 20px;
+  color: #666;
+}
+
+.chat-file-input {
+  display: none;
 }
 
 .input-hint {

@@ -1,15 +1,9 @@
 <template>
   <div class="leave-apply-container">
     <div class="page-header">
-      <a-page-header
-        title="申请请假"
-        sub-title="请填写请假申请信息"
-        @back="$router.back()"
-      >
+      <a-page-header title="申请请假" sub-title="请填写请假申请信息" @back="$router.back()">
         <template #extra>
-          <a-button type="primary" @click="$router.push('/leave')">
-            申请记录
-          </a-button>
+          <a-button type="primary" @click="$router.push('/leave')"> 申请记录 </a-button>
         </template>
       </a-page-header>
     </div>
@@ -38,22 +32,14 @@
           </a-col>
           <a-col :span="12">
             <a-form-item name="endDate" label="结束日期">
-              <a-date-picker
-                v-model:value="form.endDate"
-                style="width: 100%"
-                format="YYYY-MM-DD"
-              />
+              <a-date-picker v-model:value="form.endDate" style="width: 100%" format="YYYY-MM-DD" />
             </a-form-item>
           </a-col>
         </a-row>
         <a-row :gutter="24">
           <a-col :span="24">
             <a-form-item name="reason" label="请假原因">
-              <a-textarea
-                v-model:value="form.reason"
-                :rows="4"
-                placeholder="请输入请假原因"
-              />
+              <a-textarea v-model:value="form.reason" :rows="4" placeholder="请输入请假原因" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -79,12 +65,8 @@
         </a-row>
         <a-form-item>
           <a-space>
-            <a-button type="primary" html-type="submit" :loading="loading">
-              提交申请
-            </a-button>
-            <a-button @click="$router.back()">
-              取消
-            </a-button>
+            <a-button type="primary" html-type="submit" :loading="loading"> 提交申请 </a-button>
+            <a-button @click="$router.back()"> 取消 </a-button>
           </a-space>
         </a-form-item>
       </a-form>

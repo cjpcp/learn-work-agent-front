@@ -1,33 +1,19 @@
 <template>
   <div class="process-service-container">
-    <a-page-header
-      title="流程代办服务"
-      sub-title="查看和管理您的代办流程"
-      @back="$router.back()"
-    />
+    <a-page-header title="流程代办服务" sub-title="查看和管理您的代办流程" @back="$router.back()" />
     <a-card class="process-card">
       <a-tabs default-active-key="pending" class="process-tabs">
-        <a-tab-pane tab="待办流程" key="pending">
+        <a-tab-pane key="pending" tab="待办流程">
           <div v-if="pendingProcesses.length === 0" class="empty-state">
             <a-empty description="暂无待办流程" />
           </div>
-          <a-list
-            v-else
-            :data-source="pendingProcesses"
-            class="process-list"
-          >
+          <a-list v-else :data-source="pendingProcesses" class="process-list">
             <template #renderItem="{ item }">
               <a-list-item class="process-item">
                 <a-list-item-meta>
                   <template #title>
                     <div class="process-title">
                       <span>{{ item.name }}</span>
-                      <a-tag
-                        :color="item.status === 'pending' ? 'blue' : 'green'"
-                        class="process-status"
-                      >
-                        {{ item.status === 'pending' ? '待处理' : '已处理' }}
-                      </a-tag>
                     </div>
                   </template>
                   <template #description>
@@ -38,11 +24,14 @@
                   </template>
                 </a-list-item-meta>
                 <template #actions>
-                  <a-button
-                    type="primary"
-                    size="small"
-                    @click="handleViewProcess(item)"
+                  <a-tag
+                    :color="item.status === 'pending' ? 'blue' : 'green'"
+                    class="process-status"
+                    style="margin-right: 8px"
                   >
+                    {{ item.status === 'pending' ? '待处理' : '已处理' }}
+                  </a-tag>
+                  <a-button type="primary" size="small" @click="handleViewProcess(item)">
                     查看详情
                   </a-button>
                 </template>
@@ -50,27 +39,17 @@
             </template>
           </a-list>
         </a-tab-pane>
-        <a-tab-pane tab="已办理流程" key="completed">
+        <a-tab-pane key="completed" tab="已办理流程">
           <div v-if="completedProcesses.length === 0" class="empty-state">
             <a-empty description="暂无已办理流程" />
           </div>
-          <a-list
-            v-else
-            :data-source="completedProcesses"
-            class="process-list"
-          >
+          <a-list v-else :data-source="completedProcesses" class="process-list">
             <template #renderItem="{ item }">
               <a-list-item class="process-item">
                 <a-list-item-meta>
                   <template #title>
                     <div class="process-title">
                       <span>{{ item.name }}</span>
-                      <a-tag
-                        :color="item.status === 'pending' ? 'blue' : 'green'"
-                        class="process-status"
-                      >
-                        {{ item.status === 'pending' ? '待处理' : '已处理' }}
-                      </a-tag>
                     </div>
                   </template>
                   <template #description>
@@ -81,11 +60,14 @@
                   </template>
                 </a-list-item-meta>
                 <template #actions>
-                  <a-button
-                    type="primary"
-                    size="small"
-                    @click="handleViewProcess(item)"
+                  <a-tag
+                    :color="item.status === 'pending' ? 'blue' : 'green'"
+                    class="process-status"
+                    style="margin-right: 8px"
                   >
+                    {{ item.status === 'pending' ? '待处理' : '已处理' }}
+                  </a-tag>
+                  <a-button type="primary" size="small" @click="handleViewProcess(item)">
                     查看详情
                   </a-button>
                 </template>
@@ -115,8 +97,12 @@
           </a-descriptions-item>
           <a-descriptions-item label="审批状态">
             <a-tag v-if="leaveDetail.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
-            <a-tag v-else-if="leaveDetail.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
-            <a-tag v-else-if="leaveDetail.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
+            <a-tag v-else-if="leaveDetail.approvalStatus === 'APPROVED'" color="success"
+              >已批准</a-tag
+            >
+            <a-tag v-else-if="leaveDetail.approvalStatus === 'REJECTED'" color="error"
+              >已拒绝</a-tag
+            >
             <span v-else>{{ leaveDetail.approvalStatus }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="开始日期">
@@ -125,9 +111,7 @@
           <a-descriptions-item label="结束日期">
             {{ leaveDetail.endDate }}
           </a-descriptions-item>
-          <a-descriptions-item label="请假天数">
-            {{ leaveDetail.days }} 天
-          </a-descriptions-item>
+          <a-descriptions-item label="请假天数"> {{ leaveDetail.days }} 天 </a-descriptions-item>
           <a-descriptions-item label="申请人ID">
             {{ leaveDetail.applicantId }}
           </a-descriptions-item>
@@ -137,10 +121,10 @@
           <a-descriptions-item label="创建时间">
             {{ leaveDetail.createTime }}
           </a-descriptions-item>
-          <a-descriptions-item label="审批时间" v-if="leaveDetail.approvalTime">
+          <a-descriptions-item v-if="leaveDetail.approvalTime" label="审批时间">
             {{ leaveDetail.approvalTime }}
           </a-descriptions-item>
-          <a-descriptions-item label="审批意见" :span="2" v-if="leaveDetail.approvalComment">
+          <a-descriptions-item v-if="leaveDetail.approvalComment" label="审批意见" :span="2">
             {{ leaveDetail.approvalComment }}
           </a-descriptions-item>
         </a-descriptions>
@@ -150,7 +134,9 @@
           <a-descriptions-item label="申请类型">
             <a-tag v-if="awardDetail.applicationType === 'SCHOLARSHIP'" color="gold">奖学金</a-tag>
             <a-tag v-else-if="awardDetail.applicationType === 'GRANT'" color="green">助学金</a-tag>
-            <a-tag v-else-if="awardDetail.applicationType === 'SUBSIDY'" color="blue">困难补助</a-tag>
+            <a-tag v-else-if="awardDetail.applicationType === 'SUBSIDY'" color="blue"
+              >困难补助</a-tag
+            >
             <span v-else>{{ awardDetail.applicationType }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="审批状态">
@@ -162,7 +148,7 @@
           <a-descriptions-item label="申请名称" :span="2">
             {{ awardDetail.awardName }}
           </a-descriptions-item>
-          <a-descriptions-item label="申请金额" v-if="awardDetail.amount">
+          <a-descriptions-item v-if="awardDetail.amount" label="申请金额">
             ¥{{ awardDetail.amount }}
           </a-descriptions-item>
           <a-descriptions-item label="申请人ID">
@@ -218,12 +204,12 @@ const handleViewProcess = async (item: ProcessItem) => {
 
   try {
     if (item.type === 'leave') {
-      const response = await leaveApi.getApplication(item.id)
+      const response = await leaveApi.getApplication(Number(item.id))
       if (response.data) {
         leaveDetail.value = response.data
       }
     } else if (item.type === 'award') {
-      const response = await awardApi.getApplication(item.id)
+      const response = await awardApi.getApplicationDetail(Number(item.id))
       if (response.data) {
         awardDetail.value = response.data
       }

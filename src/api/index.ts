@@ -1,4 +1,10 @@
-import type { AwardApplication, ConsultationQuestion, PageRequest, PageResult, Result } from '@/types'
+import type {
+  AwardApplication,
+  ConsultationQuestion,
+  PageRequest,
+  PageResult,
+  Result,
+} from '@/types'
 import request from '@/utils/request'
 import type { AxiosProgressEvent } from 'axios'
 
@@ -8,12 +14,11 @@ export interface ConsultationRequest {
   category?: string
   imageUrl?: string
   voiceUrl?: string
+  files?: { transferMethod: string; url: string; type: string }[]
 }
 
 export interface TransferToHumanRequest {
-  questionType: string
-  questionDescription: string
-  attachmentUrl?: string
+  reason?: string
 }
 
 export interface LoginRequest {
@@ -33,7 +38,11 @@ export interface RegisterRequest {
 // 认证相关API
 export const authApi = {
   // 登录
-  login: (data: LoginRequest): Promise<Result<{ token: string; userId: number; username: string; realName: string; role: string }>> => {
+  login: (
+    data: LoginRequest
+  ): Promise<
+    Result<{ token: string; userId: number; username: string; realName: string; role: string }>
+  > => {
     return request.post('/auth/login', data)
   },
 
@@ -191,17 +200,41 @@ export const consultationApi = {
       },
     })
   },
+  uploadFile: (file: File | Blob, filename?: string): Promise<Result<string>> => {
+    const formData = new FormData()
+    formData.append('file', file, filename || 'file')
+    return request.post('/consultation/upload/file', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
+  },
+  getUserTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
+    return request.get('/consultation/transfers', { params })
+  },
+  getTransferDetail: (id: number): Promise<Result<any>> => {
+    return request.get(`/consultation/transfers/${id}`)
+  },
+  assignStaff: (id: number, staffId: number): Promise<Result<void>> => {
+    return request.post(`/consultation/transfers/${id}/assign`, null, {
+      params: { staffId }
+    })
+  },
+  replyToTransfer: (id: number, reply: string): Promise<Result<void>> => {
+    return request.post(`/consultation/transfers/${id}/reply`, null, {
+      params: { reply }
+    })
+  },
+  getStaffTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
+    return request.get('/consultation/transfers/staff', { params })
+  },
 }
 
 // 奖助申请相关API
 export const awardApi = {
   // 提交奖助申请
-  submitApplication: (data: FormData): Promise<Result<void>> => {
-    return request.post('/award/applications', data, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+  submitApplication: (data: any): Promise<Result<void>> => {
+    return request.post('/award/applications', data)
   },
 
   // 获取申请列表
@@ -209,8 +242,18 @@ export const awardApi = {
     return request.get('/award/applications/my')
   },
 
+  // 获取我的申请列表（别名，兼容旧代码）
+  getMyApplications: (params?: any): Promise<Result<AwardApplication[]>> => {
+    return request.get('/award/applications/my', { params })
+  },
+
   // 获取申请详情
   getApplicationDetail: (id: number): Promise<Result<AwardApplication>> => {
+    return request.get(`/award/applications/${id}`)
+  },
+
+  // 获取申请详情（别名，兼容旧代码）
+  getApplication: (id: number): Promise<Result<AwardApplication>> => {
     return request.get(`/award/applications/${id}`)
   },
 
@@ -222,6 +265,62 @@ export const awardApi = {
   // 获取待审批列表（教师/管理员）
   getPendingApplications: (): Promise<Result<AwardApplication[]>> => {
     return request.get('/award/applications/pending')
+  },
+}
+
+// 请假申请相关API
+export const leaveApi = {
+  // 提交请假申请
+  submitApplication: (data: any): Promise<Result<void>> => {
+    return request.post('/leave/applications', data)
+  },
+
+  // 获取申请列表
+  getApplications: (params?: any): Promise<Result<any>> => {
+    return request.get('/leave/applications/my', { params })
+  },
+
+  // 获取我的申请列表（别名，兼容旧代码）
+  getMyApplications: (params?: any): Promise<Result<any>> => {
+    return request.get('/leave/applications/my', { params })
+  },
+
+  // 获取申请详情
+  getApplication: (id: number): Promise<Result<any>> => {
+    return request.get(`/leave/applications/${id}`)
+  },
+
+  // 审批申请（教师/管理员）
+  approveApplication: (id: number, data: any): Promise<Result<void>> => {
+    return request.post(`/leave/applications/${id}/approve`, data)
+  },
+
+  // 获取待审批列表（教师/管理员）
+  getPendingApplications: (params?: any): Promise<Result<any>> => {
+    return request.get('/leave/applications/pending', { params })
+  },
+
+  // 下载请假条
+  downloadLeaveSlip: (id: number): void => {
+    window.open(`/api/v1/leave/applications/${id}/download-slip`)
+  },
+
+  // 销假
+  cancelLeave: (id: number): Promise<Result<void>> => {
+    return request.post(`/leave/applications/${id}/cancel`)
+  },
+}
+
+// 流程服务相关API
+export const processApi = {
+  // 获取流程列表（包含待办和已办）
+  getProcessList: (): Promise<Result<any>> => {
+    return request.get('/process/list')
+  },
+
+  // 获取流程详情
+  getProcessDetail: (id: string, type: string): Promise<Result<any>> => {
+    return request.get(`/process/${id}`, { params: { type } })
   },
 }
 

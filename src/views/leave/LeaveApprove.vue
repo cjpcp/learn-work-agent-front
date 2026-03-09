@@ -43,8 +43,12 @@
         </a-descriptions-item>
         <a-descriptions-item label="状态">
           <a-tag v-if="currentRecord.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
-          <a-tag v-else-if="currentRecord.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
-          <a-tag v-else-if="currentRecord.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
+          <a-tag v-else-if="currentRecord.approvalStatus === 'APPROVED'" color="success"
+            >已批准</a-tag
+          >
+          <a-tag v-else-if="currentRecord.approvalStatus === 'REJECTED'" color="error"
+            >已拒绝</a-tag
+          >
         </a-descriptions-item>
         <a-descriptions-item label="开始日期">
           {{ currentRecord.startDate }}
@@ -194,19 +198,22 @@ onMounted(() => {
     if (!isNaN(id)) {
       // 延迟一点执行，确保列表数据已加载
       setTimeout(() => {
-        const record = dataSource.value.find(item => item.id === id)
+        const record = dataSource.value.find((item) => item.id === id)
         if (record) {
           handleView(record)
         } else {
           // 如果列表中没找到，直接通过 API 获取详情
-          leaveApi.getApplication(id).then(response => {
-            if (response.data) {
-              currentRecord.value = response.data
-              viewVisible.value = true
-            }
-          }).catch(() => {
-            message.error('获取详情失败')
-          })
+          leaveApi
+            .getApplication(id)
+            .then((response) => {
+              if (response.data) {
+                currentRecord.value = response.data
+                viewVisible.value = true
+              }
+            })
+            .catch(() => {
+              message.error('获取详情失败')
+            })
         }
       }, 300)
     }

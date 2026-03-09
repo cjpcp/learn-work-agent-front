@@ -51,12 +51,19 @@ export interface LoginResponse {
 }
 
 // 咨询相关
+export interface FileInput {
+  transferMethod: string
+  url: string
+  type: string
+}
+
 export interface ConsultationRequest {
   questionText: string
   questionType: 'TEXT' | 'VOICE' | 'IMAGE'
   category?: 'AWARD' | 'DORM' | 'DISCIPLINE' | 'MENTAL' | 'EMPLOYMENT'
   imageUrl?: string
   voiceUrl?: string
+  files?: FileInput[]
 }
 
 export interface ConsultationQuestion {
