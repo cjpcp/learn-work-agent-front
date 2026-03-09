@@ -2,7 +2,7 @@
   <div class="process-service-container">
     <a-page-header title="流程代办服务" sub-title="查看和管理您的代办流程" @back="$router.back()" />
     <a-card class="process-card">
-      <a-tabs v-model:activeKey="activeTab" class="process-tabs">
+      <a-tabs v-model:active-key="activeTab" class="process-tabs">
         <!-- 流程代办标签页 -->
         <a-tab-pane key="process" tab="流程代办">
           <a-tabs default-active-key="pending" class="sub-tabs">
@@ -82,7 +82,11 @@
         </a-tab-pane>
 
         <!-- 人工处理中心标签页（仅辅导员和管理员可见） -->
-        <a-tab-pane v-if="userStore.isCounselor() || userStore.isAdmin()" key="human" tab="人工处理中心">
+        <a-tab-pane
+          v-if="userStore.isCounselor() || userStore.isAdmin()"
+          key="human"
+          tab="人工处理中心"
+        >
           <a-table
             :columns="humanProcessColumns"
             :data-source="humanProcessData"
@@ -104,9 +108,23 @@
                 {{ formatTransferReason(record.transferReason) }}
               </template>
               <template v-else-if="column.key === 'action'">
-                <a-button v-if="record.status === 'PENDING'" type="primary" size="small" @click="handleAssign(record)">分配</a-button>
-                <a-button v-else-if="record.status === 'PROCESSING'" type="primary" size="small" @click="handleReply(record)">回复</a-button>
-                <a-button type="link" size="small" @click="handleViewTransfer(record)">查看</a-button>
+                <a-button
+                  v-if="record.status === 'PENDING'"
+                  type="primary"
+                  size="small"
+                  @click="handleAssign(record)"
+                  >分配</a-button
+                >
+                <a-button
+                  v-else-if="record.status === 'PROCESSING'"
+                  type="primary"
+                  size="small"
+                  @click="handleReply(record)"
+                  >回复</a-button
+                >
+                <a-button type="link" size="small" @click="handleViewTransfer(record)"
+                  >查看</a-button
+                >
               </template>
             </template>
           </a-table>
@@ -129,7 +147,9 @@
                 <a-tag v-else-if="record.status === 'COMPLETED'" color="success">已完成</a-tag>
               </template>
               <template v-else-if="column.key === 'action'">
-                <a-button type="link" size="small" @click="handleViewTransferDetail(record)">查看详情</a-button>
+                <a-button type="link" size="small" @click="handleViewTransferDetail(record)"
+                  >查看详情</a-button
+                >
               </template>
             </template>
           </a-table>
@@ -253,7 +273,12 @@
     </a-modal>
 
     <!-- 转人工记录详情模态框 -->
-    <a-modal v-model:open="transferDetailVisible" title="转人工记录详情" width="800px" :footer="null">
+    <a-modal
+      v-model:open="transferDetailVisible"
+      title="转人工记录详情"
+      width="800px"
+      :footer="null"
+    >
       <a-descriptions :column="2" bordered>
         <a-descriptions-item label="问题ID" :span="2">
           {{ currentTransfer?.questionId }}
@@ -263,7 +288,9 @@
         </a-descriptions-item>
         <a-descriptions-item label="状态">
           <a-tag v-if="currentTransfer?.status === 'PENDING'">待处理</a-tag>
-          <a-tag v-else-if="currentTransfer?.status === 'PROCESSING'" color="processing">处理中</a-tag>
+          <a-tag v-else-if="currentTransfer?.status === 'PROCESSING'" color="processing"
+            >处理中</a-tag
+          >
           <a-tag v-else-if="currentTransfer?.status === 'COMPLETED'" color="success">已完成</a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="转接原因" :span="2">
@@ -383,7 +410,7 @@ const transferColumns = [
     dataIndex: 'transferType',
     key: 'transferType',
     width: 120,
-    customRender: ({ text }: { text: string }) => text === 'MANUAL' ? '手动申请' : '自动转接',
+    customRender: ({ text }: { text: string }) => (text === 'MANUAL' ? '手动申请' : '自动转接'),
   },
   {
     title: '状态',
@@ -446,7 +473,7 @@ const loadProcesses = async () => {
 // 加载人工处理中心数据
 const loadHumanProcessData = async () => {
   if (!(userStore.isCounselor() || userStore.isAdmin())) return
-  
+
   humanProcessLoading.value = true
   try {
     const params: PageRequest = {

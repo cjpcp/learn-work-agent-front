@@ -23,7 +23,11 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item name="department" label="院系">
-              <a-select v-model:value="form.department" style="width: 100%" placeholder="请选择院系">
+              <a-select
+                v-model:value="form.department"
+                style="width: 100%"
+                placeholder="请选择院系"
+              >
                 <a-select-option value="体育学院">体育学院</a-select-option>
                 <a-select-option value="文学院">文学院</a-select-option>
                 <a-select-option value="理学院">理学院</a-select-option>
@@ -71,9 +75,14 @@
         <a-row :gutter="24">
           <a-col :span="24">
             <a-form-item name="reason" label="问题说明">
-              <div style="position: relative;">
+              <div style="position: relative">
                 <a-textarea v-model:value="form.reason" :rows="6" placeholder="输入请假说明" />
-                <a-button type="primary" style="position: absolute; top: -40px; right: 0;">生成请假条</a-button>
+                <a-button
+                  type="primary"
+                  style="position: absolute; top: -40px; right: 0"
+                  @click="handleGenerateSlip"
+                  >生成请假条</a-button
+                >
               </div>
             </a-form-item>
           </a-col>
@@ -169,6 +178,10 @@ const rules: Record<string, Rule[]> = {
 
 const beforeUpload = (file: File) => {
   return false
+}
+
+const handleGenerateSlip = () => {
+  message.info('请先提交请假申请，待审批通过后在申请详情中生成请假条')
 }
 
 const handleSubmit = async () => {

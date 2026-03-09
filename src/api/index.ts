@@ -47,17 +47,17 @@ export const authApi = {
   login: (
     data: LoginRequest
   ): Promise<
-    Result<{ 
-      token: string; 
-      userId: number; 
-      username: string; 
-      realName: string; 
-      role: string;
-      department?: string;
-      grade?: string;
-      className?: string;
-      workDepartment?: string;
-      position?: string;
+    Result<{
+      token: string
+      userId: number
+      username: string
+      realName: string
+      role: string
+      department?: string
+      grade?: string
+      className?: string
+      workDepartment?: string
+      position?: string
     }>
   > => {
     return request.post('/auth/login', data)
@@ -234,12 +234,12 @@ export const consultationApi = {
   },
   assignStaff: (id: number, staffId: number): Promise<Result<void>> => {
     return request.post(`/consultation/transfers/${id}/assign`, null, {
-      params: { staffId }
+      params: { staffId },
     })
   },
   replyToTransfer: (id: number, reply: string): Promise<Result<void>> => {
     return request.post(`/consultation/transfers/${id}/reply`, null, {
-      params: { reply }
+      params: { reply },
     })
   },
   getStaffTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
@@ -325,6 +325,11 @@ export const leaveApi = {
   // 销假
   cancelLeave: (id: number): Promise<Result<void>> => {
     return request.post(`/leave/applications/${id}/cancel`)
+  },
+
+  // 生成请假条
+  generateLeaveSlip: (id: number): Promise<Result<void>> => {
+    return request.post(`/leave/applications/${id}/generate-slip`)
   },
 }
 

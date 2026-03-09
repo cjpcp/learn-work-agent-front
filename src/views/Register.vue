@@ -206,8 +206,8 @@ const handleRegister = async () => {
       query: {
         username: form.username,
         password: form.password,
-        realName: form.realName
-      }
+        realName: form.realName,
+      },
     })
   } catch (error: any) {
     message.error(error.message || '注册失败')

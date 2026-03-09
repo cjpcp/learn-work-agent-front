@@ -23,7 +23,11 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item name="department" label="院系">
-              <a-select v-model:value="form.department" style="width: 100%" placeholder="请选择院系">
+              <a-select
+                v-model:value="form.department"
+                style="width: 100%"
+                placeholder="请选择院系"
+              >
                 <a-select-option value="体育学院">体育学院</a-select-option>
                 <a-select-option value="文学院">文学院</a-select-option>
                 <a-select-option value="理学院">理学院</a-select-option>

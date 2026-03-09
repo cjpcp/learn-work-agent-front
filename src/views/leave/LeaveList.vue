@@ -206,8 +206,15 @@ const handleView = async (record: LeaveApplication) => {
   }
 }
 
-const handleDownload = (record: LeaveApplication) => {
-  leaveApi.downloadLeaveSlip(record.id!)
+const handleDownload = async (record: LeaveApplication) => {
+  try {
+    // 先生成请假条
+    await leaveApi.generateLeaveSlip(record.id!)
+    // 然后下载请假条
+    leaveApi.downloadLeaveSlip(record.id!)
+  } catch (error: any) {
+    message.error(error.message || '生成请假条失败')
+  }
 }
 
 const handleCancel = (record: LeaveApplication) => {

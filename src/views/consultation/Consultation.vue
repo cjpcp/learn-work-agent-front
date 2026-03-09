@@ -9,18 +9,30 @@
       <!-- 初始状态 - 欢迎界面 -->
       <div v-if="state === 'welcome'" class="welcome-section">
         <div class="ai-avatar">
-          <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="avatar-image" />
+          <img
+            src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square"
+            alt="学工AI智能体助手"
+            class="avatar-image"
+          />
         </div>
         <h1 class="main-title">学工AI智能体助手</h1>
-        
+
         <!-- 快捷咨询 -->
         <div class="quick-consultation">
           <h3 class="quick-title">快捷咨询</h3>
           <div class="quick-buttons">
-            <button class="quick-button" @click="handleQuickQuestion('奖学金怎么申请？')">奖学金怎么申请？</button>
-            <button class="quick-button" @click="handleQuickQuestion('宿舍调寝找那个部门？')">宿舍调寝找那个部门？</button>
-            <button class="quick-button" @click="handleQuickQuestion('违纪申诉需要做什么？')">违纪申诉需要做什么？</button>
-            <button class="quick-button" @click="handleQuickQuestion('心理健康问题怎么解决？')">心理健康问题怎么解决？</button>
+            <button class="quick-button" @click="handleQuickQuestion('奖学金怎么申请？')">
+              奖学金怎么申请？
+            </button>
+            <button class="quick-button" @click="handleQuickQuestion('宿舍调寝找那个部门？')">
+              宿舍调寝找那个部门？
+            </button>
+            <button class="quick-button" @click="handleQuickQuestion('违纪申诉需要做什么？')">
+              违纪申诉需要做什么？
+            </button>
+            <button class="quick-button" @click="handleQuickQuestion('心理健康问题怎么解决？')">
+              心理健康问题怎么解决？
+            </button>
           </div>
         </div>
       </div>
@@ -28,13 +40,21 @@
       <!-- 聊天状态 -->
       <div v-else class="chat-section">
         <!-- 历史对话列表 -->
-        <div v-for="(conversation, index) in conversationHistory" :key="index" class="conversation-item">
+        <div
+          v-for="(conversation, index) in conversationHistory"
+          :key="index"
+          class="conversation-item"
+        >
           <!-- 问题显示 -->
           <div class="question-display">
             <div class="question-item">
               <div class="question-content">{{ conversation.question }}</div>
               <div class="question-avatar">
-                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
+                <img
+                  src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square"
+                  alt="用户"
+                  class="small-avatar"
+                />
               </div>
             </div>
           </div>
@@ -43,7 +63,11 @@
           <div class="ai-response">
             <div class="ai-message">
               <div class="ai-avatar-small">
-                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+                <img
+                  src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square"
+                  alt="学工AI智能体助手"
+                  class="small-avatar"
+                />
               </div>
               <div class="ai-content-plain">{{ conversation.answer }}</div>
             </div>
@@ -57,7 +81,11 @@
             <div class="question-item">
               <div class="question-content">{{ currentQuestion }}</div>
               <div class="question-avatar">
-                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square" alt="用户" class="small-avatar" />
+                <img
+                  src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square"
+                  alt="用户"
+                  class="small-avatar"
+                />
               </div>
             </div>
           </div>
@@ -66,7 +94,11 @@
           <div class="ai-response">
             <div class="ai-message">
               <div class="ai-avatar-small">
-                <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+                <img
+                  src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square"
+                  alt="学工AI智能体助手"
+                  class="small-avatar"
+                />
               </div>
               <div class="ai-content-plain">{{ aiAnswer }}</div>
             </div>
@@ -77,9 +109,15 @@
         <div v-if="state === 'transfer'" class="transfer-section">
           <div class="transfer-message">
             <div class="ai-avatar-small">
-              <img src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square" alt="学工AI智能体助手" class="small-avatar" />
+              <img
+                src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=friendly%20female%20AI%20assistant%20avatar%2C%20professional%2C%20cartoon%20style%2C%20pink%20clothing%2C%20glasses&image_size=square"
+                alt="学工AI智能体助手"
+                class="small-avatar"
+              />
             </div>
-            <div class="transfer-text">未找到您要了解的问题答案，可申请转人工为您解答，请问需要吗？</div>
+            <div class="transfer-text">
+              未找到您要了解的问题答案，可申请转人工为您解答，请问需要吗？
+            </div>
             <div class="transfer-buttons">
               <button class="no-button" @click="cancelTransfer">不需要</button>
               <button class="yes-button" @click="confirmTransfer">需要</button>
@@ -94,7 +132,7 @@
         <form class="manual-form">
           <div class="form-group">
             <label class="form-label">问题类型</label>
-            <select class="form-select" v-model="manualForm.questionType">
+            <select v-model="manualForm.questionType" class="form-select">
               <option value="">请选择问题类型</option>
               <option value="scholarship">奖助勤贷</option>
               <option value="dormitory">宿舍管理</option>
@@ -105,7 +143,11 @@
           </div>
           <div class="form-group">
             <label class="form-label">问题说明</label>
-            <textarea class="form-textarea" v-model="manualForm.questionDescription" placeholder="请详细描述您的问题..."></textarea>
+            <textarea
+              v-model="manualForm.questionDescription"
+              class="form-textarea"
+              placeholder="请详细描述您的问题..."
+            ></textarea>
           </div>
           <div class="form-group">
             <label class="form-label">文件上传</label>
@@ -129,27 +171,73 @@
         <!-- 已上传文件列表 -->
         <div v-if="uploadedFiles.length > 0" class="uploaded-files-container">
           <div v-for="(file, index) in uploadedFiles" :key="index" class="uploaded-file-item">
-            <svg class="file-icon-small" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M13 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V9L13 2Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M13 2V9H20" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              class="file-icon-small"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M13 2H6C4.89543 2 4 2.89543 4 4V20C4 21.1046 4.89543 22 6 22H18C19.1046 22 20 21.1046 20 20V9L13 2Z"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+              <path
+                d="M13 2V9H20"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
             <span class="file-name">{{ file.name }}</span>
             <button class="remove-file-btn" @click="removeUploadedFile(index)">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path
+                  d="M18 6L6 18M6 6L18 18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </button>
           </div>
         </div>
         <div class="input-container">
-          <input type="text" v-model="questionText" class="question-input" placeholder="请输入您的问题..." @keyup.enter="handleSubmit" />
-          <input type="file" ref="chatFileInput" class="chat-file-input" @change="handleChatFileUpload" multiple />
+          <input
+            v-model="questionText"
+            type="text"
+            class="question-input"
+            placeholder="请输入您的问题..."
+            @keyup.enter="handleSubmit"
+          />
+          <input
+            ref="chatFileInput"
+            type="file"
+            class="chat-file-input"
+            multiple
+            @change="handleChatFileUpload"
+          />
           <button class="input-button" @click="triggerChatFileUpload">
-            <svg class="button-icon-svg" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M21.1525 10.8995L12.1369 19.9151C10.0866 21.9653 6.7625 21.9653 4.71225 19.9151C2.662 17.8648 2.662 14.5407 4.71225 12.4904L13.7279 3.47483C15.0947 2.108 17.2198 2.108 18.5866 3.47483C19.9534 4.84167 19.9534 6.96675 18.5866 8.33358L10.3797 16.5405C9.69633 17.2238 8.59637 17.2238 7.91304 16.5405C7.22971 15.8572 7.22971 14.7572 7.91304 14.0739L14.914 7.07295" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <svg
+              class="button-icon-svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                d="M21.1525 10.8995L12.1369 19.9151C10.0866 21.9653 6.7625 21.9653 4.71225 19.9151C2.662 17.8648 2.662 14.5407 4.71225 12.4904L13.7279 3.47483C15.0947 2.108 17.2198 2.108 18.5866 3.47483C19.9534 4.84167 19.9534 6.96675 18.5866 8.33358L10.3797 16.5405C9.69633 17.2238 8.59637 17.2238 7.91304 16.5405C7.22971 15.8572 7.22971 14.7572 7.91304 14.0739L14.914 7.07295"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
             </svg>
           </button>
-          <button class="input-button" @click="toggleVoice" :class="{ 'recording': isRecording }">
+          <button class="input-button" :class="{ recording: isRecording }" @click="toggleVoice">
             <span class="button-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
           </button>
           <button class="send-button" @click="handleSubmit">
@@ -195,7 +283,7 @@ const navigateToHistory = () => {
 // 人工帮助表单
 const manualForm = reactive({
   questionType: '',
-  questionDescription: ''
+  questionDescription: '',
 })
 const selectedFile = ref<File | null>(null)
 
@@ -209,10 +297,10 @@ const uploadedFiles = ref<UploadedFile[]>([])
 
 // 准备文件列表用于提交
 const prepareFilesForSubmit = (): FileInput[] => {
-  return uploadedFiles.value.map(file => ({
+  return uploadedFiles.value.map((file) => ({
     transferMethod: 'remote_url',
     url: file.url,
-    type: file.type
+    type: file.type,
   }))
 }
 
@@ -233,7 +321,7 @@ const handleSubmit = async () => {
   if (currentQuestion.value && aiAnswer.value) {
     conversationHistory.value.push({
       question: currentQuestion.value,
-      answer: aiAnswer.value
+      answer: aiAnswer.value,
     })
   }
 
@@ -360,7 +448,15 @@ const submitManual = async () => {
       questionText: manualForm.questionDescription,
       questionType: 'TEXT',
       category: manualForm.questionType,
-      files: attachmentUrl ? [{ transferMethod: 'remote_url', url: attachmentUrl, type: selectedFile.value?.type.startsWith('image/') ? 'image' : 'document' }] : undefined
+      files: attachmentUrl
+        ? [
+            {
+              transferMethod: 'remote_url',
+              url: attachmentUrl,
+              type: selectedFile.value?.type.startsWith('image/') ? 'image' : 'document',
+            },
+          ]
+        : undefined,
     })
 
     if (questionResult.code === 200 && questionResult.data && questionResult.data.id) {
@@ -368,7 +464,7 @@ const submitManual = async () => {
 
       // 转移给人工处理
       await consultationApi.transferToHuman(questionId, {
-        reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentUrl ? '\n附件: ' + attachmentUrl : ''}`
+        reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentUrl ? '\n附件: ' + attachmentUrl : ''}`,
       })
 
       message.success('申请提交成功，我们将尽快为您处理')
@@ -401,17 +497,17 @@ const startRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
     const recorder = new MediaRecorder(stream)
-    
+
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
         audioChunks.value.push(event.data)
       }
     }
-    
+
     recorder.onstop = () => {
       processRecording()
     }
-    
+
     recorder.start()
     mediaRecorder.value = recorder
     isRecording.value = true
@@ -431,64 +527,64 @@ const stopRecording = () => {
 }
 
 const processRecording = async () => {
-    if (audioChunks.value.length === 0) {
-      message.warning('录音内容为空')
+  if (audioChunks.value.length === 0) {
+    message.warning('录音内容为空')
+    return
+  }
+
+  const audioBlob = new Blob(audioChunks.value, { type: 'audio/mp3' })
+  audioChunks.value = []
+
+  try {
+    // 上传音频文件
+    const userStore = useUserStore()
+    const token = userStore.token
+
+    if (!token) {
+      message.error('请先登录')
       return
     }
-    
-    const audioBlob = new Blob(audioChunks.value, { type: 'audio/mp3' })
-    audioChunks.value = []
-    
-    try {
-      // 上传音频文件
-      const userStore = useUserStore()
-      const token = userStore.token
-      
-      if (!token) {
-        message.error('请先登录')
-        return
-      }
-      
-      // 创建一个File对象以便上传
-      const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mp3' })
-      const result = await consultationApi.uploadVoice(audioFile)
-      if (result.code === 200 && result.data) {
-        // 提交语音问题
-        await submitVoiceQuestion(result.data)
-      } else {
-        message.error('语音上传失败: ' + result.message)
-      }
-    } catch (error: any) {
-      console.error('处理录音失败:', error)
-      message.error('处理录音失败: ' + (error.message || '未知错误'))
+
+    // 创建一个File对象以便上传
+    const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mp3' })
+    const result = await consultationApi.uploadVoice(audioFile)
+    if (result.code === 200 && result.data) {
+      // 提交语音问题
+      await submitVoiceQuestion(result.data)
+    } else {
+      message.error('语音上传失败: ' + result.message)
     }
+  } catch (error: any) {
+    console.error('处理录音失败:', error)
+    message.error('处理录音失败: ' + (error.message || '未知错误'))
   }
+}
 
 const submitVoiceQuestion = async (voiceUrl: string) => {
   // 如果有当前对话，先保存到历史记录
   if (currentQuestion.value && aiAnswer.value) {
     conversationHistory.value.push({
       question: currentQuestion.value,
-      answer: aiAnswer.value
+      answer: aiAnswer.value,
     })
   }
-  
+
   currentQuestion.value = '语音问题'
   state.value = 'chat'
   aiAnswer.value = '' // 清空之前的回答
   isStreaming.value = true // 开始流式接收
-  
+
   const userStore = useUserStore()
   const token = userStore.token
-  
+
   if (!token) {
     message.error('请先登录')
     return
   }
-  
+
   // 准备文件列表
   const files = prepareFilesForSubmit()
-  
+
   try {
     await consultationApi.submitQuestionStream(
       {
@@ -548,7 +644,16 @@ const handleChatFileUpload = async (event: Event) => {
       const file = target.files[i]
 
       // 检查文件类型
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet']
+      const allowedTypes = [
+        'image/jpeg',
+        'image/png',
+        'image/gif',
+        'application/pdf',
+        'application/msword',
+        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'application/vnd.ms-excel',
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      ]
       const maxSize = 10 * 1024 * 1024 // 10MB
 
       if (!allowedTypes.includes(file.type)) {
@@ -567,7 +672,7 @@ const handleChatFileUpload = async (event: Event) => {
         uploadedFiles.value.push({
           name: file.name,
           url: result.data,
-          type: file.type.startsWith('image/') ? 'image' : 'document'
+          type: file.type.startsWith('image/') ? 'image' : 'document',
         })
         message.success(`文件 ${file.name} 上传成功`)
       } else {
@@ -596,7 +701,8 @@ const removeUploadedFile = (index: number) => {
 .consultation-page {
   min-height: 100vh;
   background-color: #ffffff;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 主要内容区 */
@@ -613,7 +719,6 @@ const removeUploadedFile = (index: number) => {
   justify-content: flex-end;
   margin-bottom: 24px;
 }
-
 
 /* 欢迎界面 */
 .welcome-section {
@@ -750,7 +855,8 @@ const removeUploadedFile = (index: number) => {
   color: #333;
   white-space: pre-wrap;
   word-wrap: break-word;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 
 /* 转人工确认 */
@@ -783,7 +889,8 @@ const removeUploadedFile = (index: number) => {
   margin-left: 44px;
 }
 
-.no-button, .yes-button {
+.no-button,
+.yes-button {
   padding: 8px 24px;
   border-radius: 6px;
   font-size: 14px;
@@ -843,7 +950,8 @@ const removeUploadedFile = (index: number) => {
   font-weight: 500;
 }
 
-.form-select, .form-textarea {
+.form-select,
+.form-textarea {
   padding: 10px 12px;
   border: 1px solid #e0e0e0;
   border-radius: 6px;
@@ -852,7 +960,8 @@ const removeUploadedFile = (index: number) => {
   transition: border-color 0.3s;
 }
 
-.form-select:focus, .form-textarea:focus {
+.form-select:focus,
+.form-textarea:focus {
   outline: none;
   border-color: #2196f3;
 }
@@ -907,7 +1016,8 @@ const removeUploadedFile = (index: number) => {
   margin-top: 8px;
 }
 
-.cancel-button, .submit-button {
+.cancel-button,
+.submit-button {
   padding: 10px 32px;
   border-radius: 6px;
   font-size: 14px;
@@ -1025,7 +1135,8 @@ const removeUploadedFile = (index: number) => {
   border-color: #2196f3;
 }
 
-.input-button, .send-button {
+.input-button,
+.send-button {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -1069,7 +1180,8 @@ const removeUploadedFile = (index: number) => {
   background-color: #1976d2;
 }
 
-.button-icon, .send-icon {
+.button-icon,
+.send-icon {
   font-size: 18px;
 }
 
