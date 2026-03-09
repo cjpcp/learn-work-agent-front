@@ -10,6 +10,11 @@ export const useUserStore = defineStore('user', () => {
   const username = ref<string>('')
   const realName = ref<string>('')
   const role = ref<string>('')
+  const department = ref<string>('')
+  const grade = ref<string>('')
+  const className = ref<string>('')
+  const workDepartment = ref<string>('')
+  const position = ref<string>('')
 
   // 登录
   const login = async (loginUsername: string, loginPassword: string) => {
@@ -21,6 +26,11 @@ export const useUserStore = defineStore('user', () => {
       username.value = data.username
       realName.value = data.realName
       role.value = data.role
+      department.value = data.department || ''
+      grade.value = data.grade || ''
+      className.value = data.className || ''
+      workDepartment.value = data.workDepartment || ''
+      position.value = data.position || ''
       localStorage.setItem('token', data.token)
       localStorage.setItem('userInfo', JSON.stringify(data))
       return data
@@ -34,6 +44,11 @@ export const useUserStore = defineStore('user', () => {
     username.value = ''
     realName.value = ''
     role.value = ''
+    department.value = ''
+    grade.value = ''
+    className.value = ''
+    workDepartment.value = ''
+    position.value = ''
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
     router.push('/login')
@@ -50,6 +65,11 @@ export const useUserStore = defineStore('user', () => {
         username.value = userInfo.username
         realName.value = userInfo.realName
         role.value = userInfo.role
+        department.value = userInfo.department || ''
+        grade.value = userInfo.grade || ''
+        className.value = userInfo.className || ''
+        workDepartment.value = userInfo.workDepartment || ''
+        position.value = userInfo.position || ''
       } catch (e) {
         console.error('解析用户信息失败', e)
       }
@@ -100,6 +120,11 @@ export const useUserStore = defineStore('user', () => {
     username,
     realName,
     role,
+    department,
+    grade,
+    className,
+    workDepartment,
+    position,
     login,
     logout,
     initUserInfo,

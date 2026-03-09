@@ -33,6 +33,11 @@ export interface User {
   email?: string
   role: 'STUDENT' | 'COUNSELOR' | 'ADMIN'
   status?: 'ACTIVE' | 'INACTIVE'
+  department?: string
+  grade?: string
+  className?: string
+  workDepartment?: string
+  position?: string
   createTime?: string
   updateTime?: string
 }
@@ -48,6 +53,11 @@ export interface LoginResponse {
   username: string
   realName: string
   role: string
+  department?: string
+  grade?: string
+  className?: string
+  workDepartment?: string
+  position?: string
 }
 
 // 咨询相关
@@ -92,6 +102,10 @@ export interface LeaveApplicationRequest {
   endDate: string
   reason?: string
   attachmentUrl?: string
+  studentName?: string
+  department?: string
+  grade?: string
+  className?: string
 }
 
 export interface LeaveApplication {
@@ -111,6 +125,10 @@ export interface LeaveApplication {
   leaveSlipUrl?: string
   cancelled?: boolean
   cancelTime?: string
+  studentName?: string
+  department?: string
+  grade?: string
+  className?: string
   createTime?: string
   updateTime?: string
 }
@@ -127,6 +145,10 @@ export interface AwardApplicationRequest {
   amount?: number
   reason?: string
   attachmentUrls?: string[]
+  studentName?: string
+  department?: string
+  grade?: string
+  className?: string
 }
 
 export interface AwardApplication {
@@ -141,6 +163,10 @@ export interface AwardApplication {
   approverId?: number
   approvalComment?: string
   approvalTime?: string
+  studentName?: string
+  department?: string
+  grade?: string
+  className?: string
   createTime?: string
   updateTime?: string
 }

@@ -12,11 +12,47 @@
         <a-row :gutter="24">
           <a-col :span="24">
             <a-form-item name="applicationType" label="申请类型">
-              <a-radio-group v-model:value="form.applicationType">
-                <a-radio value="SCHOLARSHIP">奖学金</a-radio>
-                <a-radio value="GRANT">助学金</a-radio>
-                <a-radio value="SUBSIDY">困难补助</a-radio>
-              </a-radio-group>
+              <a-select v-model:value="form.applicationType" style="width: 100%">
+                <a-select-option value="SCHOLARSHIP">奖学金</a-select-option>
+                <a-select-option value="GRANT">助学金</a-select-option>
+                <a-select-option value="SUBSIDY">困难补助</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item name="department" label="院系">
+              <a-select v-model:value="form.department" style="width: 100%" placeholder="请选择院系">
+                <a-select-option value="体育学院">体育学院</a-select-option>
+                <a-select-option value="文学院">文学院</a-select-option>
+                <a-select-option value="理学院">理学院</a-select-option>
+                <a-select-option value="工学院">工学院</a-select-option>
+                <a-select-option value="商学院">商学院</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item name="grade" label="年级">
+              <a-select v-model:value="form.grade" style="width: 100%" placeholder="请选择年级">
+                <a-select-option value="2021">2021</a-select-option>
+                <a-select-option value="2022">2022</a-select-option>
+                <a-select-option value="2023">2023</a-select-option>
+                <a-select-option value="2024">2024</a-select-option>
+                <a-select-option value="2025">2025</a-select-option>
+              </a-select>
+            </a-form-item>
+          </a-col>
+        </a-row>
+        <a-row :gutter="24">
+          <a-col :span="12">
+            <a-form-item name="className" label="班级">
+              <a-input v-model:value="form.className" placeholder="请输入班级" />
+            </a-form-item>
+          </a-col>
+          <a-col :span="12">
+            <a-form-item name="studentName" label="姓名">
+              <a-input v-model:value="form.studentName" placeholder="请输入姓名" />
             </a-form-item>
           </a-col>
         </a-row>
@@ -77,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UploadOutlined } from '@ant-design/icons-vue'
@@ -85,10 +121,12 @@ import { awardApi } from '@/api'
 import type { AwardApplicationRequest } from '@/types'
 import type { Rule } from 'ant-design-vue/es/form'
 import type { UploadFile } from 'ant-design-vue'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const loading = ref(false)
 const fileList = ref<UploadFile[]>([])
+const userStore = useUserStore()
 
 const form = reactive<AwardApplicationRequest>({
   applicationType: 'SCHOLARSHIP',
@@ -96,10 +134,27 @@ const form = reactive<AwardApplicationRequest>({
   amount: undefined,
   reason: '',
   attachmentUrls: [],
+  studentName: '',
+  department: '',
+  grade: '',
+  className: '',
+})
+
+// 初始化表单数据
+onMounted(() => {
+  // 从用户信息中获取数据
+  form.studentName = userStore.realName
+  form.department = userStore.department
+  form.grade = userStore.grade
+  form.className = userStore.className
 })
 
 const rules: Record<string, Rule[]> = {
   applicationType: [{ required: true, message: '请选择申请类型', trigger: 'change' }],
+  department: [{ required: true, message: '请选择院系', trigger: 'change' }],
+  grade: [{ required: true, message: '请选择年级', trigger: 'change' }],
+  className: [{ required: true, message: '请输入班级', trigger: 'blur' }],
+  studentName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   awardName: [{ required: true, message: '请输入申请名称', trigger: 'blur' }],
 }
 

@@ -108,14 +108,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UserOutlined, LockOutlined, BookOutlined } from '@ant-design/icons-vue'
 import { useUserStore } from '@/stores/user'
 import type { Rule } from 'ant-design-vue/es/form'
 
 const router = useRouter()
+const route = useRoute()
 const userStore = useUserStore()
 
 const loading = ref(false)
@@ -128,6 +129,16 @@ const rules: Record<string, Rule[]> = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
+
+// 组件加载时检查路由参数，自动填充用户名和密码
+onMounted(() => {
+  if (route.query.username) {
+    form.username = route.query.username as string
+  }
+  if (route.query.password) {
+    form.password = route.query.password as string
+  }
+})
 
 const handleLogin = async () => {
   loading.value = true

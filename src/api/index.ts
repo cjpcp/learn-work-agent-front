@@ -30,9 +30,15 @@ export interface RegisterRequest {
   username: string
   password: string
   realName: string
-  studentId: string
+  studentNo: string
   email: string
   phone: string
+  role?: string
+  department?: string
+  grade?: string
+  className?: string
+  workDepartment?: string
+  position?: string
 }
 
 // 认证相关API
@@ -41,7 +47,18 @@ export const authApi = {
   login: (
     data: LoginRequest
   ): Promise<
-    Result<{ token: string; userId: number; username: string; realName: string; role: string }>
+    Result<{ 
+      token: string; 
+      userId: number; 
+      username: string; 
+      realName: string; 
+      role: string;
+      department?: string;
+      grade?: string;
+      className?: string;
+      workDepartment?: string;
+      position?: string;
+    }>
   > => {
     return request.post('/auth/login', data)
   },
@@ -347,5 +364,21 @@ export const fileApi = {
         }
       },
     })
+  },
+}
+
+// 通知相关API
+export const notificationApi = {
+  // 获取通知列表
+  getNotifications: (params?: any): Promise<Result<any>> => {
+    return request.get('/notifications', { params })
+  },
+  // 标记通知为已读
+  markAsRead: (id: number): Promise<Result<void>> => {
+    return request.post(`/notifications/${id}/read`)
+  },
+  // 获取未读通知数量
+  getUnreadCount: (): Promise<Result<{ count: number }>> => {
+    return request.get('/notifications/unread-count')
   },
 }

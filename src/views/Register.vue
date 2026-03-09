@@ -75,6 +75,72 @@
             <a-select-option value="ADMIN">管理员</a-select-option>
           </a-select>
         </a-form-item>
+
+        <!-- 学生相关字段 -->
+        <div v-if="form.role === 'STUDENT'">
+          <div class="form-row">
+            <a-form-item name="department" label="院系">
+              <a-select
+                v-model:value="form.department"
+                placeholder="请选择院系"
+                size="large"
+                class="register-select"
+              >
+                <a-select-option value="体育学院">体育学院</a-select-option>
+                <a-select-option value="文学院">文学院</a-select-option>
+                <a-select-option value="理学院">理学院</a-select-option>
+                <a-select-option value="工学院">工学院</a-select-option>
+                <a-select-option value="商学院">商学院</a-select-option>
+              </a-select>
+            </a-form-item>
+            <a-form-item name="grade" label="年级">
+              <a-select
+                v-model:value="form.grade"
+                placeholder="请选择年级"
+                size="large"
+                class="register-select"
+              >
+                <a-select-option value="2021">2021</a-select-option>
+                <a-select-option value="2022">2022</a-select-option>
+                <a-select-option value="2023">2023</a-select-option>
+                <a-select-option value="2024">2024</a-select-option>
+                <a-select-option value="2025">2025</a-select-option>
+              </a-select>
+            </a-form-item>
+          </div>
+          <div class="form-row">
+            <a-form-item name="className" label="班级">
+              <a-input
+                v-model:value="form.className"
+                placeholder="请输入班级"
+                size="large"
+                class="register-input"
+              />
+            </a-form-item>
+          </div>
+        </div>
+
+        <!-- 辅导员/管理员相关字段 -->
+        <div v-else>
+          <div class="form-row">
+            <a-form-item name="workDepartment" label="所属部门">
+              <a-input
+                v-model:value="form.workDepartment"
+                placeholder="请输入所属部门"
+                size="large"
+                class="register-input"
+              />
+            </a-form-item>
+            <a-form-item name="position" label="职位">
+              <a-input
+                v-model:value="form.position"
+                placeholder="请输入职位"
+                size="large"
+                class="register-input"
+              />
+            </a-form-item>
+          </div>
+        </div>
         <a-form-item>
           <a-button
             type="primary"
@@ -115,6 +181,11 @@ const form = reactive({
   phone: '',
   email: '',
   role: 'STUDENT',
+  department: '',
+  grade: '',
+  className: '',
+  workDepartment: '',
+  position: '',
 })
 
 const rules: Record<string, Rule[]> = {
@@ -129,7 +200,15 @@ const handleRegister = async () => {
   try {
     await authApi.register(form)
     message.success('注册成功，请登录')
-    router.push('/login')
+    // 跳转到登录页面并传递注册信息
+    router.push({
+      path: '/login',
+      query: {
+        username: form.username,
+        password: form.password,
+        realName: form.realName
+      }
+    })
   } catch (error: any) {
     message.error(error.message || '注册失败')
   } finally {
