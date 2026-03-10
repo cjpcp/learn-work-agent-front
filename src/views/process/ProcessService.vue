@@ -100,7 +100,9 @@
                 <template #bodyCell="{ column, record }">
                   <template v-if="column.key === 'status'">
                     <a-tag v-if="record.status === 'PENDING'">待处理</a-tag>
-                    <a-tag v-else-if="record.status === 'PROCESSING'" color="processing">处理中</a-tag>
+                    <a-tag v-else-if="record.status === 'PROCESSING'" color="processing"
+                      >处理中</a-tag
+                    >
                     <a-tag v-else-if="record.status === 'COMPLETED'" color="success">已完成</a-tag>
                   </template>
                   <template v-else-if="column.key === 'transferType'">
@@ -143,7 +145,9 @@
                 <template #bodyCell="{ column, record }">
                   <template v-if="column.key === 'status'">
                     <a-tag v-if="record.status === 'PENDING'">待处理</a-tag>
-                    <a-tag v-else-if="record.status === 'PROCESSING'" color="processing">处理中</a-tag>
+                    <a-tag v-else-if="record.status === 'PROCESSING'" color="processing"
+                      >处理中</a-tag
+                    >
                     <a-tag v-else-if="record.status === 'COMPLETED'" color="success">已完成</a-tag>
                   </template>
                   <template v-else-if="column.key === 'transferType'">
@@ -167,7 +171,11 @@
         </a-tab-pane>
 
         <!-- 我的转人工记录标签页（仅非辅导员和非管理员可见） -->
-        <a-tab-pane v-if="!userStore.isCounselor() && !userStore.isAdmin()" key="transfers" tab="我的转人工记录">
+        <a-tab-pane
+          v-if="!userStore.isCounselor() && !userStore.isAdmin()"
+          key="transfers"
+          tab="我的转人工记录"
+        >
           <a-table
             :columns="transferColumns"
             :data-source="transferData"
@@ -277,6 +285,12 @@
           </a-descriptions-item>
         </a-descriptions>
       </a-spin>
+      <div class="modal-footer">
+        <a-button @click="handleCloseDetail">关闭</a-button>
+        <a-button v-if="canApprove()" type="primary" @click="handleOpenApproveModal">
+          审批
+        </a-button>
+      </div>
     </a-modal>
 
     <!-- 回复模态框 -->
@@ -292,6 +306,29 @@
       <div class="modal-footer">
         <a-button @click="replyVisible = false">取消</a-button>
         <a-button type="primary" @click="submitReply">确定</a-button>
+      </div>
+    </a-modal>
+
+    <!-- 审批弹窗 -->
+    <a-modal v-model:open="approveVisible" title="审批申请" width="600px" :footer="null">
+      <a-form :model="approveForm" layout="vertical">
+        <a-form-item label="审批结果">
+          <a-radio-group v-model:value="approveForm.approvalStatus">
+            <a-radio value="APPROVED">批准</a-radio>
+            <a-radio value="REJECTED">拒绝</a-radio>
+          </a-radio-group>
+        </a-form-item>
+        <a-form-item label="审批意见">
+          <a-textarea
+            v-model:value="approveForm.approvalComment"
+            placeholder="请输入审批意见（选填）"
+            rows="4"
+          />
+        </a-form-item>
+      </a-form>
+      <div class="modal-footer">
+        <a-button @click="approveVisible = false">取消</a-button>
+        <a-button type="primary" :loading="approving" @click="submitApproval"> 确定 </a-button>
       </div>
     </a-modal>
 
@@ -355,6 +392,15 @@ const currentType = ref<'leave' | 'award' | ''>('')
 const leaveDetail = ref<LeaveApplication | null>(null)
 const awardDetail = ref<AwardApplication | null>(null)
 const loadingDetail = ref(false)
+const currentProcessId = ref<number>(0)
+
+// 审批相关
+const approveVisible = ref(false)
+const approving = ref(false)
+const approveForm = reactive({
+  approvalStatus: 'APPROVED',
+  approvalComment: '',
+})
 
 // 人工处理中心相关
 const humanProcessLoading = ref(false)
@@ -617,6 +663,7 @@ const loadTransferData = async () => {
 
 const handleViewProcess = async (item: ProcessItem) => {
   currentType.value = item.type as 'leave' | 'award'
+  currentProcessId.value = Number(item.id)
   loadingDetail.value = true
   detailVisible.value = true
 
@@ -637,6 +684,57 @@ const handleViewProcess = async (item: ProcessItem) => {
     console.error('获取详情失败:', error)
   } finally {
     loadingDetail.value = false
+  }
+}
+
+const canApprove = () => {
+  if (!userStore.isCounselor() && !userStore.isAdmin()) {
+    return false
+  }
+  if (currentType.value === 'leave' && leaveDetail.value) {
+    return leaveDetail.value.approvalStatus === 'PENDING'
+  }
+  if (currentType.value === 'award' && awardDetail.value) {
+    return awardDetail.value.status === 'PENDING'
+  }
+  return false
+}
+
+const handleOpenApproveModal = () => {
+  approveVisible.value = true
+  approveForm.approvalStatus = 'APPROVED'
+  approveForm.approvalComment = ''
+}
+
+const submitApproval = async () => {
+  if (!currentProcessId.value) {
+    message.error('缺少申请ID')
+    return
+  }
+
+  approving.value = true
+  try {
+    if (currentType.value === 'leave') {
+      await leaveApi.approveApplication(currentProcessId.value, {
+        approvalStatus: approveForm.approvalStatus,
+        approvalComment: approveForm.approvalComment,
+      })
+    } else if (currentType.value === 'award') {
+      await awardApi.approveApplication(
+        currentProcessId.value,
+        approveForm.approvalStatus === 'APPROVED',
+        approveForm.approvalComment
+      )
+    }
+    message.success('审批成功')
+    approveVisible.value = false
+    detailVisible.value = false
+    loadProcesses()
+  } catch (error: any) {
+    console.error('审批失败', error)
+    message.error('审批失败: ' + (error.message || '未知错误'))
+  } finally {
+    approving.value = false
   }
 }
 
@@ -682,7 +780,7 @@ const submitReply = async () => {
 
   try {
     // 如果是PENDING状态，先分配给当前用户，然后直接完成处理
-    const record = humanProcessData.value.find(item => item.id === currentTransferId.value)
+    const record = humanProcessData.value.find((item) => item.id === currentTransferId.value)
     if (record && record.status === 'PENDING') {
       await consultationApi.processTransfer(currentTransferId.value, replyForm.reply)
     } else {
