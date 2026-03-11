@@ -6,6 +6,7 @@ import type {
   Result,
 } from '@/types'
 import request from '@/utils/request'
+import { encrypt } from '@/utils/crypto'
 import type { AxiosProgressEvent } from 'axios'
 
 export interface ConsultationRequest {
@@ -60,13 +61,22 @@ export const authApi = {
       position?: string
     }
   > => {
-    console.log('发起登录请求:', data)
-    return request.post('/auth/login', data)
+    // 加密密码后再发送
+    const encryptedData = {
+      username: data.username,
+      password: encrypt(data.password),
+    }
+    return request.post('/auth/login', encryptedData)
   },
 
   // 注册
   register: (data: RegisterRequest): Promise<void> => {
-    return request.post('/auth/register', data)
+    // 加密密码后再发送
+    const encryptedData = {
+      ...data,
+      password: encrypt(data.password),
+    }
+    return request.post('/auth/register', encryptedData)
   },
 
   // 检查学号/工号是否存在
