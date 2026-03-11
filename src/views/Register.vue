@@ -86,16 +86,17 @@
           <div class="form-row">
             <a-form-item name="department" label="院系">
               <a-select
-                v-model:value="form.department"
+                v-model:value="form.departmentId"
                 placeholder="请选择院系"
                 size="large"
                 class="register-select"
                 :loading="loadingColleges"
+                @change="handleCollegeChange"
               >
                 <a-select-option
                   v-for="college in colleges"
-                  :key="college.code"
-                  :value="college.name"
+                  :key="college.id"
+                  :value="college.id"
                 >
                   {{ college.name }}
                 </a-select-option>
@@ -220,6 +221,7 @@ const form = reactive({
   userType: 'STUDENT',
   role: 'STUDENT',
   department: '',
+  departmentId: null as number | null,
   grade: '',
   className: '',
   workDepartment: '',
@@ -262,12 +264,8 @@ const rules: Record<string, Rule[]> = {
 const loadStaffRoles = async () => {
   loadingRoles.value = true
   try {
-    const response = await systemApi.getStaffRoles()
-    if (response.code === 200) {
-      staffRoles.value = response.data
-    } else {
-      message.error('获取角色列表失败: ' + response.message)
-    }
+    const data = await systemApi.getStaffRoles()
+    staffRoles.value = data
   } catch (error: any) {
     message.error('获取角色列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -279,12 +277,8 @@ const loadStaffRoles = async () => {
 const loadDepartments = async () => {
   loadingDepartments.value = true
   try {
-    const response = await systemApi.getDepartments()
-    if (response.code === 200) {
-      departments.value = response.data
-    } else {
-      message.error('获取部门列表失败: ' + response.message)
-    }
+    const data = await systemApi.getDepartments()
+    departments.value = data
   } catch (error: any) {
     message.error('获取部门列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -296,12 +290,8 @@ const loadDepartments = async () => {
 const loadColleges = async () => {
   loadingColleges.value = true
   try {
-    const response = await systemApi.getColleges()
-    if (response.code === 200) {
-      colleges.value = response.data
-    } else {
-      message.error('获取学院列表失败: ' + response.message)
-    }
+    const data = await systemApi.getColleges()
+    colleges.value = data
   } catch (error: any) {
     message.error('获取学院列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -315,18 +305,29 @@ const handleUserTypeChange = (value: string) => {
     form.role = 'STUDENT'
     // 清空学工相关字段
     form.workDepartment = ''
+    form.workDepartmentId = ''
     // 加载学院列表
     loadColleges()
   } else {
     form.role = ''
     // 清空学生相关字段
     form.department = ''
+    form.departmentId = null
     form.grade = ''
     form.className = ''
     // 加载学工角色列表
     loadStaffRoles()
     // 清空部门选项
     departmentOptions.value = []
+  }
+}
+
+// 处理学院选择变化
+const handleCollegeChange = (collegeId: number) => {
+  form.departmentId = collegeId
+  const selectedCollege = colleges.value.find(college => college.id === collegeId)
+  if (selectedCollege) {
+    form.department = selectedCollege.name
   }
 }
 
@@ -338,20 +339,12 @@ const handleRoleChange = async (value: string) => {
   try {
     if (value === 'COUNSELOR' || value === 'DEAN') {
       // 加载学院列表
-      const response = await systemApi.getColleges()
-      if (response.code === 200) {
-        departmentOptions.value = response.data
-      } else {
-        message.error('获取学院列表失败: ' + response.message)
-      }
+      const data = await systemApi.getColleges()
+      departmentOptions.value = data
     } else if (value === 'ADMIN') {
       // 加载部门列表
-      const response = await systemApi.getDepartments()
-      if (response.code === 200) {
-        departmentOptions.value = response.data
-      } else {
-        message.error('获取部门列表失败: ' + response.message)
-      }
+      const data = await systemApi.getDepartments()
+      departmentOptions.value = data
     } else {
       departmentOptions.value = []
     }
@@ -387,6 +380,7 @@ const handleRegister = async () => {
       email: form.email,
       role: form.role,
       department: form.department,
+      departmentId: form.departmentId,
       grade: form.grade,
       className: form.className,
       workDepartment: form.workDepartment,

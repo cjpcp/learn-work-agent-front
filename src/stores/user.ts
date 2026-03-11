@@ -11,6 +11,7 @@ export const useUserStore = defineStore('user', () => {
   const realName = ref<string>('')
   const role = ref<string>('')
   const department = ref<string>('')
+  const departmentId = ref<number | null>(null)
   const grade = ref<string>('')
   const className = ref<string>('')
   const workDepartment = ref<string>('')
@@ -28,6 +29,7 @@ export const useUserStore = defineStore('user', () => {
         realName.value = userData.realName
         role.value = userData.role
         department.value = userData.department || ''
+        departmentId.value = userData.departmentId || null
         grade.value = userData.grade || ''
         className.value = userData.className || ''
         workDepartment.value = userData.workDepartment || ''
@@ -52,6 +54,7 @@ export const useUserStore = defineStore('user', () => {
     realName.value = ''
     role.value = ''
     department.value = ''
+    departmentId.value = null
     grade.value = ''
     className.value = ''
     workDepartment.value = ''
@@ -73,6 +76,7 @@ export const useUserStore = defineStore('user', () => {
         realName.value = userInfo.realName
         role.value = userInfo.role
         department.value = userInfo.department || ''
+        departmentId.value = userInfo.departmentId || null
         grade.value = userInfo.grade || ''
         className.value = userInfo.className || ''
         workDepartment.value = userInfo.workDepartment || ''
@@ -133,6 +137,7 @@ export const useUserStore = defineStore('user', () => {
     realName,
     role,
     department,
+    departmentId,
     grade,
     className,
     workDepartment,

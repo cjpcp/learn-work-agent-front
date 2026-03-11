@@ -1,6 +1,7 @@
 import type {
   AwardApplication,
   ConsultationQuestion,
+  LeaveApplication,
   PageRequest,
   PageResult,
   Result,
@@ -36,6 +37,7 @@ export interface RegisterRequest {
   phone: string
   role?: string
   department?: string
+  departmentId?: number
   grade?: string
   className?: string
   workDepartment?: string
@@ -55,6 +57,7 @@ export const authApi = {
       realName: string
       role: string
       department?: string
+      departmentId?: number
       grade?: string
       className?: string
       workDepartment?: string
@@ -242,31 +245,31 @@ export const consultationApi = {
       },
     })
   },
-  getUserTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
+  getUserTransfers: (params: PageRequest): Promise<PageResult<any>> => {
     return request.get('/consultation/transfers', { params })
   },
-  getTransferDetail: (id: number): Promise<Result<any>> => {
+  getTransferDetail: (id: number): Promise<any> => {
     return request.get(`/consultation/transfers/${id}`)
   },
-  assignStaff: (id: number, staffId: number): Promise<Result<void>> => {
+  assignStaff: (id: number, staffId: number): Promise<void> => {
     return request.post(`/consultation/transfers/${id}/assign`, null, {
       params: { staffId },
     })
   },
-  replyToTransfer: (id: number, reply: string): Promise<Result<void>> => {
+  replyToTransfer: (id: number, reply: string): Promise<void> => {
     return request.post(`/consultation/transfers/${id}/reply`, null, {
       params: { reply },
     })
   },
-  processTransfer: (id: number, reply: string): Promise<Result<void>> => {
+  processTransfer: (id: number, reply: string): Promise<void> => {
     return request.post(`/consultation/transfers/${id}/process`, null, {
       params: { reply },
     })
   },
-  getStaffTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
+  getStaffTransfers: (params: PageRequest): Promise<PageResult<any>> => {
     return request.get('/consultation/transfers/staff', { params })
   },
-  getCompletedTransfers: (params: PageRequest): Promise<Result<PageResult<any>>> => {
+  getCompletedTransfers: (params: PageRequest): Promise<PageResult<any>> => {
     return request.get('/consultation/transfers/completed', { params })
   },
 }
@@ -279,32 +282,32 @@ export const awardApi = {
   },
 
   // 获取申请列表
-  getApplications: (): Promise<Result<AwardApplication[]>> => {
+  getApplications: (): Promise<AwardApplication[]> => {
     return request.get('/award/applications/my')
   },
 
   // 获取我的申请列表（别名，兼容旧代码）
-  getMyApplications: (params?: any): Promise<Result<AwardApplication[]>> => {
+  getMyApplications: (params?: any): Promise<AwardApplication[]> => {
     return request.get('/award/applications/my', { params })
   },
 
   // 获取申请详情
-  getApplicationDetail: (id: number): Promise<Result<AwardApplication>> => {
+  getApplicationDetail: (id: number): Promise<AwardApplication> => {
     return request.get(`/award/applications/${id}`)
   },
 
   // 获取申请详情（别名，兼容旧代码）
-  getApplication: (id: number): Promise<Result<AwardApplication>> => {
+  getApplication: (id: number): Promise<AwardApplication> => {
     return request.get(`/award/applications/${id}`)
   },
 
   // 审批申请（教师/管理员）
-  approveApplication: (id: number, approved: boolean, comment?: string): Promise<Result<void>> => {
+  approveApplication: (id: number, approved: boolean, comment?: string): Promise<void> => {
     return request.post(`/award/applications/${id}/approve`, { approved, comment })
   },
 
   // 获取待审批列表（教师/管理员）
-  getPendingApplications: (): Promise<Result<AwardApplication[]>> => {
+  getPendingApplications: (): Promise<AwardApplication[]> => {
     return request.get('/award/applications/pending')
   },
 }
@@ -317,27 +320,27 @@ export const leaveApi = {
   },
 
   // 获取申请列表
-  getApplications: (params?: any): Promise<Result<any>> => {
+  getApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
     return request.get('/leave/applications/my', { params })
   },
 
   // 获取我的申请列表（别名，兼容旧代码）
-  getMyApplications: (params?: any): Promise<Result<any>> => {
+  getMyApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
     return request.get('/leave/applications/my', { params })
   },
 
   // 获取申请详情
-  getApplication: (id: number): Promise<Result<any>> => {
+  getApplication: (id: number): Promise<LeaveApplication> => {
     return request.get(`/leave/applications/${id}`)
   },
 
   // 审批申请（教师/管理员）
-  approveApplication: (id: number, data: any): Promise<Result<void>> => {
+  approveApplication: (id: number, data: any): Promise<void> => {
     return request.post(`/leave/applications/${id}/approve`, data)
   },
 
   // 获取待审批列表（教师/管理员）
-  getPendingApplications: (params?: any): Promise<Result<any>> => {
+  getPendingApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
     return request.get('/leave/applications/pending', { params })
   },
 
@@ -347,12 +350,12 @@ export const leaveApi = {
   },
 
   // 销假
-  cancelLeave: (id: number): Promise<Result<void>> => {
+  cancelLeave: (id: number): Promise<void> => {
     return request.post(`/leave/applications/${id}/cancel`)
   },
 
   // 生成请假条
-  generateLeaveSlip: (id: number): Promise<Result<void>> => {
+  generateLeaveSlip: (id: number): Promise<void> => {
     return request.post(`/leave/applications/${id}/generate-slip`)
   },
 }
@@ -360,17 +363,17 @@ export const leaveApi = {
 // 审批相关API
 export const approvalApi = {
   // 获取我的待审批任务
-  getPendingTasks: (): Promise<Result<any>> => {
+  getPendingTasks: (): Promise<any> => {
     return request.get('/approval/tasks/pending')
   },
 
   // 处理审批任务
-  processTask: (id: number, data: any): Promise<Result<any>> => {
+  processTask: (id: number, data: any): Promise<any> => {
     return request.post(`/approval/tasks/${id}/process`, data)
   },
 
   // 获取审批详情
-  getApprovalInstance: (businessType: string, businessId: number): Promise<Result<any>> => {
+  getApprovalInstance: (businessType: string, businessId: number): Promise<any> => {
     return request.get(`/approval/instances/${businessType}/${businessId}`)
   },
 }
@@ -431,12 +434,12 @@ export const approvalConfigApi = {
 // 流程服务相关API
 export const processApi = {
   // 获取流程列表（包含待办和已办）
-  getProcessList: (): Promise<Result<any>> => {
+  getProcessList: (): Promise<any> => {
     return request.get('/process/list')
   },
 
   // 获取流程详情
-  getProcessDetail: (id: string, type: string): Promise<Result<any>> => {
+  getProcessDetail: (id: string, type: string): Promise<any> => {
     return request.get(`/process/${id}`, { params: { type } })
   },
 }
@@ -486,23 +489,23 @@ export const notificationApi = {
 // 系统相关API
 export const systemApi = {
   // 获取学工角色列表
-  getStaffRoles: (): Promise<Result<{ code: string; name: string }[]>> => {
+  getStaffRoles: (): Promise<{ code: string; name: string }[]> => {
     return request.get('/system/roles/staff')
   },
   // 获取所有角色列表
-  getAllRoles: (): Promise<Result<{ code: string; name: string }[]>> => {
+  getAllRoles: (): Promise<{ code: string; name: string }[]> => {
     return request.get('/system/roles')
   },
   // 获取部门列表
-  getDepartments: (): Promise<Result<{ id: number; code: string; name: string; description: string }[]>> => {
+  getDepartments: (): Promise<{ id: number; code: string; name: string; description: string }[]> => {
     return request.get('/system/departments')
   },
   // 获取学院列表
-  getColleges: (): Promise<Result<{ id: number; code: string; name: string; description: string }[]>> => {
+  getColleges: (): Promise<{ id: number; code: string; name: string; description: string }[]> => {
     return request.get('/system/colleges')
   },
   // 获取用户列表
-  getUsers: (departmentId?: number): Promise<Result<{ id: number; name: string; username: string; role: string }[]>> => {
+  getUsers: (departmentId?: number): Promise<{ id: number; name: string; username: string; role: string }[]> => {
     return request.get('/system/users', { params: departmentId ? { departmentId } : {} })
   },
 }

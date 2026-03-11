@@ -145,6 +145,7 @@ const form = reactive<{
   attachmentUrls?: string[]
   studentName?: string
   department?: string
+  departmentId?: number | null
   grade?: string
   className?: string
 }>({
@@ -155,6 +156,7 @@ const form = reactive<{
   attachmentUrls: [],
   studentName: '',
   department: '',
+  departmentId: undefined,
   grade: '',
   className: '',
 })
@@ -164,6 +166,7 @@ onMounted(() => {
   // 从用户信息中获取数据
   form.studentName = userStore.realName
   form.department = userStore.department
+  form.departmentId = userStore.departmentId
   form.grade = userStore.grade
   form.className = userStore.className
 })
@@ -202,6 +205,7 @@ const handleSubmit = async () => {
       attachmentUrl: form.attachmentUrls?.join(','),
       studentName: form.studentName,
       department: form.department,
+      departmentId: form.departmentId,
       grade: form.grade,
       className: form.className,
     }

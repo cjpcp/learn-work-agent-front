@@ -607,12 +607,8 @@ const formatTransferReason = (reason?: string) => {
 const loadProcesses = async () => {
   try {
     const response = await processApi.getProcessList()
-    if (response.code === 200) {
-      pendingProcesses.value = response.data.pending
-      completedProcesses.value = response.data.completed
-    } else {
-      message.error('获取流程数据失败: ' + response.message)
-    }
+    pendingProcesses.value = response.pending
+    completedProcesses.value = response.completed
   } catch (error) {
     message.error('获取流程数据失败')
     console.error('获取流程数据失败:', error)
@@ -630,10 +626,8 @@ const loadHumanProcessData = async () => {
       pageSize: humanProcessPagination.pageSize,
     }
     const response = await consultationApi.getStaffTransfers(params)
-    if (response.data) {
-      humanProcessData.value = response.data.records
-      humanProcessPagination.total = response.data.total
-    }
+    humanProcessData.value = response.records
+    humanProcessPagination.total = response.total
   } catch (error: any) {
     console.error('加载人工处理数据失败', error)
     message.error('加载数据失败: ' + (error.message || '未知错误'))
@@ -653,10 +647,8 @@ const loadCompletedProcessData = async () => {
       pageSize: completedProcessPagination.pageSize,
     }
     const response = await consultationApi.getCompletedTransfers(params)
-    if (response.data) {
-      completedProcessData.value = response.data.records
-      completedProcessPagination.total = response.data.total
-    }
+    completedProcessData.value = response.records
+    completedProcessPagination.total = response.total
   } catch (error: any) {
     console.error('加载已完成记录失败', error)
     message.error('加载数据失败: ' + (error.message || '未知错误'))
@@ -674,10 +666,8 @@ const loadTransferData = async () => {
       pageSize: transferPagination.pageSize,
     }
     const response = await consultationApi.getUserTransfers(params)
-    if (response.data) {
-      transferData.value = response.data.records
-      transferPagination.total = response.data.total
-    }
+    transferData.value = response.records
+    transferPagination.total = response.total
   } catch (error: any) {
     console.error('加载转人工记录失败', error)
     message.error('加载数据失败: ' + (error.message || '未知错误'))
@@ -695,34 +685,24 @@ const handleViewProcess = async (item: ProcessItem) => {
 
   try {
     if (item.type === 'leave') {
-      const response = await leaveApi.getApplication(Number(item.id))
-      if (response.data) {
-        leaveDetail.value = response.data
-      }
+      leaveDetail.value = await leaveApi.getApplication(Number(item.id))
     } else if (item.type === 'award') {
-      const response = await awardApi.getApplicationDetail(Number(item.id))
-      if (response.data) {
-        awardDetail.value = response.data
-      }
+      awardDetail.value = await awardApi.getApplicationDetail(Number(item.id))
     }
 
     // 加载审批流程状态
     const businessType = item.type === 'leave' ? 'LEAVE' : 'AWARD'
-    const approvalResponse = await approvalApi.getApprovalInstance(businessType, Number(item.id))
-    if (approvalResponse.data) {
-      const instance = approvalResponse.data
-      // 构建审批流程步骤
-      if (instance.steps) {
-        approvalProcess.value = {
-          status: instance.status,
-          steps: instance.steps.map((step: any) => ({
-            name: step.stepName,
-            status: step.status,
-            approver: step.approverName,
-            time: step.approvalTime,
-            comment: step.comment
-          }))
-        }
+    const instance = await approvalApi.getApprovalInstance(businessType, Number(item.id))
+    if (instance.steps) {
+      approvalProcess.value = {
+        status: instance.status,
+        steps: instance.steps.map((step: any) => ({
+          name: step.stepName,
+          status: step.status,
+          approver: step.approverName,
+          time: step.approvalTime,
+          comment: step.comment
+        }))
       }
     }
   } catch (error) {
@@ -847,11 +827,8 @@ const submitReply = async () => {
 
 const handleViewTransfer = async (record: any) => {
   try {
-    const response = await consultationApi.getTransferDetail(record.id)
-    if (response.data) {
-      currentTransfer.value = response.data
-      transferDetailVisible.value = true
-    }
+    currentTransfer.value = await consultationApi.getTransferDetail(record.id)
+    transferDetailVisible.value = true
   } catch (error: any) {
     console.error('获取转人工记录详情失败', error)
     message.error('获取详情失败: ' + (error.message || '未知错误'))
@@ -867,11 +844,8 @@ const handleTransferTableChange = (pag: any) => {
 
 const handleViewTransferDetail = async (record: any) => {
   try {
-    const response = await consultationApi.getTransferDetail(record.id)
-    if (response.data) {
-      currentTransfer.value = response.data
-      transferDetailVisible.value = true
-    }
+    currentTransfer.value = await consultationApi.getTransferDetail(record.id)
+    transferDetailVisible.value = true
   } catch (error: any) {
     console.error('获取转人工记录详情失败', error)
     message.error('获取详情失败: ' + (error.message || '未知错误'))

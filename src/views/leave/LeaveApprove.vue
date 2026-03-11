@@ -139,9 +139,9 @@ const loadData = async () => {
       pageSize: pagination.pageSize,
     }
     const response = await leaveApi.getPendingApplications(params)
-    if (response.data) {
-      dataSource.value = response.data.records
-      pagination.total = response.data.total
+    if (response) {
+      dataSource.value = response.records
+      pagination.total = response.total
     }
   } catch (error: any) {
     console.error('加载数据失败', error)
@@ -180,8 +180,8 @@ const handleConfirmApprove = async () => {
 const handleView = async (record: LeaveApplication) => {
   try {
     const response = await leaveApi.getApplication(record.id!)
-    if (response.data) {
-      currentRecord.value = response.data
+    if (response) {
+      currentRecord.value = response
       viewVisible.value = true
     }
   } catch (error: any) {
@@ -206,8 +206,8 @@ onMounted(() => {
           leaveApi
             .getApplication(id)
             .then((response) => {
-              if (response.data) {
-                currentRecord.value = response.data
+              if (response) {
+                currentRecord.value = response
                 viewVisible.value = true
               }
             })

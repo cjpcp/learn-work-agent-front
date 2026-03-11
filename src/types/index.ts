@@ -34,6 +34,7 @@ export interface User {
   role: 'STUDENT' | 'COUNSELOR' | 'ADMIN'
   status?: 'ACTIVE' | 'INACTIVE'
   department?: string
+  departmentId?: number
   grade?: string
   className?: string
   workDepartment?: string
@@ -54,6 +55,7 @@ export interface LoginResponse {
   realName: string
   role: string
   department?: string
+  departmentId?: number
   grade?: string
   className?: string
   workDepartment?: string

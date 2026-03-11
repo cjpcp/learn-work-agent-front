@@ -177,9 +177,9 @@ const loadData = async () => {
       pageSize: pagination.pageSize,
     }
     const response = await leaveApi.getMyApplications(params)
-    if (response.data) {
-      dataSource.value = response.data.records
-      pagination.total = response.data.total
+    if (response) {
+      dataSource.value = response.records
+      pagination.total = response.total
     }
   } catch (error: any) {
     console.error('加载数据失败', error)
@@ -197,8 +197,8 @@ const handleTableChange = (pag: any) => {
 const handleView = async (record: LeaveApplication) => {
   try {
     const response = await leaveApi.getApplication(record.id!)
-    if (response.data) {
-      currentRecord.value = response.data
+    if (response) {
+      currentRecord.value = response
       visible.value = true
     }
   } catch (error: any) {
