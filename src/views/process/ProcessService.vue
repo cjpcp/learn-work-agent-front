@@ -5,7 +5,7 @@
       <a-tabs v-model:active-key="activeTab" class="process-tabs">
         <!-- 流程代办标签页 -->
         <a-tab-pane key="process" tab="流程代办">
-          <a-tabs default-active-key="pending" class="sub-tabs">
+          <a-tabs v-model:active-key="processActiveTab" class="sub-tabs" @change="handleProcessTabChange">
             <a-tab-pane key="pending" tab="待办流程">
               <div v-if="pendingProcesses.length === 0" class="empty-state">
                 <a-empty description="暂无待办流程" />
@@ -407,6 +407,7 @@ import type { ProcessItem, LeaveApplication, AwardApplication, PageRequest } fro
 const userStore = useUserStore()
 const activeTab = ref('process')
 const humanActiveTab = ref('pending')
+const processActiveTab = ref('pending')
 
 // 流程代办相关
 const pendingProcesses = ref<ProcessItem[]>([])
@@ -881,6 +882,11 @@ watch(humanActiveTab, (newTab) => {
     }
   }
 })
+
+// 处理流程代办标签页变化
+const handleProcessTabChange = (key: string) => {
+  loadProcesses()
+}
 </script>
 
 <style scoped>
