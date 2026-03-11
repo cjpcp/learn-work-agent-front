@@ -37,11 +37,11 @@
             class="login-form"
             @finish="handleLogin"
           >
-            <!-- 用户名输入 -->
-            <a-form-item name="username" class="form-item">
+            <!-- 学号/工号输入 -->
+            <a-form-item name="studentNo" class="form-item">
               <a-input
-                v-model:value="form.username"
-                placeholder="请输入用户名"
+                v-model:value="form.studentNo"
+                placeholder="请输入学号/工号"
                 size="large"
                 class="login-input"
               >
@@ -121,19 +121,19 @@ const userStore = useUserStore()
 
 const loading = ref(false)
 const form = reactive({
-  username: '',
+  studentNo: '',
   password: '',
 })
 
 const rules: Record<string, Rule[]> = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
+  studentNo: [{ required: true, message: '请输入学号/工号', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
 }
 
-// 组件加载时检查路由参数，自动填充用户名和密码
+// 组件加载时检查路由参数，自动填充学号/工号和密码
 onMounted(() => {
   if (route.query.username) {
-    form.username = route.query.username as string
+    form.studentNo = route.query.username as string
   }
   if (route.query.password) {
     form.password = route.query.password as string
@@ -143,7 +143,7 @@ onMounted(() => {
 const handleLogin = async () => {
   loading.value = true
   try {
-    await userStore.login(form.username, form.password)
+    await userStore.login(form.studentNo, form.password)
     message.success('登录成功')
     // 确保登录成功后再跳转
     setTimeout(() => {

@@ -225,7 +225,7 @@ const form = reactive({
   grade: '',
   className: '',
   workDepartment: '',
-  workDepartmentId: '',
+  workDepartmentId: null as number | null,
   position: '',
 })
 
@@ -305,7 +305,7 @@ const handleUserTypeChange = (value: string) => {
     form.role = 'STUDENT'
     // 清空学工相关字段
     form.workDepartment = ''
-    form.workDepartmentId = ''
+    form.workDepartmentId = null
     // 加载学院列表
     loadColleges()
   } else {
@@ -334,7 +334,7 @@ const handleCollegeChange = (collegeId: number) => {
 // 处理角色切换
 const handleRoleChange = async (value: string) => {
   form.workDepartment = ''
-  form.workDepartmentId = ''
+  form.workDepartmentId = null
   loadingDepartments.value = true
   try {
     if (value === 'COUNSELOR' || value === 'DEAN') {
@@ -357,7 +357,7 @@ const handleRoleChange = async (value: string) => {
 
 const handleDepartmentChange = (departmentId: number) => {
   // 保存部门ID
-  form.workDepartmentId = String(departmentId)
+  form.workDepartmentId = departmentId
   // 根据部门ID找到对应的部门名称
   const selectedDept = departmentOptions.value.find(dept => dept.id === departmentId)
   if (selectedDept) {
@@ -380,11 +380,11 @@ const handleRegister = async () => {
       email: form.email,
       role: form.role,
       department: form.department,
-      departmentId: form.departmentId,
+      departmentId: form.departmentId ?? undefined,
       grade: form.grade,
       className: form.className,
       workDepartment: form.workDepartment,
-      workDepartmentId: form.workDepartmentId,
+      workDepartmentId: form.workDepartmentId ?? undefined,
       position: form.position,
     }
     await authApi.register(registerData)

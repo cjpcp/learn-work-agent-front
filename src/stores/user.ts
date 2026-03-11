@@ -18,9 +18,9 @@ export const useUserStore = defineStore('user', () => {
   const position = ref<string>('')
 
   // 登录
-  const login = async (loginUsername: string, loginPassword: string) => {
+  const login = async (loginStudentNo: string, loginPassword: string) => {
     try {
-      const userData = await authApi.login({ username: loginUsername, password: loginPassword })
+      const userData = await authApi.login({ studentNo: loginStudentNo, password: loginPassword })
       // 检查响应结构
       if (userData && userData.token) {
         token.value = userData.token

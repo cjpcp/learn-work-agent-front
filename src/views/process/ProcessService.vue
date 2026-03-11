@@ -606,9 +606,13 @@ const formatTransferReason = (reason?: string) => {
 // 加载流程数据
 const loadProcesses = async () => {
   try {
-    const response = await processApi.getProcessList()
-    pendingProcesses.value = response.pending
-    completedProcesses.value = response.completed
+    // 获取待办流程
+    const pendingResponse = await processApi.getProcessList()
+    pendingProcesses.value = pendingResponse.pending
+    
+    // 获取已办理流程
+    const completedResponse = await processApi.getCompletedProcesses()
+    completedProcesses.value = completedResponse
   } catch (error) {
     message.error('获取流程数据失败')
     console.error('获取流程数据失败:', error)

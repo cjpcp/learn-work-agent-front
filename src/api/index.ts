@@ -24,7 +24,7 @@ export interface TransferToHumanRequest {
 }
 
 export interface LoginRequest {
-  username: string
+  studentNo: string
   password: string
 }
 
@@ -41,6 +41,7 @@ export interface RegisterRequest {
   grade?: string
   className?: string
   workDepartment?: string
+  workDepartmentId?: number
   position?: string
 }
 
@@ -66,7 +67,7 @@ export const authApi = {
   > => {
     // 加密密码后再发送
     const encryptedData = {
-      username: data.username,
+      studentNo: data.studentNo,
       password: encrypt(data.password),
     }
     return request.post('/auth/login', encryptedData)
@@ -339,10 +340,7 @@ export const leaveApi = {
     return request.post(`/leave/applications/${id}/approve`, data)
   },
 
-  // 获取待审批列表（教师/管理员）
-  getPendingApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
-    return request.get('/leave/applications/pending', { params })
-  },
+
 
   // 下载请假条
   downloadLeaveSlip: (id: number): void => {
@@ -436,6 +434,11 @@ export const processApi = {
   // 获取流程列表（包含待办和已办）
   getProcessList: (): Promise<any> => {
     return request.get('/process/list')
+  },
+
+  // 获取已办理流程列表
+  getCompletedProcesses: (): Promise<any> => {
+    return request.get('/process/completed')
   },
 
   // 获取流程详情
