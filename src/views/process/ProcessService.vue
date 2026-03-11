@@ -252,6 +252,30 @@
           </a-descriptions-item>
         </a-descriptions>
 
+        <!-- 审批流程状态 -->
+        <div v-if="approvalProcess" class="approval-process-section" style="margin-top: 20px;">
+          <h3 style="margin-bottom: 12px;">审批流程</h3>
+          <a-timeline>
+            <a-timeline-item 
+              v-for="(step, index) in approvalProcess.steps" 
+              :key="index"
+              :color="step.status === 'APPROVED' ? 'green' : step.status === 'REJECTED' ? 'red' : 'blue'"
+              :dot="step.status === 'APPROVED' ? 'success' : step.status === 'REJECTED' ? 'error' : 'processing'"
+            >
+              <div>
+                <strong>{{ step.name }}</strong>
+                <span v-if="step.approver" style="margin-left: 8px; color: #666;">({{ step.approver }})</span>
+              </div>
+              <div v-if="step.status === 'APPROVED' || step.status === 'REJECTED'" style="margin-top: 4px; font-size: 12px; color: #999;">
+                {{ step.status === 'APPROVED' ? '已批准' : '已拒绝' }} - {{ step.time || 'N/A' }}
+              </div>
+              <div v-if="step.comment" style="margin-top: 4px; font-size: 12px; color: #666;">
+                意见: {{ step.comment }}
+              </div>
+            </a-timeline-item>
+          </a-timeline>
+        </div>
+
         <!-- 奖助详情 -->
         <a-descriptions v-if="currentType === 'award' && awardDetail" :column="2" bordered>
           <a-descriptions-item label="申请类型">
@@ -376,7 +400,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { message } from 'ant-design-vue'
-import { processApi, leaveApi, awardApi, consultationApi } from '@/api'
+import { processApi, leaveApi, awardApi, consultationApi, approvalApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import type { ProcessItem, LeaveApplication, AwardApplication, PageRequest } from '@/types'
 
@@ -393,6 +417,7 @@ const leaveDetail = ref<LeaveApplication | null>(null)
 const awardDetail = ref<AwardApplication | null>(null)
 const loadingDetail = ref(false)
 const currentProcessId = ref<number>(0)
+const approvalProcess = ref<any>(null)
 
 // 审批相关
 const approveVisible = ref(false)
@@ -666,6 +691,7 @@ const handleViewProcess = async (item: ProcessItem) => {
   currentProcessId.value = Number(item.id)
   loadingDetail.value = true
   detailVisible.value = true
+  approvalProcess.value = null
 
   try {
     if (item.type === 'leave') {
@@ -677,6 +703,26 @@ const handleViewProcess = async (item: ProcessItem) => {
       const response = await awardApi.getApplicationDetail(Number(item.id))
       if (response.data) {
         awardDetail.value = response.data
+      }
+    }
+
+    // 加载审批流程状态
+    const businessType = item.type === 'leave' ? 'LEAVE' : 'AWARD'
+    const approvalResponse = await approvalApi.getApprovalInstance(businessType, Number(item.id))
+    if (approvalResponse.data) {
+      const instance = approvalResponse.data
+      // 构建审批流程步骤
+      if (instance.steps) {
+        approvalProcess.value = {
+          status: instance.status,
+          steps: instance.steps.map((step: any) => ({
+            name: step.stepName,
+            status: step.status,
+            approver: step.approverName,
+            time: step.approvalTime,
+            comment: step.comment
+          }))
+        }
       }
     }
   } catch (error) {
@@ -742,6 +788,7 @@ const handleCloseDetail = () => {
   detailVisible.value = false
   leaveDetail.value = null
   awardDetail.value = null
+  approvalProcess.value = null
   currentType.value = ''
 }
 

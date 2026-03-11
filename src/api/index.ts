@@ -47,7 +47,7 @@ export const authApi = {
   login: (
     data: LoginRequest
   ): Promise<
-    Result<{
+    {
       token: string
       userId: number
       username: string
@@ -58,14 +58,20 @@ export const authApi = {
       className?: string
       workDepartment?: string
       position?: string
-    }>
+    }
   > => {
+    console.log('发起登录请求:', data)
     return request.post('/auth/login', data)
   },
 
   // 注册
-  register: (data: RegisterRequest): Promise<Result<void>> => {
+  register: (data: RegisterRequest): Promise<void> => {
     return request.post('/auth/register', data)
+  },
+
+  // 检查学号/工号是否存在
+  checkStudentNo: (studentNo: string): Promise<boolean> => {
+    return request.get('/auth/check-student-no', { params: { studentNo } })
   },
 }
 
@@ -341,6 +347,77 @@ export const leaveApi = {
   },
 }
 
+// 审批相关API
+export const approvalApi = {
+  // 获取我的待审批任务
+  getPendingTasks: (): Promise<Result<any>> => {
+    return request.get('/approval/tasks/pending')
+  },
+
+  // 处理审批任务
+  processTask: (id: number, data: any): Promise<Result<any>> => {
+    return request.post(`/approval/tasks/${id}/process`, data)
+  },
+
+  // 获取审批详情
+  getApprovalInstance: (businessType: string, businessId: number): Promise<Result<any>> => {
+    return request.get(`/approval/instances/${businessType}/${businessId}`)
+  },
+}
+
+// 审批流程配置相关API
+export const approvalConfigApi = {
+  // 获取所有审批流程
+  getProcesses: (): Promise<Result<any>> => {
+    return request.get('/approval/config/processes')
+  },
+
+  // 创建审批流程
+  createProcess: (data: any): Promise<Result<any>> => {
+    return request.post('/approval/config/processes', data)
+  },
+
+  // 更新审批流程
+  updateProcess: (id: number, data: any): Promise<Result<any>> => {
+    return request.put(`/approval/config/processes/${id}`, data)
+  },
+
+  // 删除审批流程
+  deleteProcess: (id: number): Promise<Result<any>> => {
+    return request.delete(`/approval/config/processes/${id}`)
+  },
+
+  // 获取流程的审批步骤
+  getSteps: (processId: number): Promise<Result<any>> => {
+    return request.get(`/approval/config/processes/${processId}/steps`)
+  },
+
+  // 添加审批步骤
+  addStep: (data: any): Promise<Result<any>> => {
+    return request.post('/approval/config/steps', data)
+  },
+
+  // 更新审批步骤
+  updateStep: (id: number, data: any): Promise<Result<any>> => {
+    return request.put(`/approval/config/steps/${id}`, data)
+  },
+
+  // 删除审批步骤
+  deleteStep: (id: number): Promise<Result<any>> => {
+    return request.delete(`/approval/config/steps/${id}`)
+  },
+
+  // 启用流程
+  enableProcess: (id: number): Promise<Result<any>> => {
+    return request.post(`/approval/config/processes/${id}/enable`)
+  },
+
+  // 禁用流程
+  disableProcess: (id: number): Promise<Result<any>> => {
+    return request.post(`/approval/config/processes/${id}/disable`)
+  },
+}
+
 // 流程服务相关API
 export const processApi = {
   // 获取流程列表（包含待办和已办）
@@ -393,5 +470,29 @@ export const notificationApi = {
   // 获取未读通知数量
   getUnreadCount: (): Promise<Result<{ count: number }>> => {
     return request.get('/notifications/unread-count')
+  },
+}
+
+// 系统相关API
+export const systemApi = {
+  // 获取学工角色列表
+  getStaffRoles: (): Promise<Result<{ code: string; name: string }[]>> => {
+    return request.get('/system/roles/staff')
+  },
+  // 获取所有角色列表
+  getAllRoles: (): Promise<Result<{ code: string; name: string }[]>> => {
+    return request.get('/system/roles')
+  },
+  // 获取部门列表
+  getDepartments: (): Promise<Result<{ id: number; code: string; name: string; description: string }[]>> => {
+    return request.get('/system/departments')
+  },
+  // 获取学院列表
+  getColleges: (): Promise<Result<{ id: number; code: string; name: string; description: string }[]>> => {
+    return request.get('/system/colleges')
+  },
+  // 获取用户列表
+  getUsers: (departmentId?: number): Promise<Result<{ id: number; name: string; username: string; role: string }[]>> => {
+    return request.get('/system/users', { params: departmentId ? { departmentId } : {} })
   },
 }

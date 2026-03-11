@@ -18,22 +18,29 @@ export const useUserStore = defineStore('user', () => {
 
   // 登录
   const login = async (loginUsername: string, loginPassword: string) => {
-    const response = await authApi.login({ username: loginUsername, password: loginPassword })
-    if (response.data) {
-      const data = response.data
-      token.value = data.token
-      userId.value = data.userId
-      username.value = data.username
-      realName.value = data.realName
-      role.value = data.role
-      department.value = data.department || ''
-      grade.value = data.grade || ''
-      className.value = data.className || ''
-      workDepartment.value = data.workDepartment || ''
-      position.value = data.position || ''
-      localStorage.setItem('token', data.token)
-      localStorage.setItem('userInfo', JSON.stringify(data))
-      return data
+    try {
+      const userData = await authApi.login({ username: loginUsername, password: loginPassword })
+      // 检查响应结构
+      if (userData && userData.token) {
+        token.value = userData.token
+        userId.value = userData.userId
+        username.value = userData.username
+        realName.value = userData.realName
+        role.value = userData.role
+        department.value = userData.department || ''
+        grade.value = userData.grade || ''
+        className.value = userData.className || ''
+        workDepartment.value = userData.workDepartment || ''
+        position.value = userData.position || ''
+        localStorage.setItem('token', userData.token)
+        localStorage.setItem('userInfo', JSON.stringify(userData))
+        return userData
+      } else {
+        throw new Error('登录失败，未返回用户信息')
+      }
+    } catch (error: any) {
+      console.error('登录请求失败:', error)
+      throw error
     }
   }
 
@@ -86,10 +93,15 @@ export const useUserStore = defineStore('user', () => {
       if (tokenParts.length !== 3) {
         return true
       }
-      const payload = JSON.parse(atob(tokenParts[1]))
+      // JWT使用Base64 URL编码，需要先转换为标准Base64
+      const base64Url = tokenParts[1]
+      const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+      const paddedBase64 = base64.padEnd(base64.length + (4 - base64.length % 4) % 4, '=')
+      const payload = JSON.parse(decodeURIComponent(escape(atob(paddedBase64))))
       const exp = payload.exp
       return Date.now() >= exp * 1000
     } catch (e) {
+      console.error('Token解析失败:', e)
       return true
     }
   }

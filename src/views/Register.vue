@@ -42,7 +42,12 @@
               placeholder="请输入学号或工号"
               size="large"
               class="register-input"
-            />
+              :loading="checkingStudentNo"
+            >
+              <template #suffix>
+                <a-spin v-if="checkingStudentNo" size="small" />
+              </template>
+            </a-input>
           </a-form-item>
         </div>
         <div class="form-row">
@@ -63,21 +68,21 @@
             />
           </a-form-item>
         </div>
-        <a-form-item name="role" label="角色">
+        <a-form-item name="userType" label="注册类型">
           <a-select
-            v-model:value="form.role"
-            placeholder="请选择角色"
+            v-model:value="form.userType"
+            placeholder="请选择注册类型"
             size="large"
             class="register-select"
+            @change="handleUserTypeChange"
           >
             <a-select-option value="STUDENT">学生</a-select-option>
-            <a-select-option value="COUNSELOR">辅导员</a-select-option>
-            <a-select-option value="ADMIN">管理员</a-select-option>
+            <a-select-option value="STAFF">学工</a-select-option>
           </a-select>
         </a-form-item>
 
         <!-- 学生相关字段 -->
-        <div v-if="form.role === 'STUDENT'">
+        <div v-if="form.userType === 'STUDENT'">
           <div class="form-row">
             <a-form-item name="department" label="院系">
               <a-select
@@ -85,12 +90,15 @@
                 placeholder="请选择院系"
                 size="large"
                 class="register-select"
+                :loading="loadingColleges"
               >
-                <a-select-option value="体育学院">体育学院</a-select-option>
-                <a-select-option value="文学院">文学院</a-select-option>
-                <a-select-option value="理学院">理学院</a-select-option>
-                <a-select-option value="工学院">工学院</a-select-option>
-                <a-select-option value="商学院">商学院</a-select-option>
+                <a-select-option
+                  v-for="college in colleges"
+                  :key="college.code"
+                  :value="college.name"
+                >
+                  {{ college.name }}
+                </a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item name="grade" label="年级">
@@ -120,24 +128,44 @@
           </div>
         </div>
 
-        <!-- 辅导员/管理员相关字段 -->
+        <!-- 学工相关字段 -->
         <div v-else>
           <div class="form-row">
-            <a-form-item name="workDepartment" label="所属部门">
-              <a-input
-                v-model:value="form.workDepartment"
-                placeholder="请输入所属部门"
+            <a-form-item name="role" label="角色">
+              <a-select
+                v-model:value="form.role"
+                placeholder="请选择角色"
                 size="large"
-                class="register-input"
-              />
+                class="register-select"
+                :loading="loadingRoles"
+                @change="handleRoleChange"
+              >
+                <a-select-option
+                  v-for="role in staffRoles"
+                  :key="role.code"
+                  :value="role.code"
+                >
+                  {{ role.name }}
+                </a-select-option>
+              </a-select>
             </a-form-item>
-            <a-form-item name="position" label="职位">
-              <a-input
-                v-model:value="form.position"
-                placeholder="请输入职位"
+            <a-form-item name="workDepartment" label="所属部门">
+              <a-select
+                v-model:value="form.workDepartmentId"
+                placeholder="请选择所属部门"
                 size="large"
-                class="register-input"
-              />
+                class="register-select"
+                :loading="loadingDepartments"
+                @change="handleDepartmentChange"
+              >
+                <a-select-option
+                  v-for="dept in departmentOptions"
+                  :key="dept.code"
+                  :value="dept.id"
+                >
+                  {{ dept.name }}
+                </a-select-option>
+              </a-select>
             </a-form-item>
           </div>
         </div>
@@ -164,15 +192,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
-import { authApi } from '@/api'
+import { authApi, systemApi } from '@/api'
 import type { Rule } from 'ant-design-vue/es/form'
 
 const router = useRouter()
 
 const loading = ref(false)
+const loadingRoles = ref(false)
+const checkingStudentNo = ref(false)
+const loadingDepartments = ref(false)
+const loadingColleges = ref(false)
+const staffRoles = ref<{ code: string; name: string }[]>([])
+const departments = ref<{ id: number; code: string; name: string; description: string }[]>([])
+const colleges = ref<{ id: number; code: string; name: string; description: string }[]>([])
+const departmentOptions = ref<{ id: number; code: string; name: string }[]>([])
+
 const form = reactive({
   username: '',
   password: '',
@@ -180,11 +217,13 @@ const form = reactive({
   studentNo: '',
   phone: '',
   email: '',
+  userType: 'STUDENT',
   role: 'STUDENT',
   department: '',
   grade: '',
   className: '',
   workDepartment: '',
+  workDepartmentId: '',
   position: '',
 })
 
@@ -192,13 +231,169 @@ const rules: Record<string, Rule[]> = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   realName: [{ required: true, message: '请输入真实姓名', trigger: 'blur' }],
+  studentNo: [
+    { required: true, message: '请输入学号/工号', trigger: 'blur' },
+    {
+      validator: async (_rule: Rule, value: string) => {
+        if (!value || !value.trim()) {
+          return Promise.resolve()
+        }
+        try {
+          checkingStudentNo.value = true
+          const response = await authApi.checkStudentNo(value.trim())
+          if (response === true) {
+            return Promise.reject(new Error('学号/工号已存在'))
+          }
+          return Promise.resolve()
+        } catch (error: any) {
+          return Promise.reject(new Error('验证学号/工号失败'))
+        } finally {
+          checkingStudentNo.value = false
+        }
+      },
+      trigger: 'blur',
+    },
+  ],
+  userType: [{ required: true, message: '请选择注册类型', trigger: 'change' }],
   role: [{ required: true, message: '请选择角色', trigger: 'change' }],
+}
+
+// 获取学工角色列表
+const loadStaffRoles = async () => {
+  loadingRoles.value = true
+  try {
+    const response = await systemApi.getStaffRoles()
+    if (response.code === 200) {
+      staffRoles.value = response.data
+    } else {
+      message.error('获取角色列表失败: ' + response.message)
+    }
+  } catch (error: any) {
+    message.error('获取角色列表失败: ' + (error.message || '未知错误'))
+  } finally {
+    loadingRoles.value = false
+  }
+}
+
+// 获取部门列表
+const loadDepartments = async () => {
+  loadingDepartments.value = true
+  try {
+    const response = await systemApi.getDepartments()
+    if (response.code === 200) {
+      departments.value = response.data
+    } else {
+      message.error('获取部门列表失败: ' + response.message)
+    }
+  } catch (error: any) {
+    message.error('获取部门列表失败: ' + (error.message || '未知错误'))
+  } finally {
+    loadingDepartments.value = false
+  }
+}
+
+// 获取学院列表
+const loadColleges = async () => {
+  loadingColleges.value = true
+  try {
+    const response = await systemApi.getColleges()
+    if (response.code === 200) {
+      colleges.value = response.data
+    } else {
+      message.error('获取学院列表失败: ' + response.message)
+    }
+  } catch (error: any) {
+    message.error('获取学院列表失败: ' + (error.message || '未知错误'))
+  } finally {
+    loadingColleges.value = false
+  }
+}
+
+// 处理注册类型切换
+const handleUserTypeChange = (value: string) => {
+  if (value === 'STUDENT') {
+    form.role = 'STUDENT'
+    // 清空学工相关字段
+    form.workDepartment = ''
+    // 加载学院列表
+    loadColleges()
+  } else {
+    form.role = ''
+    // 清空学生相关字段
+    form.department = ''
+    form.grade = ''
+    form.className = ''
+    // 加载学工角色列表
+    loadStaffRoles()
+    // 清空部门选项
+    departmentOptions.value = []
+  }
+}
+
+// 处理角色切换
+const handleRoleChange = async (value: string) => {
+  form.workDepartment = ''
+  form.workDepartmentId = ''
+  loadingDepartments.value = true
+  try {
+    if (value === 'COUNSELOR' || value === 'DEAN') {
+      // 加载学院列表
+      const response = await systemApi.getColleges()
+      if (response.code === 200) {
+        departmentOptions.value = response.data
+      } else {
+        message.error('获取学院列表失败: ' + response.message)
+      }
+    } else if (value === 'ADMIN') {
+      // 加载部门列表
+      const response = await systemApi.getDepartments()
+      if (response.code === 200) {
+        departmentOptions.value = response.data
+      } else {
+        message.error('获取部门列表失败: ' + response.message)
+      }
+    } else {
+      departmentOptions.value = []
+    }
+  } catch (error: any) {
+    message.error('获取部门/学院列表失败: ' + (error.message || '未知错误'))
+  } finally {
+    loadingDepartments.value = false
+  }
+}
+
+const handleDepartmentChange = (departmentId: number) => {
+  // 保存部门ID
+  form.workDepartmentId = String(departmentId)
+  // 根据部门ID找到对应的部门名称
+  const selectedDept = departmentOptions.value.find(dept => dept.id === departmentId)
+  if (selectedDept) {
+    form.workDepartment = selectedDept.name
+  } else {
+    form.workDepartment = ''
+  }
 }
 
 const handleRegister = async () => {
   loading.value = true
   try {
-    await authApi.register(form)
+    // 构建注册数据
+    const registerData = {
+      username: form.username,
+      password: form.password,
+      realName: form.realName,
+      studentNo: form.studentNo,
+      phone: form.phone,
+      email: form.email,
+      role: form.role,
+      department: form.department,
+      grade: form.grade,
+      className: form.className,
+      workDepartment: form.workDepartment,
+      workDepartmentId: form.workDepartmentId,
+      position: form.position,
+    }
+    await authApi.register(registerData)
     message.success('注册成功，请登录')
     // 跳转到登录页面并传递注册信息
     router.push({
@@ -215,6 +410,13 @@ const handleRegister = async () => {
     loading.value = false
   }
 }
+
+// 页面加载时初始化学院列表
+onMounted(() => {
+  if (form.userType === 'STUDENT') {
+    loadColleges()
+  }
+})
 </script>
 
 <style scoped>

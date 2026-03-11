@@ -34,8 +34,8 @@ service.interceptors.response.use(
       return Promise.reject(new Error(res.message || '请求失败'))
     }
 
-    // 返回Result对象，这样API调用时可以直接使用
-    return res as any
+    // 返回Result对象中的data部分，这样API调用时可以直接使用
+    return res.data
   },
   (error) => {
     if (error.response) {

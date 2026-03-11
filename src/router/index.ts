@@ -72,6 +72,14 @@ const router = createRouter({
           name: 'Notifications',
           component: () => import('@/views/notification/NotificationList.vue'),
         },
+        {
+          path: '/approval/config',
+          name: 'ApprovalConfig',
+          component: () => import('@/views/approval/ApprovalConfig.vue'),
+          meta: {
+            roles: ['ADMIN'],
+          },
+        },
       ],
     },
   ],
@@ -93,7 +101,7 @@ router.beforeEach((to, from, next) => {
 
   if (to.meta.requiresAuth && !userStore.isLoggedIn()) {
     next('/login')
-  } else if ((to.path === '/login' || to.path === '/register') && userStore.isLoggedIn()) {
+  } else if (userStore.isLoggedIn() && (to.path === '/login' || to.path === '/register')) {
     next('/')
   } else if (to.meta.roles && Array.isArray(to.meta.roles) && to.meta.roles.length > 0) {
     // 检查角色权限

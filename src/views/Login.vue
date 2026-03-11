@@ -145,10 +145,15 @@ const handleLogin = async () => {
   try {
     await userStore.login(form.username, form.password)
     message.success('登录成功')
-    router.push('/')
+    // 确保登录成功后再跳转
+    setTimeout(() => {
+      router.push('/')
+    }, 500)
   } catch (error: any) {
+    console.error('登录失败:', error)
     message.error(error.message || '登录失败')
-    userStore.logout()
+    // 只在需要时调用logout
+    // 避免在网络错误等情况下清除用户状态
   } finally {
     loading.value = false
   }

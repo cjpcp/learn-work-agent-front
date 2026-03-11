@@ -31,6 +31,7 @@
                 <a-menu-item key="4" @click="$router.push('/award/apply')"
                   >奖助申请办理</a-menu-item
                 >
+                <a-menu-item v-if="userStore.isAdmin()" key="5" @click="$router.push('/approval/config')">审批流程配置</a-menu-item>
               </a-menu>
             </template>
           </a-dropdown>
