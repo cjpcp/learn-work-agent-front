@@ -155,13 +155,17 @@ export interface AwardApplicationRequest {
 
 export interface AwardApplication {
   id?: number
-  userId: number
+  applicantId?: number
+  userId?: number
   applicationType: string
   awardName: string
   amount?: number
   reason?: string
   attachmentUrls?: string[]
-  status?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  materialStatus?: 'PENDING' | 'PASSED' | 'FAILED'
+  materialComment?: string
+  materialReviewTime?: string
+  approvalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
   approverId?: number
   approvalComment?: string
   approvalTime?: string

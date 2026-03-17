@@ -313,10 +313,10 @@
             <span v-else>{{ awardDetail?.applicationType }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="审批状态">
-            <a-tag v-if="awardDetail?.status === 'PENDING'" color="processing">待审批</a-tag>
-            <a-tag v-else-if="awardDetail?.status === 'APPROVED'" color="success">已批准</a-tag>
-            <a-tag v-else-if="awardDetail?.status === 'REJECTED'" color="error">已拒绝</a-tag>
-            <span v-else>{{ awardDetail?.status }}</span>
+            <a-tag v-if="awardDetail?.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
+            <a-tag v-else-if="awardDetail?.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
+            <a-tag v-else-if="awardDetail?.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
+            <span v-else>{{ awardDetail?.approvalStatus }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="申请名称" :span="2">
             {{ awardDetail?.awardName }}
@@ -907,7 +907,7 @@ const canApprove = () => {
     return leaveDetail.value.approvalStatus === 'PENDING'
   }
   if (currentType.value === 'award' && awardDetail.value) {
-    return awardDetail.value.status === 'PENDING'
+    return awardDetail.value.approvalStatus === 'PENDING'
   }
   return false
 }

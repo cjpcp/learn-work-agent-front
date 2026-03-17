@@ -27,10 +27,10 @@
           <a-tag v-else-if="record.applicationType === 'GRANT'" color="green">助学金</a-tag>
           <a-tag v-else-if="record.applicationType === 'SUBSIDY'" color="blue">困难补助</a-tag>
         </template>
-        <template v-else-if="column.key === 'status'">
-          <a-tag v-if="record.status === 'PENDING'" color="processing">待审批</a-tag>
-          <a-tag v-else-if="record.status === 'APPROVED'" color="success">已批准</a-tag>
-          <a-tag v-else-if="record.status === 'REJECTED'" color="error">已拒绝</a-tag>
+        <template v-else-if="column.key === 'approvalStatus'">
+          <a-tag v-if="record.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
+          <a-tag v-else-if="record.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
+          <a-tag v-else-if="record.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
         </template>
         <template v-else-if="column.key === 'action'">
           <a-button type="link" @click="handleView(record)">查看详情</a-button>
@@ -48,9 +48,9 @@
           </a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="状态">
-          <a-tag v-if="currentRecord?.status === 'PENDING'" color="processing">待审批</a-tag>
-          <a-tag v-else-if="currentRecord?.status === 'APPROVED'" color="success">已批准</a-tag>
-          <a-tag v-else-if="currentRecord?.status === 'REJECTED'" color="error">已拒绝</a-tag>
+          <a-tag v-if="currentRecord?.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
+          <a-tag v-else-if="currentRecord?.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
+          <a-tag v-else-if="currentRecord?.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="申请名称">
           {{ currentRecord?.awardName }}
@@ -114,8 +114,8 @@ const columns = [
   },
   {
     title: '状态',
-    dataIndex: 'status',
-    key: 'status',
+    dataIndex: 'approvalStatus',
+    key: 'approvalStatus',
     width: 100,
   },
   {
