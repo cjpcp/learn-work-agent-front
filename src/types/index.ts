@@ -31,7 +31,7 @@ export interface User {
   studentNo?: string
   phone?: string
   email?: string
-  role: 'STUDENT' | 'COUNSELOR' | 'ADMIN'
+  role: 'STUDENT' | 'COUNSELOR' | 'COLLEGE_LEADER' | 'DEPARTMENT_LEADER'
   status?: 'ACTIVE' | 'INACTIVE'
   department?: string
   departmentId?: number
@@ -105,7 +105,7 @@ export interface LeaveApplicationRequest {
   reason?: string
   attachmentUrl?: string
   studentName?: string
-  department?: string
+  departmentId?: number
   grade?: string
   className?: string
 }
@@ -128,7 +128,7 @@ export interface LeaveApplication {
   cancelled?: boolean
   cancelTime?: string
   studentName?: string
-  department?: string
+  departmentId?: number
   grade?: string
   className?: string
   createTime?: string
@@ -148,7 +148,7 @@ export interface AwardApplicationRequest {
   reason?: string
   attachmentUrls?: string[]
   studentName?: string
-  department?: string
+  departmentId?: number
   grade?: string
   className?: string
 }
@@ -166,7 +166,7 @@ export interface AwardApplication {
   approvalComment?: string
   approvalTime?: string
   studentName?: string
-  department?: string
+  departmentId?: number
   grade?: string
   className?: string
   createTime?: string

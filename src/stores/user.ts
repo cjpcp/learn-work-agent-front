@@ -1,6 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
-import type { LoginResponse, User } from '@/types'
+import type { LoginResponse} from '@/types'
 import { authApi } from '@/api'
 import router from '@/router'
 
@@ -15,6 +15,7 @@ export const useUserStore = defineStore('user', () => {
   const grade = ref<string>('')
   const className = ref<string>('')
   const workDepartment = ref<string>('')
+  const workDepartmentId = ref<number | null>(null)
   const position = ref<string>('')
 
   // 登录
@@ -33,6 +34,7 @@ export const useUserStore = defineStore('user', () => {
         grade.value = userData.grade || ''
         className.value = userData.className || ''
         workDepartment.value = userData.workDepartment || ''
+        workDepartmentId.value = userData.workDepartmentId || null
         position.value = userData.position || ''
         localStorage.setItem('token', userData.token)
         localStorage.setItem('userInfo', JSON.stringify(userData))
@@ -58,6 +60,7 @@ export const useUserStore = defineStore('user', () => {
     grade.value = ''
     className.value = ''
     workDepartment.value = ''
+    workDepartmentId.value = null
     position.value = ''
     localStorage.removeItem('token')
     localStorage.removeItem('userInfo')
@@ -80,6 +83,7 @@ export const useUserStore = defineStore('user', () => {
         grade.value = userInfo.grade || ''
         className.value = userInfo.className || ''
         workDepartment.value = userInfo.workDepartment || ''
+        workDepartmentId.value = (userInfo as any).workDepartmentId || null
         position.value = userInfo.position || ''
       } catch (e) {
         console.error('解析用户信息失败', e)
@@ -141,6 +145,7 @@ export const useUserStore = defineStore('user', () => {
     grade,
     className,
     workDepartment,
+    workDepartmentId,
     position,
     login,
     logout,

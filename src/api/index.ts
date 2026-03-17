@@ -62,6 +62,7 @@ export const authApi = {
       grade?: string
       className?: string
       workDepartment?: string
+      workDepartmentId?: number
       position?: string
     }
   > => {
@@ -278,15 +279,9 @@ export const consultationApi = {
 // 奖助申请相关API
 export const awardApi = {
   // 提交奖助申请
-  submitApplication: (data: any): Promise<Result<void>> => {
+  submitApplication: (data: never): Promise<Result<void>> => {
     return request.post('/award/applications', data)
   },
-
-  // 获取申请列表
-  getApplications: (): Promise<AwardApplication[]> => {
-    return request.get('/award/applications/my')
-  },
-
   // 获取我的申请列表（别名，兼容旧代码）
   getMyApplications: (params?: any): Promise<AwardApplication[]> => {
     return request.get('/award/applications/my', { params })
@@ -379,52 +374,52 @@ export const approvalApi = {
 // 审批流程配置相关API
 export const approvalConfigApi = {
   // 获取所有审批流程
-  getProcesses: (): Promise<Result<any>> => {
+  getProcesses: (): Promise<any> => {
     return request.get('/approval/config/processes')
   },
 
   // 创建审批流程
-  createProcess: (data: any): Promise<Result<any>> => {
+  createProcess: (data: any): Promise<any> => {
     return request.post('/approval/config/processes', data)
   },
 
   // 更新审批流程
-  updateProcess: (id: number, data: any): Promise<Result<any>> => {
+  updateProcess: (id: number, data: any): Promise<any> => {
     return request.put(`/approval/config/processes/${id}`, data)
   },
 
   // 删除审批流程
-  deleteProcess: (id: number): Promise<Result<any>> => {
+  deleteProcess: (id: number): Promise<any> => {
     return request.delete(`/approval/config/processes/${id}`)
   },
 
   // 获取流程的审批步骤
-  getSteps: (processId: number): Promise<Result<any>> => {
+  getSteps: (processId: number): Promise<any> => {
     return request.get(`/approval/config/processes/${processId}/steps`)
   },
 
   // 添加审批步骤
-  addStep: (data: any): Promise<Result<any>> => {
+  addStep: (data: any): Promise<any> => {
     return request.post('/approval/config/steps', data)
   },
 
   // 更新审批步骤
-  updateStep: (id: number, data: any): Promise<Result<any>> => {
+  updateStep: (id: number, data: any): Promise<any> => {
     return request.put(`/approval/config/steps/${id}`, data)
   },
 
   // 删除审批步骤
-  deleteStep: (id: number): Promise<Result<any>> => {
+  deleteStep: (id: number): Promise<any> => {
     return request.delete(`/approval/config/steps/${id}`)
   },
 
   // 启用流程
-  enableProcess: (id: number): Promise<Result<any>> => {
+  enableProcess: (id: number): Promise<any> => {
     return request.post(`/approval/config/processes/${id}/enable`)
   },
 
   // 禁用流程
-  disableProcess: (id: number): Promise<Result<any>> => {
+  disableProcess: (id: number): Promise<any> => {
     return request.post(`/approval/config/processes/${id}/disable`)
   },
 }

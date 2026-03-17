@@ -22,17 +22,14 @@
         </a-row>
         <a-row :gutter="24">
           <a-col :span="12">
-            <a-form-item name="department" label="院系">
+            <a-form-item name="departmentId" label="院系">
               <a-select
-                v-model:value="form.department"
+                v-model:value="form.departmentId"
                 style="width: 100%"
                 placeholder="请选择院系"
+                :loading="loadingColleges"
               >
-                <a-select-option value="体育学院">体育学院</a-select-option>
-                <a-select-option value="文学院">文学院</a-select-option>
-                <a-select-option value="理学院">理学院</a-select-option>
-                <a-select-option value="工学院">工学院</a-select-option>
-                <a-select-option value="商学院">商学院</a-select-option>
+                <a-select-option v-for="c in colleges" :key="c.id" :value="c.id">{{ c.name }}</a-select-option>
               </a-select>
             </a-form-item>
           </a-col>
@@ -121,7 +118,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UploadOutlined } from '@ant-design/icons-vue'
-import { awardApi } from '@/api'
+import { awardApi, systemApi } from '@/api'
 import type { AwardApplicationRequest } from '@/types'
 import type { Rule } from 'ant-design-vue/es/form'
 import type { UploadFile } from 'ant-design-vue'
@@ -131,6 +128,8 @@ const router = useRouter()
 const loading = ref(false)
 const fileList = ref<UploadFile[]>([])
 const userStore = useUserStore()
+const colleges = ref<{ id: number; name: string }[]>([])
+const loadingColleges = ref(false)
 
 const form = reactive<AwardApplicationRequest>({
   applicationType: 'SCHOLARSHIP',
@@ -139,7 +138,7 @@ const form = reactive<AwardApplicationRequest>({
   reason: '',
   attachmentUrls: [],
   studentName: '',
-  department: '',
+  departmentId: undefined,
   grade: '',
   className: '',
 })
@@ -148,14 +147,25 @@ const form = reactive<AwardApplicationRequest>({
 onMounted(() => {
   // 从用户信息中获取数据
   form.studentName = userStore.realName
-  form.department = userStore.department
+  form.departmentId = userStore.departmentId
   form.grade = userStore.grade
   form.className = userStore.className
+  loadColleges()
 })
+
+const loadColleges = async () => {
+  loadingColleges.value = true
+  try {
+    const data = await systemApi.getColleges()
+    colleges.value = (data || []).map((c: any) => ({ id: c.id, name: c.name }))
+  } finally {
+    loadingColleges.value = false
+  }
+}
 
 const rules: Record<string, Rule[]> = {
   applicationType: [{ required: true, message: '请选择申请类型', trigger: 'change' }],
-  department: [{ required: true, message: '请选择院系', trigger: 'change' }],
+  departmentId: [{ required: true, message: '请选择院系', trigger: 'change' }],
   grade: [{ required: true, message: '请选择年级', trigger: 'change' }],
   className: [{ required: true, message: '请输入班级', trigger: 'blur' }],
   studentName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],

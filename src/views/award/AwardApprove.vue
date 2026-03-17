@@ -136,10 +136,9 @@ const loadData = async () => {
       pageSize: pagination.pageSize,
     }
     const response = await awardApi.getPendingApplications(params)
-    if (response.data) {
-      dataSource.value = response.data.records
-      pagination.total = response.data.total
-    }
+    const pageResult = (response as any).data ?? response
+    dataSource.value = pageResult.records ?? (Array.isArray(pageResult) ? pageResult : [])
+    pagination.total = pageResult.total ?? dataSource.value.length
   } catch (error: any) {
     console.error('加载数据失败', error)
   } finally {
@@ -165,7 +164,11 @@ const handleConfirmApprove = async () => {
   if (!currentRecord.value) return
 
   try {
-    await awardApi.approveApplication(currentRecord.value.id!, approveForm)
+    await awardApi.approveApplication(
+      currentRecord.value.id!,
+      approveForm.approvalStatus === 'APPROVED',
+      approveForm.approvalComment,
+    )
     message.success('审批成功')
     approveVisible.value = false
     loadData()
@@ -177,10 +180,8 @@ const handleConfirmApprove = async () => {
 const handleView = async (record: AwardApplication) => {
   try {
     const response = await awardApi.getApplication(record.id!)
-    if (response.data) {
-      currentRecord.value = response.data
-      viewVisible.value = true
-    }
+    currentRecord.value = (response as any).data ?? response
+    viewVisible.value = true
   } catch (error: any) {
     message.error('获取详情失败')
   }

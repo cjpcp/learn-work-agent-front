@@ -164,14 +164,14 @@
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item v-if="stepForm.approverRole === 'ADMIN'" label="部门" :rules="[{ required: true, message: '请选择部门' }]">
-          <a-select v-model:value="stepForm.department" placeholder="请选择部门" :loading="loadingDepartments" :get-popup-container="(triggerNode: any) => triggerNode.parentNode" @change="handleDepartmentChange">
+        <a-form-item v-if="stepForm.approverRole === 'DEPARTMENT_LEADER'" label="部门" :rules="[{ required: true, message: '请选择部门' }]">
+          <a-select v-model:value="stepForm.departmentId" placeholder="请选择部门" :loading="loadingDepartments" :get-popup-container="(triggerNode: any) => triggerNode.parentNode" @change="handleDepartmentChange">
             <a-select-option v-for="dept in departments" :key="dept.code" :value="dept.id">
               {{ dept.name }}
             </a-select-option>
           </a-select>
         </a-form-item>
-        <a-form-item v-if="stepForm.approverRole === 'ADMIN'" label="具体审批人" :rules="[{ required: true, message: '请选择具体审批人' }]">
+        <a-form-item v-if="stepForm.approverRole === 'DEPARTMENT_LEADER'" label="具体审批人" :rules="[{ required: true, message: '请选择具体审批人' }]">
           <a-select v-model:value="stepForm.approverUserId" placeholder="请选择具体审批人" :loading="loadingUsers" :get-popup-container="(triggerNode: any) => triggerNode.parentNode">
             <a-select-option v-for="user in users" :key="user.id" :value="user.id">
               {{ user.name }}
@@ -219,7 +219,7 @@ const stepForm = reactive({
   stepOrder: 1,
   approvalType: 'SINGLE',
   approverRole: '',
-  department: '',
+  departmentId: undefined as number | undefined,
   approverUserId: '',
   mustPass: true,
 })
@@ -312,12 +312,8 @@ const getRoleName = (role: string) => {
 const loadApproverRoles = async () => {
   loadingRoles.value = true
   try {
-    const response = await systemApi.getStaffRoles()
-    if (response.code === 200) {
-      approverRoles.value = response.data
-    } else {
-      message.error('获取角色列表失败: ' + response.message)
-    }
+    const data = await systemApi.getStaffRoles()
+    approverRoles.value = data || []
   } catch (error: any) {
     message.error('获取角色列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -329,12 +325,8 @@ const loadApproverRoles = async () => {
 const loadUsers = async (departmentId?: number) => {
   loadingUsers.value = true
   try {
-    const response = await systemApi.getUsers(departmentId)
-    if (response.code === 200) {
-      users.value = response.data
-    } else {
-      message.error('获取用户列表失败: ' + response.message)
-    }
+    const data = await systemApi.getUsers(departmentId)
+    users.value = data || []
   } catch (error: any) {
     message.error('获取用户列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -346,12 +338,8 @@ const loadUsers = async (departmentId?: number) => {
 const loadDepartments = async () => {
   loadingDepartments.value = true
   try {
-    const response = await systemApi.getDepartments()
-    if (response.code === 200) {
-      departments.value = response.data
-    } else {
-      message.error('获取部门列表失败: ' + response.message)
-    }
+    const data = await systemApi.getDepartments()
+    departments.value = data || []
   } catch (error: any) {
     message.error('获取部门列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -361,15 +349,15 @@ const loadDepartments = async () => {
 
 // 处理角色变化
 const handleRoleChange = (roleCode: string) => {
-  stepForm.department = ''
+  stepForm.departmentId = undefined
   stepForm.approverUserId = ''
-  if (roleCode === 'ADMIN') {
+  if (roleCode === 'DEPARTMENT_LEADER') {
     loadDepartments()
   }
 }
 
 // 处理部门变化
-const handleDepartmentChange = (departmentId: string) => {
+const handleDepartmentChange = (departmentId: number) => {
   stepForm.approverUserId = ''
   if (departmentId) {
     loadUsers(Number(departmentId))
@@ -380,12 +368,8 @@ const handleDepartmentChange = (departmentId: string) => {
 const loadProcesses = async () => {
   loadingProcesses.value = true
   try {
-    const response = await approvalConfigApi.getProcesses()
-    if (response.code === 200) {
-      processes.value = response.data
-    } else {
-      message.error('获取流程列表失败: ' + response.message)
-    }
+    const data = await approvalConfigApi.getProcesses()
+    processes.value = data || []
   } catch (error: any) {
     message.error('获取流程列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -397,12 +381,8 @@ const loadProcesses = async () => {
 const loadSteps = async (processId: number) => {
   loadingSteps.value = true
   try {
-    const response = await approvalConfigApi.getSteps(processId)
-    if (response.code === 200) {
-      steps.value = response.data
-    } else {
-      message.error('获取步骤列表失败: ' + response.message)
-    }
+    const data = await approvalConfigApi.getSteps(processId)
+    steps.value = data || []
   } catch (error: any) {
     message.error('获取步骤列表失败: ' + (error.message || '未知错误'))
   } finally {
@@ -451,19 +431,16 @@ const handleEditProcess = (record: any) => {
 // 保存流程
 const handleSaveProcess = async () => {
   try {
-    let response
+    let data
     if (editingProcess.value) {
-      response = await approvalConfigApi.updateProcess(editingProcess.value.id, processForm)
+      data = await approvalConfigApi.updateProcess(editingProcess.value.id, processForm)
     } else {
-      response = await approvalConfigApi.createProcess(processForm)
+      data = await approvalConfigApi.createProcess(processForm)
     }
-    if (response.code === 200) {
-      message.success('保存成功')
-      processModalVisible.value = false
-      loadProcesses()
-    } else {
-      message.error('保存失败: ' + response.message)
-    }
+    if (data === undefined || data === null) return
+    message.success('保存成功')
+    processModalVisible.value = false
+    loadProcesses()
   } catch (error: any) {
     message.error('保存失败: ' + (error.message || '未知错误'))
   }
@@ -482,13 +459,9 @@ const handleDeleteProcess = (record: any) => {
     content: `确定要删除流程 "${record.processName}" 吗？`,
     onOk: async () => {
       try {
-        const response = await approvalConfigApi.deleteProcess(record.id)
-        if (response.code === 200) {
-          message.success('删除成功')
-          loadProcesses()
-        } else {
-          message.error('删除失败: ' + response.message)
-        }
+        await approvalConfigApi.deleteProcess(record.id)
+        message.success('删除成功')
+        loadProcesses()
       } catch (error: any) {
         message.error('删除失败: ' + (error.message || '未知错误'))
       }
@@ -499,13 +472,9 @@ const handleDeleteProcess = (record: any) => {
 // 启用流程
 const handleEnableProcess = async (record: any) => {
   try {
-    const response = await approvalConfigApi.enableProcess(record.id)
-    if (response.code === 200) {
-      message.success('启用成功')
-      loadProcesses()
-    } else {
-      message.error('启用失败: ' + response.message)
-    }
+    await approvalConfigApi.enableProcess(record.id)
+    message.success('启用成功')
+    loadProcesses()
   } catch (error: any) {
     message.error('启用失败: ' + (error.message || '未知错误'))
   }
@@ -514,13 +483,9 @@ const handleEnableProcess = async (record: any) => {
 // 禁用流程
 const handleDisableProcess = async (record: any) => {
   try {
-    const response = await approvalConfigApi.disableProcess(record.id)
-    if (response.code === 200) {
-      message.success('禁用成功')
-      loadProcesses()
-    } else {
-      message.error('禁用失败: ' + response.message)
-    }
+    await approvalConfigApi.disableProcess(record.id)
+    message.success('禁用成功')
+    loadProcesses()
   } catch (error: any) {
     message.error('禁用失败: ' + (error.message || '未知错误'))
   }
@@ -545,7 +510,7 @@ const handleAddStep = () => {
     stepOrder: steps.value.length + 1,
     approvalType: 'SINGLE',
     approverRole: '',
-    department: '',
+    departmentId: undefined,
     approverUserId: '',
     mustPass: true,
   })
@@ -560,16 +525,16 @@ const handleEditStep = (record: any) => {
     stepOrder: record.stepOrder,
     approvalType: record.approvalType,
     approverRole: record.approverRole,
-    department: record.department || '',
+    departmentId: record.departmentId || undefined,
     approverUserId: record.approverUserId || '',
     mustPass: record.mustPass,
   })
   
   // 如果是部门领导，加载部门列表
-  if (record.approverRole === 'ADMIN') {
+  if (record.approverRole === 'DEPARTMENT_LEADER') {
     loadDepartments()
-    if (record.department) {
-      loadUsers(record.department)
+    if (record.departmentId) {
+      loadUsers(record.departmentId)
     }
   }
   
@@ -589,25 +554,22 @@ const handleSaveStep = async () => {
       stepOrder: stepForm.stepOrder,
       approvalType: stepForm.approvalType,
       approverRole: stepForm.approverRole,
-      department: stepForm.department,
+      departmentId: stepForm.departmentId,
       approverUserId: stepForm.approverUserId,
       mustPass: stepForm.mustPass,
       process: { id: currentProcess.value.id },
     }
 
-    let response
+    let data
     if (editingStep.value) {
-      response = await approvalConfigApi.updateStep(editingStep.value.id, stepData)
+      data = await approvalConfigApi.updateStep(editingStep.value.id, stepData)
     } else {
-      response = await approvalConfigApi.addStep(stepData)
+      data = await approvalConfigApi.addStep(stepData)
     }
-    if (response.code === 200) {
-      message.success('保存成功')
-      stepModalVisible.value = false
-      loadSteps(currentProcess.value.id)
-    } else {
-      message.error('保存失败: ' + response.message)
-    }
+    if (data === undefined || data === null) return
+    message.success('保存成功')
+    stepModalVisible.value = false
+    loadSteps(currentProcess.value.id)
   } catch (error: any) {
     message.error('保存失败: ' + (error.message || '未知错误'))
   }
@@ -626,14 +588,10 @@ const handleDeleteStep = (record: any) => {
     content: `确定要删除步骤 "${record.stepName}" 吗？`,
     onOk: async () => {
       try {
-        const response = await approvalConfigApi.deleteStep(record.id)
-        if (response.code === 200) {
-          message.success('删除成功')
-          if (currentProcess.value) {
-            loadSteps(currentProcess.value.id)
-          }
-        } else {
-          message.error('删除失败: ' + response.message)
+        await approvalConfigApi.deleteStep(record.id)
+        message.success('删除成功')
+        if (currentProcess.value) {
+          loadSteps(currentProcess.value.id)
         }
       } catch (error: any) {
         message.error('删除失败: ' + (error.message || '未知错误'))

@@ -5,7 +5,11 @@
       <a-tabs v-model:active-key="activeTab" class="process-tabs">
         <!-- 流程代办标签页 -->
         <a-tab-pane key="process" tab="流程代办">
-          <a-tabs v-model:active-key="processActiveTab" class="sub-tabs" @change="handleProcessTabChange">
+          <a-tabs
+            v-model:active-key="processActiveTab"
+            class="sub-tabs"
+            @change="handleProcessTabChange"
+          >
             <a-tab-pane key="pending" tab="待办流程">
               <div v-if="pendingProcesses.length === 0" class="empty-state">
                 <a-empty description="暂无待办流程" />
@@ -34,7 +38,21 @@
                       >
                         {{ item.status === 'pending' ? '待处理' : '已处理' }}
                       </a-tag>
-                      <a-button type="primary" size="small" @click="handleViewProcess(item)">
+                      <a-button
+                        v-if="
+                          item.status === 'pending' &&
+                          (userStore.role === 'COUNSELOR' ||
+                            userStore.role === 'COLLEGE_LEADER' ||
+                            userStore.role === 'DEPARTMENT_LEADER')
+                        "
+                        type="primary"
+                        size="small"
+                        style="margin-right: 4px"
+                        @click="handleGoApprove(item)"
+                      >
+                        去审批
+                      </a-button>
+                      <a-button type="default" size="small" @click="handleViewProcess(item)">
                         查看详情
                       </a-button>
                     </template>
@@ -213,63 +231,71 @@
         <!-- 请假详情 -->
         <a-descriptions v-if="currentType === 'leave' && leaveDetail" :column="2" bordered>
           <a-descriptions-item label="请假类型">
-            <a-tag v-if="leaveDetail.leaveType === 'SICK'" color="red">病假</a-tag>
-            <a-tag v-else-if="leaveDetail.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
-            <a-tag v-else-if="leaveDetail.leaveType === 'PUBLIC'" color="blue">公假</a-tag>
-            <span v-else>{{ leaveDetail.leaveType }}</span>
+            <a-tag v-if="leaveDetail?.leaveType === 'SICK'" color="red">病假</a-tag>
+            <a-tag v-else-if="leaveDetail?.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
+            <a-tag v-else-if="leaveDetail?.leaveType === 'PUBLIC'" color="blue">公假</a-tag>
+            <span v-else>{{ leaveDetail?.leaveType }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="审批状态">
-            <a-tag v-if="leaveDetail.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
-            <a-tag v-else-if="leaveDetail.approvalStatus === 'APPROVED'" color="success"
+            <a-tag v-if="leaveDetail?.approvalStatus === 'PENDING'" color="processing"
+              >待审批</a-tag
+            >
+            <a-tag v-else-if="leaveDetail?.approvalStatus === 'APPROVED'" color="success"
               >已批准</a-tag
             >
-            <a-tag v-else-if="leaveDetail.approvalStatus === 'REJECTED'" color="error"
+            <a-tag v-else-if="leaveDetail?.approvalStatus === 'REJECTED'" color="error"
               >已拒绝</a-tag
             >
-            <span v-else>{{ leaveDetail.approvalStatus }}</span>
+            <span v-else>{{ leaveDetail?.approvalStatus }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="开始日期">
-            {{ leaveDetail.startDate }}
+            {{ leaveDetail?.startDate }}
           </a-descriptions-item>
           <a-descriptions-item label="结束日期">
-            {{ leaveDetail.endDate }}
+            {{ leaveDetail?.endDate }}
           </a-descriptions-item>
-          <a-descriptions-item label="请假天数"> {{ leaveDetail.days }} 天 </a-descriptions-item>
+          <a-descriptions-item label="请假天数"> {{ leaveDetail?.days }} 天 </a-descriptions-item>
           <a-descriptions-item label="申请人ID">
-            {{ leaveDetail.applicantId }}
+            {{ leaveDetail?.applicantId }}
           </a-descriptions-item>
           <a-descriptions-item label="请假原因" :span="2">
-            {{ leaveDetail.reason || '无' }}
+            {{ leaveDetail?.reason || '无' }}
           </a-descriptions-item>
           <a-descriptions-item label="创建时间">
-            {{ leaveDetail.createTime }}
+            {{ leaveDetail?.createTime }}
           </a-descriptions-item>
-          <a-descriptions-item v-if="leaveDetail.approvalTime" label="审批时间">
-            {{ leaveDetail.approvalTime }}
+          <a-descriptions-item v-if="leaveDetail?.approvalTime" label="审批时间">
+            {{ leaveDetail?.approvalTime }}
           </a-descriptions-item>
-          <a-descriptions-item v-if="leaveDetail.approvalComment" label="审批意见" :span="2">
-            {{ leaveDetail.approvalComment }}
+          <a-descriptions-item v-if="leaveDetail?.approvalComment" label="审批意见" :span="2">
+            {{ leaveDetail?.approvalComment }}
           </a-descriptions-item>
         </a-descriptions>
 
         <!-- 审批流程状态 -->
-        <div v-if="approvalProcess" class="approval-process-section" style="margin-top: 20px;">
-          <h3 style="margin-bottom: 12px;">审批流程</h3>
+        <div v-if="approvalProcess" class="approval-process-section" style="margin-top: 20px">
+          <h3 style="margin-bottom: 12px">审批流程</h3>
           <a-timeline>
-            <a-timeline-item 
-              v-for="(step, index) in approvalProcess.steps" 
+            <a-timeline-item
+              v-for="(step, index) in approvalProcess.steps"
               :key="index"
-              :color="step.status === 'APPROVED' ? 'green' : step.status === 'REJECTED' ? 'red' : 'blue'"
-              :dot="step.status === 'APPROVED' ? 'success' : step.status === 'REJECTED' ? 'error' : 'processing'"
+              :color="
+                step.status === 'APPROVED' ? 'green' : step.status === 'REJECTED' ? 'red' : 'blue'
+              "
             >
               <div>
                 <strong>{{ step.name }}</strong>
-                <span v-if="step.approver" style="margin-left: 8px; color: #666;">({{ step.approver }})</span>
+                <span v-if="step.approver" style="margin-left: 8px; color: #666"
+                  >({{ step.approver }})</span
+                >
               </div>
-              <div v-if="step.status === 'APPROVED' || step.status === 'REJECTED'" style="margin-top: 4px; font-size: 12px; color: #999;">
+              <div
+                v-if="step.status === 'APPROVED' || step.status === 'REJECTED'"
+                style="margin-top: 4px; font-size: 12px; color: #999"
+              >
                 {{ step.status === 'APPROVED' ? '已批准' : '已拒绝' }} - {{ step.time || 'N/A' }}
               </div>
-              <div v-if="step.comment" style="margin-top: 4px; font-size: 12px; color: #666;">
+              <div v-if="step.comment" style="margin-top: 4px; font-size: 12px; color: #666">
                 意见: {{ step.comment }}
               </div>
             </a-timeline-item>
@@ -279,33 +305,33 @@
         <!-- 奖助详情 -->
         <a-descriptions v-if="currentType === 'award' && awardDetail" :column="2" bordered>
           <a-descriptions-item label="申请类型">
-            <a-tag v-if="awardDetail.applicationType === 'SCHOLARSHIP'" color="gold">奖学金</a-tag>
-            <a-tag v-else-if="awardDetail.applicationType === 'GRANT'" color="green">助学金</a-tag>
-            <a-tag v-else-if="awardDetail.applicationType === 'SUBSIDY'" color="blue"
+            <a-tag v-if="awardDetail?.applicationType === 'SCHOLARSHIP'" color="gold">奖学金</a-tag>
+            <a-tag v-else-if="awardDetail?.applicationType === 'GRANT'" color="green">助学金</a-tag>
+            <a-tag v-else-if="awardDetail?.applicationType === 'SUBSIDY'" color="blue"
               >困难补助</a-tag
             >
-            <span v-else>{{ awardDetail.applicationType }}</span>
+            <span v-else>{{ awardDetail?.applicationType }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="审批状态">
-            <a-tag v-if="awardDetail.status === 'PENDING'" color="processing">待审批</a-tag>
-            <a-tag v-else-if="awardDetail.status === 'APPROVED'" color="success">已批准</a-tag>
-            <a-tag v-else-if="awardDetail.status === 'REJECTED'" color="error">已拒绝</a-tag>
-            <span v-else>{{ awardDetail.status }}</span>
+            <a-tag v-if="awardDetail?.status === 'PENDING'" color="processing">待审批</a-tag>
+            <a-tag v-else-if="awardDetail?.status === 'APPROVED'" color="success">已批准</a-tag>
+            <a-tag v-else-if="awardDetail?.status === 'REJECTED'" color="error">已拒绝</a-tag>
+            <span v-else>{{ awardDetail?.status }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="申请名称" :span="2">
-            {{ awardDetail.awardName }}
+            {{ awardDetail?.awardName }}
           </a-descriptions-item>
-          <a-descriptions-item v-if="awardDetail.amount" label="申请金额">
-            ¥{{ awardDetail.amount }}
+          <a-descriptions-item v-if="awardDetail?.amount" label="申请金额">
+            ¥{{ awardDetail?.amount }}
           </a-descriptions-item>
           <a-descriptions-item label="申请人ID">
-            {{ awardDetail.userId }}
+            {{ awardDetail?.userId }}
           </a-descriptions-item>
           <a-descriptions-item label="申请原因" :span="2">
-            {{ awardDetail.reason || '无' }}
+            {{ awardDetail?.reason || '无' }}
           </a-descriptions-item>
           <a-descriptions-item label="创建时间">
-            {{ awardDetail.createTime }}
+            {{ awardDetail?.createTime }}
           </a-descriptions-item>
         </a-descriptions>
       </a-spin>
@@ -334,25 +360,104 @@
     </a-modal>
 
     <!-- 审批弹窗 -->
-    <a-modal v-model:open="approveVisible" title="审批申请" width="600px" :footer="null">
-      <a-form :model="approveForm" layout="vertical">
-        <a-form-item label="审批结果">
-          <a-radio-group v-model:value="approveForm.approvalStatus">
-            <a-radio value="APPROVED">批准</a-radio>
-            <a-radio value="REJECTED">拒绝</a-radio>
-          </a-radio-group>
-        </a-form-item>
-        <a-form-item label="审批意见">
-          <a-textarea
-            v-model:value="approveForm.approvalComment"
-            placeholder="请输入审批意见（选填）"
-            rows="4"
-          />
-        </a-form-item>
-      </a-form>
+    <a-modal v-model:open="approveVisible" title="审批处理" width="700px" :footer="null">
+      <a-spin :spinning="approveModalLoading">
+        <!-- 请假申请详情 -->
+        <template v-if="currentType === 'leave' && approveLeaveDetail">
+          <a-divider orientation="left">请假申请信息</a-divider>
+          <a-descriptions :column="2" bordered size="small" style="margin-bottom: 16px">
+            <a-descriptions-item label="请假类型">
+              <a-tag v-if="approveLeaveDetail?.leaveType === 'SICK'" color="red">病假</a-tag>
+              <a-tag v-else-if="approveLeaveDetail?.leaveType === 'PERSONAL'" color="orange"
+                >事假</a-tag
+              >
+              <a-tag v-else-if="approveLeaveDetail?.leaveType === 'PUBLIC'" color="blue"
+                >公假</a-tag
+              >
+              <span v-else>{{ approveLeaveDetail?.leaveType }}</span>
+            </a-descriptions-item>
+            <a-descriptions-item label="请假天数"
+              >{{ approveLeaveDetail?.days }} 天</a-descriptions-item
+            >
+            <a-descriptions-item label="开始日期">{{
+              approveLeaveDetail?.startDate
+            }}</a-descriptions-item>
+            <a-descriptions-item label="结束日期">{{
+              approveLeaveDetail?.endDate
+            }}</a-descriptions-item>
+            <a-descriptions-item label="申请人ID">{{
+              approveLeaveDetail?.applicantId
+            }}</a-descriptions-item>
+            <a-descriptions-item label="创建时间">{{
+              approveLeaveDetail?.createTime
+            }}</a-descriptions-item>
+            <a-descriptions-item label="请假原因" :span="2">{{
+              approveLeaveDetail?.reason || '无'
+            }}</a-descriptions-item>
+          </a-descriptions>
+        </template>
+
+        <!-- 奖助申请详情 -->
+        <template v-if="currentType === 'award' && approveAwardDetail">
+          <a-divider orientation="left">奖助申请信息</a-divider>
+          <a-descriptions :column="2" bordered size="small" style="margin-bottom: 16px">
+            <a-descriptions-item label="申请类型">
+              <a-tag v-if="approveAwardDetail?.applicationType === 'SCHOLARSHIP'" color="gold"
+                >奖学金</a-tag
+              >
+              <a-tag v-else-if="approveAwardDetail?.applicationType === 'GRANT'" color="green"
+                >助学金</a-tag
+              >
+              <a-tag v-else-if="approveAwardDetail?.applicationType === 'SUBSIDY'" color="blue"
+                >困难补助</a-tag
+              >
+              <span v-else>{{ approveAwardDetail?.applicationType }}</span>
+            </a-descriptions-item>
+            <a-descriptions-item v-if="approveAwardDetail?.amount" label="申请金额"
+              >¥{{ approveAwardDetail?.amount }}</a-descriptions-item
+            >
+            <a-descriptions-item label="申请名称" :span="2">{{
+              approveAwardDetail?.awardName
+            }}</a-descriptions-item>
+            <a-descriptions-item label="申请人ID">{{
+              approveAwardDetail?.userId
+            }}</a-descriptions-item>
+            <a-descriptions-item label="创建时间">{{
+              approveAwardDetail?.createTime
+            }}</a-descriptions-item>
+            <a-descriptions-item label="申请原因" :span="2">{{
+              approveAwardDetail?.reason || '无'
+            }}</a-descriptions-item>
+          </a-descriptions>
+        </template>
+
+        <a-divider orientation="left">审批操作</a-divider>
+        <a-form :model="approveForm" layout="vertical">
+          <a-form-item label="审批结果">
+            <a-radio-group v-model:value="approveForm.approvalStatus">
+              <a-radio value="APPROVED">批准</a-radio>
+              <a-radio value="REJECTED">拒绝</a-radio>
+            </a-radio-group>
+          </a-form-item>
+          <a-form-item label="审批意见">
+            <a-textarea
+              v-model:value="approveForm.approvalComment"
+              placeholder="请输入审批意见（选填）"
+              rows="4"
+            />
+          </a-form-item>
+        </a-form>
+      </a-spin>
       <div class="modal-footer">
         <a-button @click="approveVisible = false">取消</a-button>
-        <a-button type="primary" :loading="approving" @click="submitApproval"> 确定 </a-button>
+        <a-button
+          type="primary"
+          :loading="approving"
+          :disabled="approveModalLoading"
+          @click="submitApproval"
+        >
+          确定
+        </a-button>
       </div>
     </a-modal>
 
@@ -381,16 +486,16 @@
           {{ formatTransferReason(currentTransfer?.transferReason) }}
         </a-descriptions-item>
         <a-descriptions-item v-if="currentTransfer?.staffId" label="处理人员ID">
-          {{ currentTransfer.staffId }}
+          {{ currentTransfer?.staffId }}
         </a-descriptions-item>
         <a-descriptions-item v-if="currentTransfer?.staffReply" label="处理回复" :span="2">
-          {{ currentTransfer.staffReply }}
+          {{ currentTransfer?.staffReply }}
         </a-descriptions-item>
         <a-descriptions-item label="创建时间">
           {{ currentTransfer?.createTime }}
         </a-descriptions-item>
         <a-descriptions-item v-if="currentTransfer?.processTime" label="处理时间">
-          {{ currentTransfer.processTime }}
+          {{ currentTransfer?.processTime }}
         </a-descriptions-item>
       </a-descriptions>
     </a-modal>
@@ -399,11 +504,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { processApi, leaveApi, awardApi, consultationApi, approvalApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import type { ProcessItem, LeaveApplication, AwardApplication, PageRequest } from '@/types'
 
+const router = useRouter()
 const userStore = useUserStore()
 const activeTab = ref('process')
 const humanActiveTab = ref('pending')
@@ -413,6 +520,7 @@ const processActiveTab = ref('pending')
 const pendingProcesses = ref<ProcessItem[]>([])
 const completedProcesses = ref<ProcessItem[]>([])
 const detailVisible = ref(false)
+const approveVisible = ref(false)
 const currentType = ref<'leave' | 'award' | ''>('')
 const leaveDetail = ref<LeaveApplication | null>(null)
 const awardDetail = ref<AwardApplication | null>(null)
@@ -420,9 +528,12 @@ const loadingDetail = ref(false)
 const currentProcessId = ref<number>(0)
 const approvalProcess = ref<any>(null)
 
-// 审批相关
-const approveVisible = ref(false)
+// 当前待审批任务ID
+const currentTaskId = ref<number | null>(null)
 const approving = ref(false)
+const approveModalLoading = ref(false)
+const approveLeaveDetail = ref<LeaveApplication | null>(null)
+const approveAwardDetail = ref<AwardApplication | null>(null)
 const approveForm = reactive({
   approvalStatus: 'APPROVED',
   approvalComment: '',
@@ -610,7 +721,7 @@ const loadProcesses = async () => {
     // 获取待办流程
     const pendingResponse = await processApi.getProcessList()
     pendingProcesses.value = pendingResponse.pending
-    
+
     // 获取已办理流程
     const completedResponse = await processApi.getCompletedProcesses()
     completedProcesses.value = completedResponse
@@ -681,9 +792,57 @@ const loadTransferData = async () => {
   }
 }
 
+const handleGoApprove = async (item: ProcessItem) => {
+  currentType.value = item.type as 'leave' | 'award'
+  currentProcessId.value = Number(item.id)
+  currentTaskId.value = null
+  approveLeaveDetail.value = null
+  approveAwardDetail.value = null
+  approveForm.approvalStatus = 'APPROVED'
+  approveForm.approvalComment = ''
+
+  // 先打开弹窗，再加载数据
+  approveVisible.value = true
+  approveModalLoading.value = true
+
+  try {
+    // 并行加载申请详情和待办任务
+    const detailPromise =
+      item.type === 'leave'
+        ? leaveApi.getApplication(Number(item.id)).then((data) => {
+            approveLeaveDetail.value = data
+          })
+        : awardApi.getApplicationDetail(Number(item.id)).then((data) => {
+            approveAwardDetail.value = data
+          })
+
+    const taskPromise = approvalApi.getPendingTasks().then((pendingTasks) => {
+      const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
+      const matchedTask = tasks.find(
+        (t: any) =>
+          String(t.instance?.businessId) === String(item.id) ||
+          String(t.businessId) === String(item.id)
+      )
+      if (matchedTask) {
+        currentTaskId.value = matchedTask.id
+      } else {
+        throw new Error('未找到对应的审批任务，您可能已处理或无权限审批')
+      }
+    })
+
+    await Promise.all([detailPromise, taskPromise])
+  } catch (e: any) {
+    message.error(e?.message || '加载审批信息失败')
+    approveVisible.value = false
+  } finally {
+    approveModalLoading.value = false
+  }
+}
+
 const handleViewProcess = async (item: ProcessItem) => {
   currentType.value = item.type as 'leave' | 'award'
   currentProcessId.value = Number(item.id)
+  currentTaskId.value = null
   loadingDetail.value = true
   detailVisible.value = true
   approvalProcess.value = null
@@ -706,9 +865,25 @@ const handleViewProcess = async (item: ProcessItem) => {
           status: step.status,
           approver: step.approverName,
           time: step.approvalTime,
-          comment: step.comment
-        }))
+          comment: step.comment,
+        })),
       }
+    }
+
+    // 查找当前用户对应的待处理审批任务ID
+    try {
+      const pendingTasks = await approvalApi.getPendingTasks()
+      const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
+      const matchedTask = tasks.find(
+        (t: any) =>
+          String(t.instance?.businessId) === String(item.id) ||
+          String(t.businessId) === String(item.id)
+      )
+      if (matchedTask) {
+        currentTaskId.value = matchedTask.id
+      }
+    } catch (e) {
+      // 找不到任务ID时不阻断展示
     }
   } catch (error) {
     message.error('获取详情失败')
@@ -719,7 +894,13 @@ const handleViewProcess = async (item: ProcessItem) => {
 }
 
 const canApprove = () => {
-  if (!userStore.isCounselor() && !userStore.isAdmin()) {
+  const role = userStore.role
+  const isApprover =
+    role === 'COUNSELOR' ||
+    role === 'COLLEGE_LEADER' ||
+    role === 'DEPARTMENT_LEADER' ||
+    role === 'ADMIN'
+  if (!isApprover) {
     return false
   }
   if (currentType.value === 'leave' && leaveDetail.value) {
@@ -743,22 +924,22 @@ const submitApproval = async () => {
     return
   }
 
+  if (!currentTaskId.value) {
+    message.error('未找到对应的审批任务，请确认您有权限审批此申请')
+    return
+  }
+
   approving.value = true
   try {
-    if (currentType.value === 'leave') {
-      await leaveApi.approveApplication(currentProcessId.value, {
-        approvalStatus: approveForm.approvalStatus,
-        approvalComment: approveForm.approvalComment,
-      })
-    } else if (currentType.value === 'award') {
-      await awardApi.approveApplication(
-        currentProcessId.value,
-        approveForm.approvalStatus === 'APPROVED',
-        approveForm.approvalComment
-      )
-    }
+    // 通过审批任务流程处理，而不是直接修改业务状态
+    await approvalApi.processTask(currentTaskId.value, {
+      status: approveForm.approvalStatus,
+      comment: approveForm.approvalComment,
+    })
     message.success('审批成功')
     approveVisible.value = false
+    approveLeaveDetail.value = null
+    approveAwardDetail.value = null
     detailVisible.value = false
     loadProcesses()
   } catch (error: any) {
@@ -884,7 +1065,7 @@ watch(humanActiveTab, (newTab) => {
 })
 
 // 处理流程代办标签页变化
-const handleProcessTabChange = (key: string) => {
+const handleProcessTabChange = (_key: string) => {
   loadProcesses()
 }
 </script>

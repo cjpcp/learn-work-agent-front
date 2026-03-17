@@ -169,6 +169,23 @@
               </a-select>
             </a-form-item>
           </div>
+          <!-- 辅导员需要指定负责年级 -->
+          <div v-if="form.role === 'COUNSELOR'" class="form-row">
+            <a-form-item name="staffGrade" label="负责年级">
+              <a-select
+                v-model:value="form.grade"
+                placeholder="请选择负责年级"
+                size="large"
+                class="register-select"
+              >
+                <a-select-option value="2021">2021</a-select-option>
+                <a-select-option value="2022">2022</a-select-option>
+                <a-select-option value="2023">2023</a-select-option>
+                <a-select-option value="2024">2024</a-select-option>
+                <a-select-option value="2025">2025</a-select-option>
+              </a-select>
+            </a-form-item>
+          </div>
         </div>
         <a-form-item>
           <a-button
@@ -337,11 +354,11 @@ const handleRoleChange = async (value: string) => {
   form.workDepartmentId = null
   loadingDepartments.value = true
   try {
-    if (value === 'COUNSELOR' || value === 'DEAN') {
+    if (value === 'COUNSELOR' || value === 'COLLEGE_LEADER') {
       // 加载学院列表
       const data = await systemApi.getColleges()
       departmentOptions.value = data
-    } else if (value === 'ADMIN') {
+    } else if (value === 'DEPARTMENT_LEADER') {
       // 加载部门列表
       const data = await systemApi.getDepartments()
       departmentOptions.value = data
@@ -380,7 +397,9 @@ const handleRegister = async () => {
       email: form.email,
       role: form.role,
       department: form.department,
-      departmentId: form.departmentId ?? undefined,
+      departmentId: form.userType === 'STAFF'
+        ? (form.workDepartmentId ?? undefined)
+        : (form.departmentId ?? undefined),
       grade: form.grade,
       className: form.className,
       workDepartment: form.workDepartment,

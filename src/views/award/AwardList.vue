@@ -139,9 +139,11 @@ const loadData = async () => {
       pageSize: pagination.pageSize,
     }
     const response = await awardApi.getMyApplications(params)
-    if (response.data) {
-      dataSource.value = response.data.records
-      pagination.total = response.data.total
+    if (response) {
+      // 后端返回 PageResult，直接解包
+      const pageResult = (response as any).data ?? response
+      dataSource.value = pageResult.records ?? (Array.isArray(pageResult) ? pageResult : [])
+      pagination.total = pageResult.total ?? dataSource.value.length
     }
   } catch (error: any) {
     console.error('加载数据失败', error)
@@ -159,10 +161,9 @@ const handleTableChange = (pag: any) => {
 const handleView = async (record: AwardApplication) => {
   try {
     const response = await awardApi.getApplication(record.id!)
-    if (response.data) {
-      currentRecord.value = response.data
-      visible.value = true
-    }
+    // API 已在拦截器解包，response 直接是 AwardApplication
+    currentRecord.value = (response as any).data ?? response
+    visible.value = true
   } catch (error: any) {
     console.error('获取详情失败', error)
   }
