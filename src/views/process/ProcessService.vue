@@ -842,7 +842,7 @@ const handleGoApprove = async (item: ProcessItem) => {
 const handleViewProcess = async (item: ProcessItem) => {
   currentType.value = item.type as 'leave' | 'award'
   currentProcessId.value = Number(item.id)
-  currentTaskId.value = null
+  currentTaskId.value = null  // 重置：打开详情时先清空，防止上次残留值导致误判
   loadingDetail.value = true
   detailVisible.value = true
   approvalProcess.value = null
@@ -903,13 +903,9 @@ const canApprove = () => {
   if (!isApprover) {
     return false
   }
-  if (currentType.value === 'leave' && leaveDetail.value) {
-    return leaveDetail.value.approvalStatus === 'PENDING'
-  }
-  if (currentType.value === 'award' && awardDetail.value) {
-    return awardDetail.value.approvalStatus === 'PENDING'
-  }
-  return false
+  // 必须存在当前用户对应的待处理审批任务才允许显示审批按钮
+  // 避免已完成审批的节点在查看历史详情时错误显示审批按钮
+  return currentTaskId.value !== null
 }
 
 const handleOpenApproveModal = () => {
@@ -956,6 +952,7 @@ const handleCloseDetail = () => {
   awardDetail.value = null
   approvalProcess.value = null
   currentType.value = ''
+  currentTaskId.value = null  // 关闭时重置，防止残留
 }
 
 // 人工处理中心操作
