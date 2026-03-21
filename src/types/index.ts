@@ -76,6 +76,7 @@ export interface ConsultationRequest {
   imageUrl?: string
   voiceUrl?: string
   files?: FileInput[]
+  sessionId?: string
 }
 
 export interface ConsultationQuestion {

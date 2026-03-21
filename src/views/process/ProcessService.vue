@@ -349,6 +349,26 @@
         <a-form-item label="问题内容">
           <a-textarea v-model:value="replyForm.questionText" disabled rows="4" />
         </a-form-item>
+        <!-- 历史对话上下文 -->
+        <div
+          v-if="transferHistory.length > 0"
+          style="margin-bottom: 16px"
+        >
+          <p style="font-weight: 600; margin-bottom: 8px">咨询历史对话：</p>
+          <div
+            v-for="(item, idx) in transferHistory"
+            :key="idx"
+            style="margin-bottom: 10px; border: 1px solid #f0f0f0; border-radius: 6px; padding: 10px; background: #fafafa"
+          >
+            <a-tag color="blue" style="margin-bottom: 6px">第 {{ idx + 1 }} 轮</a-tag>
+            <div style="margin-bottom: 4px">
+              <span style="font-weight: 600; color: #1890ff">用户：</span>{{ item.questionText }}
+            </div>
+            <div v-if="item.aiAnswer">
+              <span style="font-weight: 600; color: #52c41a">AI：</span><span style="color: #555">{{ item.aiAnswer }}</span>
+            </div>
+          </div>
+        </div>
         <a-form-item label="回复内容">
           <a-textarea v-model:value="replyForm.reply" placeholder="请输入回复内容" rows="6" />
         </a-form-item>
@@ -498,6 +518,31 @@
           {{ currentTransfer?.processTime }}
         </a-descriptions-item>
       </a-descriptions>
+
+      <!-- 历史对话上下文 -->
+      <div
+        v-if="transferHistory.length > 0"
+        style="margin-top: 20px"
+      >
+        <a-divider orientation="left">咨询历史对话</a-divider>
+        <div
+          v-for="(item, idx) in transferHistory"
+          :key="idx"
+          style="margin-bottom: 16px; border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px; background: #fafafa"
+        >
+          <div style="margin-bottom: 8px">
+            <a-tag color="blue" style="margin-right: 6px">第 {{ idx + 1 }} 轮</a-tag>
+          </div>
+          <div style="margin-bottom: 6px">
+            <span style="font-weight: 600; color: #1890ff">用户：</span>
+            <span style="white-space: pre-wrap">{{ item.questionText }}</span>
+          </div>
+          <div v-if="item.aiAnswer">
+            <span style="font-weight: 600; color: #52c41a">AI：</span>
+            <span style="white-space: pre-wrap; color: #555">{{ item.aiAnswer }}</span>
+          </div>
+        </div>
+      </div>
     </a-modal>
   </div>
 </template>
@@ -552,6 +597,7 @@ const currentTransfer = ref<any>(null)
 const currentTransferId = ref<number>(0)
 const replyForm = reactive({
   questionText: '',
+  transferReason: '',
   reply: '',
 })
 
@@ -654,6 +700,7 @@ const completedProcessColumns = [
 const transferLoading = ref(false)
 const transferData = ref<any[]>([])
 const transferDetailVisible = ref(false)
+const transferHistory = ref<any[]>([])
 const transferPagination = reactive({
   current: 1,
   pageSize: 10,
@@ -713,6 +760,43 @@ const formatTransferReason = (reason?: string) => {
   return reason.replace(/问题类型: (\w+)/g, (match, category) => {
     return `问题类型: ${getCategoryName(category)}`
   })
+}
+
+// 解析转人工原因，分离基本信息和历史对话
+const parseTransferContext = (reason?: string): { reason: string; history: { question: string; answer: string }[] } => {
+  if (!reason) return { reason: '', history: [] }
+
+  const historyMarker = '\n\n===历史对话===\n'
+  const markerIdx = reason.indexOf(historyMarker)
+
+  if (markerIdx === -1) {
+    // 没有历史对话，直接返回格式化后的原因
+    return { reason: formatTransferReason(reason), history: [] }
+  }
+
+  const basePart = reason.substring(0, markerIdx)
+  const historyPart = reason.substring(markerIdx + historyMarker.length)
+
+  // 解析历史对话，每轮以 [第N轮] 开头
+  const history: { question: string; answer: string }[] = []
+  const turns = historyPart.split(/\n\n(?=\[第\d+轮\])/).filter(Boolean)
+  for (const turn of turns) {
+    const lines = turn.split('\n')
+    let question = ''
+    let answer = ''
+    for (const line of lines) {
+      if (line.startsWith('用户: ')) {
+        question = line.substring(4)
+      } else if (line.startsWith('AI: ')) {
+        answer = line.substring(4)
+      }
+    }
+    if (question || answer) {
+      history.push({ question, answer })
+    }
+  }
+
+  return { reason: formatTransferReason(basePart), history }
 }
 
 // 加载流程数据
@@ -968,17 +1052,35 @@ const handleCompletedProcessTableChange = (pag: any) => {
   loadCompletedProcessData()
 }
 
-const handleProcess = (record: any) => {
+const handleProcess = async (record: any) => {
   currentTransferId.value = record.id
-  replyForm.questionText = record.transferReason?.split('\n问题描述: ')[1] || ''
+  replyForm.questionText = record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
+  replyForm.transferReason = record.transferReason || ''
   replyForm.reply = ''
+  // 加载历史对话
+  try {
+    const response = await consultationApi.getTransferDetail(record.id)
+    const data = (response as any)
+    transferHistory.value = data.history ?? []
+  } catch {
+    transferHistory.value = []
+  }
   replyVisible.value = true
 }
 
-const handleReply = (record: any) => {
+const handleReply = async (record: any) => {
   currentTransferId.value = record.id
-  replyForm.questionText = record.transferReason?.split('\n问题描述: ')[1] || ''
+  replyForm.questionText = record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
+  replyForm.transferReason = record.transferReason || ''
   replyForm.reply = ''
+  // 加载历史对话
+  try {
+    const response = await consultationApi.getTransferDetail(record.id)
+    const data = (response as any)
+    transferHistory.value = data.history ?? []
+  } catch {
+    transferHistory.value = []
+  }
   replyVisible.value = true
 }
 
@@ -1010,7 +1112,10 @@ const submitReply = async () => {
 
 const handleViewTransfer = async (record: any) => {
   try {
-    currentTransfer.value = await consultationApi.getTransferDetail(record.id)
+    const response = await consultationApi.getTransferDetail(record.id)
+    const data = (response as any)
+    currentTransfer.value = data.transfer ?? data
+    transferHistory.value = data.history ?? []
     transferDetailVisible.value = true
   } catch (error: any) {
     console.error('获取转人工记录详情失败', error)
@@ -1027,7 +1132,10 @@ const handleTransferTableChange = (pag: any) => {
 
 const handleViewTransferDetail = async (record: any) => {
   try {
-    currentTransfer.value = await consultationApi.getTransferDetail(record.id)
+    const response = await consultationApi.getTransferDetail(record.id)
+    const data = (response as any)
+    currentTransfer.value = data.transfer ?? data
+    transferHistory.value = data.history ?? []
     transferDetailVisible.value = true
   } catch (error: any) {
     console.error('获取转人工记录详情失败', error)

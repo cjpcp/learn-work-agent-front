@@ -275,6 +275,9 @@ const isStreaming = ref(false) // 是否正在流式接收
 const conversationHistory = ref<Conversation[]>([])
 const router = useRouter()
 
+// 会话ID：每次页面加载生成一个新的会话ID，标识本次连续对话
+const sessionId = ref(`session-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+
 // 导航到咨询历史页面
 const navigateToHistory = () => {
   router.push('/consultation/history')
@@ -353,6 +356,7 @@ const handleSubmit = async () => {
         imageUrl: undefined,
         voiceUrl: undefined,
         files: files.length > 0 ? files : undefined,
+        sessionId: sessionId.value,
       },
       (chunk: string) => {
         // 收到流式数据块，追加到回答中
@@ -443,11 +447,12 @@ const submitManual = async () => {
       }
     }
 
-    // 创建问题
-    const questionResult = await consultationApi.submitQuestion({
+    // 创建问题（响应拦截器已解包，直接是 ConsultationQuestion 对象）
+    const question = await consultationApi.submitQuestion({
       questionText: manualForm.questionDescription,
       questionType: 'TEXT',
       category: manualForm.questionType,
+      sessionId: sessionId.value,
       files: attachmentUrl
         ? [
             {
@@ -459,19 +464,19 @@ const submitManual = async () => {
         : undefined,
     })
 
-    if (questionResult.code === 200 && questionResult.data && questionResult.data.id) {
-      const questionId = questionResult.data.id
-
-      // 转移给人工处理
-      await consultationApi.transferToHuman(questionId, {
-        reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentUrl ? '\n附件: ' + attachmentUrl : ''}`,
-      })
-
-      message.success('申请提交成功，我们将尽快为您处理')
-      cancelManual()
-    } else {
-      message.error('创建问题失败: ' + questionResult.message)
+    const questionId = (question as any)?.id
+    if (!questionId) {
+      message.error('创建问题失败，请重试')
+      return
     }
+
+    // 转移给人工处理，只传真实原因，历史对话通过 questionId 在后端查询
+    await consultationApi.transferToHuman(questionId, {
+      reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentUrl ? '\n附件: ' + attachmentUrl : ''}`,
+    })
+
+    message.success('申请提交成功，我们将尽快为您处理')
+    cancelManual()
   } catch (error: any) {
     console.error('提交人工帮助申请失败:', error)
     message.error('提交申请失败: ' + (error.message || '未知错误'))
