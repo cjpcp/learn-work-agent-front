@@ -286,7 +286,7 @@
 <script setup lang="ts">
 import { ref, reactive, nextTick } from 'vue'
 import { message } from 'ant-design-vue'
-import { marked } from 'marked'
+
 import { consultationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
@@ -433,12 +433,6 @@ const handleSubmit = async () => {
   }
 }
 
-// 直接解析Markdown，不做额外格式化
-const renderMarkdown = (text: string) => {
-  if (!text) return ''
-  return marked.parse(text)
-}
-
 // 转人工相关
 const cancelTransfer = () => {
   state.value = 'chat'
@@ -553,13 +547,6 @@ const getSupportedMimeType = (): string => {
   return ''
 }
 
-const getAudioExtension = (mimeType: string): string => {
-  if (mimeType.includes('webm')) return 'webm'
-  if (mimeType.includes('ogg')) return 'ogg'
-  if (mimeType.includes('wav')) return 'wav'
-  return 'webm'
-}
-
 const toggleVoice = async () => {
   if (isRecording.value) {
     // 停止录音
@@ -619,21 +606,40 @@ const stopRecording = () => {
   }
 }
 
-const processRecording = () => {
+const processRecording = async () => {
   if (audioChunks.value.length === 0) {
     message.warning('录音内容为空')
     return
   }
 
   const actualMimeType = mediaRecorder.value?.mimeType || getSupportedMimeType() || 'audio/webm'
-  const ext = getAudioExtension(actualMimeType)
   const audioBlob = new Blob(audioChunks.value, { type: actualMimeType })
   audioChunks.value = []
 
-  // 暂存语音文件，等用户点击发送时一起提交
-  const audioFile = new File([audioBlob], `audio.${ext}`, { type: actualMimeType })
-  pendingVoiceFile.value = audioFile
-  message.success('语音已就绪，可继续添加附件或直接发送')
+  try {
+    message.loading({ content: '正在转换为MP3格式...', key: 'mp3convert' })
+
+    // 用 AudioContext 解码原始音频为 PCM
+    const arrayBuffer = await audioBlob.arrayBuffer()
+    const audioContext = new AudioContext()
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer)
+    await audioContext.close()
+
+    // 取左声道 PCM 数据（lamejs 编码单声道）
+    const sampleRate = audioBuffer.sampleRate
+    const pcmData = audioBuffer.getChannelData(0)
+
+    // 使用封装好的 mp3Encoder 工具转换（通过 lame.all.js 全局脚本避免 MPEGMode 问题）
+    const { encodePcmToMp3 } = await import('@/utils/mp3Encoder')
+    const mp3Blob = await encodePcmToMp3(pcmData, sampleRate)
+    const mp3File = new File([mp3Blob], 'audio.mp3', { type: 'audio/mp3' })
+
+    message.success({ content: '语音已就绪，可继续添加附件或直接发送', key: 'mp3convert' })
+    pendingVoiceFile.value = mp3File
+  } catch (err) {
+    console.error('MP3转换失败:', err)
+    message.error({ content: 'MP3转换失败，请重试', key: 'mp3convert' })
+  }
 }
 
 // 聊天区域文件上传

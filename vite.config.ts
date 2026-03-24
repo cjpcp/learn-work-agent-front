@@ -9,6 +9,9 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  optimizeDeps: {
+    include: ['lamejs'],
+  },
   server: {
     port: 3000,
     proxy: {
