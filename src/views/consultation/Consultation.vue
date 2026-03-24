@@ -219,32 +219,51 @@
             type="file"
             class="chat-file-input"
             multiple
+            accept="image/jpeg,image/png,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             @change="handleChatFileUpload"
           />
-          <button class="input-button" @click="triggerChatFileUpload">
-            <svg
-              class="button-icon-svg"
-              viewBox="0 0 24 24"
-              fill="none"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                d="M21.1525 10.8995L12.1369 19.9151C10.0866 21.9653 6.7625 21.9653 4.71225 19.9151C2.662 17.8648 2.662 14.5407 4.71225 12.4904L13.7279 3.47483C15.0947 2.108 17.2198 2.108 18.5866 3.47483C19.9534 4.84167 19.9534 6.96675 18.5866 8.33358L10.3797 16.5405C9.69633 17.2238 8.59637 17.2238 7.91304 16.5405C7.22971 15.8572 7.22971 14.7572 7.91304 14.0739L14.914 7.07295"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              />
-            </svg>
-          </button>
-          <button class="input-button" :class="{ recording: isRecording }" @click="toggleVoice">
-            <span class="button-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
-          </button>
+          <a-tooltip placement="top">
+            <template #title>
+              <div class="upload-tooltip">
+                <div>📎 附件支持：.jpg .png .gif .pdf .doc .docx .xls .xlsx</div>
+                <div>（单文件最大 10MB）</div>
+              </div>
+            </template>
+            <button class="input-button" @click="triggerChatFileUpload">
+              <svg
+                class="button-icon-svg"
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M21.1525 10.8995L12.1369 19.9151C10.0866 21.9653 6.7625 21.9653 4.71225 19.9151C2.662 17.8648 2.662 14.5407 4.71225 12.4904L13.7279 3.47483C15.0947 2.108 17.2198 2.108 18.5866 3.47483C19.9534 4.84167 19.9534 6.96675 18.5866 8.33358L10.3797 16.5405C9.69633 17.2238 8.59637 17.2238 7.91304 16.5405C7.22971 15.8572 7.22971 14.7572 7.91304 14.0739L14.914 7.07295"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
+              </svg>
+            </button>
+          </a-tooltip>
+          <a-tooltip placement="top">
+            <template #title>
+              <div class="upload-tooltip">
+                <div>🎤 语音录制，最长 2 分钟</div>
+                <div>录制完成后自动上传（支持 webm/wav）</div>
+              </div>
+            </template>
+            <button class="input-button" :class="{ recording: isRecording }" @click="toggleVoice">
+              <span class="button-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
+            </button>
+          </a-tooltip>
           <button class="send-button" @click="handleSubmit">
             <span class="send-icon">➤</span>
           </button>
         </div>
         <div class="input-hint">
+          <span class="format-hint">📎 附件：jpg/png/gif/pdf/doc/xls（≤10MB）&nbsp;&nbsp;🎤 语音：最长2分钟</span>
+          <span class="hint-divider">｜</span>
           <a href="#" @click.prevent="showManualForm">申请人工帮助</a>
         </div>
       </div>
@@ -259,7 +278,6 @@ import { marked } from 'marked'
 import { consultationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
-import type { FileInput } from '@/types'
 
 interface Conversation {
   question: string
@@ -290,22 +308,12 @@ const manualForm = reactive({
 })
 const selectedFile = ref<File | null>(null)
 
-// 已上传文件列表
+// 已选择文件列表（暂存在前端，提交时一起上传）
 interface UploadedFile {
   name: string
-  url: string
-  type: string
+  file: File
 }
 const uploadedFiles = ref<UploadedFile[]>([])
-
-// 准备文件列表用于提交
-const prepareFilesForSubmit = (): FileInput[] => {
-  return uploadedFiles.value.map((file) => ({
-    transferMethod: 'remote_url',
-    url: file.url,
-    type: file.type,
-  }))
-}
 
 // 快捷问题处理
 const handleQuickQuestion = (question: string) => {
@@ -344,33 +352,58 @@ const handleSubmit = async () => {
   // 立即清空文本框
   questionText.value = ''
 
-  // 准备文件列表
-  const files = prepareFilesForSubmit()
+  // 使用 multipart 接口：文件和问题文本一起提交
+  const formData = new FormData()
+  formData.append('questionText', currentQuestion.value)
+  formData.append('sessionId', sessionId.value)
+  uploadedFiles.value.forEach((f) => formData.append('files', f.file))
+
+  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
   try {
-    await consultationApi.submitQuestionStream(
+    const response = await fetch(
+      `${baseUrl}/api/v1/consultation/questions/stream/multipart`,
       {
-        questionText: currentQuestion.value,
-        questionType: 'TEXT',
-        category: undefined,
-        imageUrl: undefined,
-        voiceUrl: undefined,
-        files: files.length > 0 ? files : undefined,
-        sessionId: sessionId.value,
-      },
-      (chunk: string) => {
-        // 收到流式数据块，追加到回答中
-        if (chunk.startsWith('错误:')) {
-          message.error(chunk)
-          return
-        }
-        // 直接追加到回答，不使用打字机效果
-        aiAnswer.value += chunk
-      },
-      token
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      }
     )
-    isStreaming.value = false // 流式接收完成
-    // 清空已上传文件
+
+    if (!response.ok) {
+      throw new Error(`请求失败: ${response.status} ${response.statusText}`)
+    }
+
+    const reader = response.body?.getReader()
+    const decoder = new TextDecoder('utf-8')
+    let buffer = ''
+
+    if (!reader) throw new Error('无法获取响应流')
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      buffer += decoder.decode(value, { stream: true })
+      let eventEndIndex
+      while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
+        const event = buffer.substring(0, eventEndIndex)
+        buffer = buffer.substring(eventEndIndex + 2)
+        for (const line of event.split('\n')) {
+          if (line.startsWith('data:')) {
+            const jsonStr = line.substring(5).trim()
+            if (jsonStr && jsonStr !== '[DONE]') {
+              try {
+                const parsed = JSON.parse(jsonStr)
+                if (parsed.answer) aiAnswer.value += parsed.answer
+              } catch {
+                aiAnswer.value += jsonStr
+              }
+            }
+          }
+        }
+      }
+    }
+    isStreaming.value = false
     uploadedFiles.value = []
   } catch (error: any) {
     console.error('咨询请求失败:', error)
@@ -437,12 +470,13 @@ const submitManual = async () => {
     let attachmentUrl: string | undefined = undefined
 
     // 上传文件（如果有）
+    // 注意：request.ts 响应拦截器已解包，返回的直接是 string URL（不是 Result<string>）
     if (selectedFile.value) {
-      const result = await consultationApi.uploadFile(selectedFile.value)
-      if (result.code === 200 && result.data) {
-        attachmentUrl = result.data
+      const fileUrl = await consultationApi.uploadFile(selectedFile.value) as unknown as string
+      if (fileUrl) {
+        attachmentUrl = fileUrl
       } else {
-        message.error('文件上传失败: ' + result.message)
+        message.error('文件上传失败，请重试')
         return
       }
     }
@@ -487,6 +521,24 @@ const submitManual = async () => {
 const isRecording = ref(false)
 const mediaRecorder = ref<MediaRecorder | null>(null)
 const audioChunks = ref<Blob[]>([])
+const recordingTimer = ref<ReturnType<typeof setTimeout> | null>(null)
+const MAX_RECORDING_SECONDS = 120 // 最长录制2分钟
+
+// 检测浏览器支持的音频格式
+const getSupportedMimeType = (): string => {
+  const types = ['audio/webm;codecs=opus', 'audio/webm', 'audio/ogg;codecs=opus', 'audio/wav']
+  for (const type of types) {
+    if (MediaRecorder.isTypeSupported(type)) return type
+  }
+  return ''
+}
+
+const getAudioExtension = (mimeType: string): string => {
+  if (mimeType.includes('webm')) return 'webm'
+  if (mimeType.includes('ogg')) return 'ogg'
+  if (mimeType.includes('wav')) return 'wav'
+  return 'webm'
+}
 
 const toggleVoice = async () => {
   if (isRecording.value) {
@@ -501,7 +553,9 @@ const toggleVoice = async () => {
 const startRecording = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const recorder = new MediaRecorder(stream)
+    const mimeType = getSupportedMimeType()
+    const recorderOptions = mimeType ? { mimeType } : {}
+    const recorder = new MediaRecorder(stream, recorderOptions)
 
     recorder.ondataavailable = (event) => {
       if (event.data.size > 0) {
@@ -510,13 +564,23 @@ const startRecording = async () => {
     }
 
     recorder.onstop = () => {
+      // 停止所有音轨，释放麦克风
+      stream.getTracks().forEach((track) => track.stop())
       processRecording()
     }
 
     recorder.start()
     mediaRecorder.value = recorder
     isRecording.value = true
-    message.info('开始录音...')
+    message.info('开始录音，最长 2 分钟...')
+
+    // 超时自动停止
+    recordingTimer.value = setTimeout(() => {
+      if (isRecording.value) {
+        message.warning('已达到最长录制时间（2分钟），自动停止')
+        stopRecording()
+      }
+    }, MAX_RECORDING_SECONDS * 1000)
   } catch (error) {
     console.error('录音失败:', error)
     message.error('录音失败，请检查麦克风权限')
@@ -524,10 +588,14 @@ const startRecording = async () => {
 }
 
 const stopRecording = () => {
-  if (mediaRecorder.value) {
+  if (recordingTimer.value) {
+    clearTimeout(recordingTimer.value)
+    recordingTimer.value = null
+  }
+  if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
     mediaRecorder.value.stop()
     isRecording.value = false
-    message.info('录音结束，正在处理...')
+    message.info('录音结束，正在上传...')
   }
 }
 
@@ -537,11 +605,13 @@ const processRecording = async () => {
     return
   }
 
-  const audioBlob = new Blob(audioChunks.value, { type: 'audio/mp3' })
+  // 使用实际录制的 mimeType，避免格式与内容不匹配
+  const actualMimeType = mediaRecorder.value?.mimeType || getSupportedMimeType() || 'audio/webm'
+  const ext = getAudioExtension(actualMimeType)
+  const audioBlob = new Blob(audioChunks.value, { type: actualMimeType })
   audioChunks.value = []
 
   try {
-    // 上传音频文件
     const userStore = useUserStore()
     const token = userStore.token
 
@@ -550,14 +620,14 @@ const processRecording = async () => {
       return
     }
 
-    // 创建一个File对象以便上传
-    const audioFile = new File([audioBlob], 'audio.mp3', { type: 'audio/mp3' })
-    const result = await consultationApi.uploadVoice(audioFile)
-    if (result.code === 200 && result.data) {
-      // 提交语音问题
-      await submitVoiceQuestion(result.data)
+    // 使用正确的扩展名和 MIME 类型创建 File 对象
+    const audioFile = new File([audioBlob], `audio.${ext}`, { type: actualMimeType })
+    // 注意：request.ts 响应拦截器已解包，返回的直接是 string URL
+    const voiceUrl = await consultationApi.uploadVoice(audioFile) as unknown as string
+    if (voiceUrl) {
+      await submitVoiceQuestion(voiceUrl)
     } else {
-      message.error('语音上传失败: ' + result.message)
+      message.error('语音上传失败，请重试')
     }
   } catch (error: any) {
     console.error('处理录音失败:', error)
@@ -624,76 +694,43 @@ const submitVoiceQuestion = async (voiceUrl: string) => {
 
 // 聊天区域文件上传
 const chatFileInput = ref<HTMLInputElement | null>(null)
-const isUploading = ref(false)
 
 const triggerChatFileUpload = () => {
   chatFileInput.value?.click()
 }
 
-const handleChatFileUpload = async (event: Event) => {
+const handleChatFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (!target.files || target.files.length === 0) return
 
-  const userStore = useUserStore()
-  const token = userStore.token
+  const allowedTypes = [
+    'image/jpeg',
+    'image/png',
+    'image/gif',
+    'application/pdf',
+    'application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-excel',
+    'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  ]
+  const maxSize = 10 * 1024 * 1024 // 10MB
 
-  if (!token) {
-    message.error('请先登录')
-    return
+  for (let i = 0; i < target.files.length; i++) {
+    const file = target.files[i]
+    if (!allowedTypes.includes(file.type)) {
+      message.warning(`文件 ${file.name} 类型不支持`)
+      continue
+    }
+    if (file.size > maxSize) {
+      message.warning(`文件 ${file.name} 大小超过10MB限制`)
+      continue
+    }
+    uploadedFiles.value.push({ name: file.name, file })
+    message.success(`文件 ${file.name} 已添加`)
   }
 
-  isUploading.value = true
-
-  try {
-    for (let i = 0; i < target.files.length; i++) {
-      const file = target.files[i]
-
-      // 检查文件类型
-      const allowedTypes = [
-        'image/jpeg',
-        'image/png',
-        'image/gif',
-        'application/pdf',
-        'application/msword',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/vnd.ms-excel',
-        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-      ]
-      const maxSize = 10 * 1024 * 1024 // 10MB
-
-      if (!allowedTypes.includes(file.type)) {
-        message.warning(`文件 ${file.name} 类型不支持`)
-        continue
-      }
-
-      if (file.size > maxSize) {
-        message.warning(`文件 ${file.name} 大小超过10MB限制`)
-        continue
-      }
-
-      // 上传文件
-      const result = await consultationApi.uploadFile(file)
-      if (result.code === 200 && result.data) {
-        uploadedFiles.value.push({
-          name: file.name,
-          url: result.data,
-          type: file.type.startsWith('image/') ? 'image' : 'document',
-        })
-        message.success(`文件 ${file.name} 上传成功`)
-      } else {
-        message.error(`文件 ${file.name} 上传失败: ${result.message}`)
-      }
-    }
-  } catch (error: any) {
-    console.error('文件上传失败:', error)
-    message.error('文件上传失败: ' + (error.message || '未知错误'))
-  } finally {
-    isUploading.value = false
-    // 清空input，允许重复选择同一文件
-    if (chatFileInput.value) {
-      chatFileInput.value.value = ''
-    }
-  }
+  // 清空input，允许重复选择同一文件
+  if (chatFileInput.value) chatFileInput.value.value = ''
 }
 
 const removeUploadedFile = (index: number) => {
@@ -1213,5 +1250,21 @@ const removeUploadedFile = (index: number) => {
 
 .input-hint a:hover {
   text-decoration: underline;
+}
+
+.format-hint {
+  font-size: 11px;
+  color: #aaa;
+}
+
+.hint-divider {
+  font-size: 11px;
+  color: #ccc;
+  margin: 0 4px;
+}
+
+.upload-tooltip div {
+  font-size: 12px;
+  line-height: 1.6;
 }
 </style>
