@@ -206,12 +206,24 @@
             </button>
           </div>
         </div>
+        <!-- 语音暂存提示 -->
+        <div v-if="pendingVoiceFile" class="uploaded-files-list">
+          <div class="uploaded-file-item">
+            <span style="margin-right:4px">🎤</span>
+            <span class="file-name">{{ pendingVoiceFile.name }}（语音）</span>
+            <button class="remove-file-btn" @click="pendingVoiceFile = null">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </div>
+        </div>
         <div class="input-container">
           <input
             v-model="questionText"
             type="text"
             class="question-input"
-            placeholder="请输入您的问题..."
+            :placeholder="pendingVoiceFile ? '语音已就绪，可补充文字说明（可选）...' : '请输入您的问题...'"
             @keyup.enter="handleSubmit"
           />
           <input
@@ -315,6 +327,9 @@ interface UploadedFile {
 }
 const uploadedFiles = ref<UploadedFile[]>([])
 
+// 录音暂存：录制完成后存为 File，不立即提交
+const pendingVoiceFile = ref<File | null>(null)
+
 // 快捷问题处理
 const handleQuickQuestion = (question: string) => {
   questionText.value = question
@@ -323,8 +338,8 @@ const handleQuickQuestion = (question: string) => {
 
 // 提交问题
 const handleSubmit = async () => {
-  if (!questionText.value.trim()) {
-    message.warning('请输入问题')
+  if (!questionText.value.trim() && !pendingVoiceFile.value) {
+    message.warning('请输入问题或录制语音')
     return
   }
 
@@ -336,7 +351,7 @@ const handleSubmit = async () => {
     })
   }
 
-  currentQuestion.value = questionText.value
+  currentQuestion.value = questionText.value.trim() || '语音问题'
   state.value = 'chat'
   aiAnswer.value = '' // 清空之前的回答
   isStreaming.value = true // 开始流式接收
@@ -357,6 +372,10 @@ const handleSubmit = async () => {
   formData.append('questionText', currentQuestion.value)
   formData.append('sessionId', sessionId.value)
   uploadedFiles.value.forEach((f) => formData.append('files', f.file))
+  // 附加语音文件（如有）
+  if (pendingVoiceFile.value) {
+    formData.append('files', pendingVoiceFile.value)
+  }
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
@@ -405,6 +424,7 @@ const handleSubmit = async () => {
     }
     isStreaming.value = false
     uploadedFiles.value = []
+    pendingVoiceFile.value = null
   } catch (error: any) {
     console.error('咨询请求失败:', error)
     message.error('咨询请求失败: ' + (error.message || '未知错误'))
@@ -595,101 +615,25 @@ const stopRecording = () => {
   if (mediaRecorder.value && mediaRecorder.value.state !== 'inactive') {
     mediaRecorder.value.stop()
     isRecording.value = false
-    message.info('录音结束，正在上传...')
+    message.info('录音完成，点击发送按钮提交')
   }
 }
 
-const processRecording = async () => {
+const processRecording = () => {
   if (audioChunks.value.length === 0) {
     message.warning('录音内容为空')
     return
   }
 
-  // 使用实际录制的 mimeType，避免格式与内容不匹配
   const actualMimeType = mediaRecorder.value?.mimeType || getSupportedMimeType() || 'audio/webm'
   const ext = getAudioExtension(actualMimeType)
   const audioBlob = new Blob(audioChunks.value, { type: actualMimeType })
   audioChunks.value = []
 
-  try {
-    const userStore = useUserStore()
-    const token = userStore.token
-
-    if (!token) {
-      message.error('请先登录')
-      return
-    }
-
-    // 使用正确的扩展名和 MIME 类型创建 File 对象
-    const audioFile = new File([audioBlob], `audio.${ext}`, { type: actualMimeType })
-    // 注意：request.ts 响应拦截器已解包，返回的直接是 string URL
-    const voiceUrl = await consultationApi.uploadVoice(audioFile) as unknown as string
-    if (voiceUrl) {
-      await submitVoiceQuestion(voiceUrl)
-    } else {
-      message.error('语音上传失败，请重试')
-    }
-  } catch (error: any) {
-    console.error('处理录音失败:', error)
-    message.error('处理录音失败: ' + (error.message || '未知错误'))
-  }
-}
-
-const submitVoiceQuestion = async (voiceUrl: string) => {
-  // 如果有当前对话，先保存到历史记录
-  if (currentQuestion.value && aiAnswer.value) {
-    conversationHistory.value.push({
-      question: currentQuestion.value,
-      answer: aiAnswer.value,
-    })
-  }
-
-  currentQuestion.value = '语音问题'
-  state.value = 'chat'
-  aiAnswer.value = '' // 清空之前的回答
-  isStreaming.value = true // 开始流式接收
-
-  const userStore = useUserStore()
-  const token = userStore.token
-
-  if (!token) {
-    message.error('请先登录')
-    return
-  }
-
-  // 准备文件列表
-  const files = prepareFilesForSubmit()
-
-  try {
-    await consultationApi.submitQuestionStream(
-      {
-        questionText: '语音问题',
-        questionType: 'VOICE',
-        category: undefined,
-        imageUrl: undefined,
-        voiceUrl: voiceUrl,
-        files: files.length > 0 ? files : undefined,
-      },
-      (chunk: string) => {
-        // 收到流式数据块，追加到回答中
-        if (chunk.startsWith('错误:')) {
-          message.error(chunk)
-          return
-        }
-        // 直接追加到回答，不使用打字机效果
-        aiAnswer.value += chunk
-      },
-      token
-    )
-    isStreaming.value = false // 流式接收完成
-    // 清空已上传文件
-    uploadedFiles.value = []
-  } catch (error: any) {
-    console.error('咨询请求失败:', error)
-    message.error('咨询请求失败: ' + (error.message || '未知错误'))
-    // 如果失败，显示转人工选项
-    state.value = 'transfer'
-  }
+  // 暂存语音文件，等用户点击发送时一起提交
+  const audioFile = new File([audioBlob], `audio.${ext}`, { type: actualMimeType })
+  pendingVoiceFile.value = audioFile
+  message.success('语音已就绪，可继续添加附件或直接发送')
 }
 
 // 聊天区域文件上传

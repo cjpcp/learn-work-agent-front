@@ -201,33 +201,11 @@ export const consultationApi = {
       throw error
     }
   },
-  getQuestion: (id: number): Promise<Result<ConsultationQuestion>> => {
-    return request.get(`/consultation/questions/${id}`)
-  },
   getMyQuestions: (params: PageRequest): Promise<Result<PageResult<ConsultationQuestion>>> => {
     return request.get('/consultation/questions/my', { params })
   },
-  getAllQuestions: (
-    params: PageRequest & { status?: string; category?: string }
-  ): Promise<Result<PageResult<ConsultationQuestion>>> => {
-    return request.get('/consultation/questions', { params })
-  },
-  rateQuestion: (id: number, satisfactionScore: number): Promise<Result<void>> => {
-    return request.post(`/consultation/questions/${id}/rate`, null, {
-      params: { satisfactionScore },
-    })
-  },
   transferToHuman: (id: number, data: TransferToHumanRequest): Promise<Result<void>> => {
     return request.post(`/consultation/questions/${id}/transfer`, data)
-  },
-  uploadImage: (file: File): Promise<Result<string>> => {
-    const formData = new FormData()
-    formData.append('file', file)
-    return request.post('/consultation/upload/image', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
   },
   uploadVoice: (file: File): Promise<Result<string>> => {
     const formData = new FormData()
@@ -314,13 +292,8 @@ export const leaveApi = {
   submitApplication: (data: any): Promise<Result<void>> => {
     return request.post('/leave/applications', data)
   },
-
-  // 获取申请列表
-  getApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
-    return request.get('/leave/applications/my', { params })
-  },
-
-  // 获取我的申请列表（别名，兼容旧代码）
+// 获取申请列表
+// 获取我的申请列表（别名，兼容旧代码）
   getMyApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
     return request.get('/leave/applications/my', { params })
   },
@@ -329,15 +302,8 @@ export const leaveApi = {
   getApplication: (id: number): Promise<LeaveApplication> => {
     return request.get(`/leave/applications/${id}`)
   },
-
-  // 审批申请（教师/管理员）
-  approveApplication: (id: number, data: any): Promise<void> => {
-    return request.post(`/leave/applications/${id}/approve`, data)
-  },
-
-
-
-  // 下载请假条
+// 审批申请（教师/管理员）
+// 下载请假条
   downloadLeaveSlip: (id: number): void => {
     window.open(`/api/v1/leave/applications/${id}/download-slip`)
   },
