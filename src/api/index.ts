@@ -11,11 +11,11 @@ import { encrypt } from '@/utils/crypto'
 import type { AxiosProgressEvent } from 'axios'
 
 export interface ConsultationRequest {
-  questionText: string
+  questionText?: string
   questionType: 'TEXT' | 'IMAGE' | 'VOICE'
   category?: string
-  imageUrl?: string
   voiceUrl?: string
+  sessionId?: string
   files?: { transferMethod: string; url: string; type: string }[]
 }
 

@@ -351,7 +351,7 @@ const handleSubmit = async () => {
     })
   }
 
-  currentQuestion.value = questionText.value.trim() || '语音问题'
+  currentQuestion.value = questionText.value.trim() || (pendingVoiceFile.value ? '🎤 语音消息' : '')
   state.value = 'chat'
   aiAnswer.value = '' // 清空之前的回答
   isStreaming.value = true // 开始流式接收
@@ -365,14 +365,16 @@ const handleSubmit = async () => {
   }
 
   // 立即清空文本框
+  const textToSend = questionText.value.trim()
   questionText.value = ''
 
   // 使用 multipart 接口：文件和问题文本一起提交
   const formData = new FormData()
-  formData.append('questionText', currentQuestion.value)
+  // 仅当有文本时才发送 questionText，纯语音时发送空字符串
+  formData.append('questionText', textToSend)
   formData.append('sessionId', sessionId.value)
   uploadedFiles.value.forEach((f) => formData.append('files', f.file))
-  // 附加语音文件（如有）
+  // 语音文件单独作为 voice 类型附加（后端按 content-type 区分）
   if (pendingVoiceFile.value) {
     formData.append('files', pendingVoiceFile.value)
   }
