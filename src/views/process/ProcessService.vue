@@ -41,9 +41,9 @@
                       <a-button
                         v-if="
                           item.status === 'pending' &&
-                          (userStore.role === 'COUNSELOR' ||
-                            userStore.role === 'COLLEGE_LEADER' ||
-                            userStore.role === 'DEPARTMENT_LEADER')
+                          (userStore.roleName === 'COUNSELOR' ||
+                            userStore.roleName === 'COLLEGE_LEADER' ||
+                            userStore.roleName === 'DEPARTMENT_LEADER')
                         "
                         type="primary"
                         size="small"

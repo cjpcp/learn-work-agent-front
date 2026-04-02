@@ -113,7 +113,7 @@
                 alt="用户头像"
                 class="user-avatar"
               />
-              <span class="user-name">{{ userStore.realName || 'JayLiu' }}</span>
+              <span class="user-name">{{ userStore.teacherName || userStore.nick || '用户' }}</span>
             </div>
             <template #overlay>
               <a-menu>

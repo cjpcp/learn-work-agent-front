@@ -6,7 +6,6 @@ export interface Result<T = any> {
   timestamp: number
 }
 
-// 分页请求
 export interface PageRequest {
   pageNum?: number
   pageSize?: number
@@ -14,7 +13,6 @@ export interface PageRequest {
   orderDirection?: 'ASC' | 'DESC'
 }
 
-// 分页结果
 export interface PageResult<T> {
   records: T[]
   total: number
@@ -23,22 +21,17 @@ export interface PageResult<T> {
   totalPages: number
 }
 
-// 用户相关
 export interface User {
   id?: number
   username: string
-  realName?: string
-  studentNo?: string
+  nick: string
+  teacherId?: number
+  teacherName?: string
   phone?: string
-  email?: string
-  role: 'STUDENT' | 'COUNSELOR' | 'COLLEGE_LEADER' | 'DEPARTMENT_LEADER'
-  status?: 'ACTIVE' | 'INACTIVE'
-  department?: string
-  departmentId?: number
-  grade?: string
-  className?: string
-  workDepartment?: string
-  position?: string
+  cardNumber?: string
+  roleId?: number
+  roleName?: string
+  status?: number
   createTime?: string
   updateTime?: string
 }
@@ -50,19 +43,16 @@ export interface LoginRequest {
 
 export interface LoginResponse {
   token: string
-  userId: number
+  adminId: number
   username: string
-  realName: string
-  role: string
-  department?: string
-  departmentId?: number
-  grade?: string
-  className?: string
-  workDepartment?: string
-  position?: string
+  nick: string
+  teacherId: number
+  teacherName: string
+  roleId: number
+  roleName: string
+  status: number
 }
 
-// 咨询相关
 export interface FileInput {
   transferMethod: string
   url: string
@@ -98,7 +88,6 @@ export interface TransferToHumanRequest {
   reason?: string
 }
 
-// 请假相关
 export interface LeaveApplicationRequest {
   leaveType: 'SICK' | 'PERSONAL' | 'PUBLIC'
   startDate: string
@@ -106,9 +95,6 @@ export interface LeaveApplicationRequest {
   reason?: string
   attachmentUrl?: string
   studentName?: string
-  departmentId?: number
-  grade?: string
-  className?: string
 }
 
 export interface LeaveApplication {
@@ -129,9 +115,6 @@ export interface LeaveApplication {
   cancelled?: boolean
   cancelTime?: string
   studentName?: string
-  departmentId?: number
-  grade?: string
-  className?: string
   createTime?: string
   updateTime?: string
 }
@@ -141,7 +124,6 @@ export interface ApprovalRequest {
   approvalComment?: string
 }
 
-// 奖助相关
 export interface AwardApplicationRequest {
   applicationType: 'SCHOLARSHIP' | 'GRANT' | 'SUBSIDY'
   awardName: string
@@ -149,9 +131,6 @@ export interface AwardApplicationRequest {
   reason?: string
   attachmentUrls?: string[]
   studentName?: string
-  departmentId?: number
-  grade?: string
-  className?: string
 }
 
 export interface AwardApplication {
@@ -171,14 +150,10 @@ export interface AwardApplication {
   approvalComment?: string
   approvalTime?: string
   studentName?: string
-  departmentId?: number
-  grade?: string
-  className?: string
   createTime?: string
   updateTime?: string
 }
 
-// 通知相关
 export interface Notification {
   id?: number
   userId: number
@@ -196,7 +171,6 @@ export interface UnreadCountResponse {
   count: number
 }
 
-// 流程代办相关
 export interface ProcessItem {
   id: string
   name: string

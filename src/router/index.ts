@@ -108,7 +108,7 @@ router.beforeEach((to, from, next) => {
     if (!userStore.isLoggedIn()) {
       next('/login')
     } else {
-      const hasRole = (to.meta.roles as string[]).some((role: string) => userStore.role === role)
+      const hasRole = (to.meta.roles as string[]).some((role: string) => userStore.roleName === role)
       if (hasRole) {
         next()
       } else {
