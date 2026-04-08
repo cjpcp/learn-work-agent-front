@@ -73,6 +73,14 @@ const router = createRouter({
           component: () => import('@/views/notification/NotificationList.vue'),
         },
         {
+          path: '/consultation/transfer-config',
+          name: 'TransferConfig',
+          component: () => import('@/views/consultation/TransferConfig.vue'),
+          meta: {
+            roles: ['ADMIN'],
+          },
+        },
+        {
           path: '/approval/config',
           name: 'ApprovalConfig',
           component: () => import('@/views/approval/ApprovalConfig.vue'),

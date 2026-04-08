@@ -33,9 +33,10 @@ export interface RegisterRequest {
   password: string
   nick: string
   roleId: number
-  teacherName: string
-  phone: string
-  cardNumber: string
+  teacher: boolean
+  teacherName?: string
+  phone?: string
+  cardNumber?: string
 }
 
 export const authApi = {
@@ -130,8 +131,11 @@ export const consultationApi = {
       }
     }
   },
-  getMyQuestions: (params: PageRequest): Promise<Result<PageResult<ConsultationQuestion>>> => {
+  getMyQuestions: (params: PageRequest): Promise<PageResult<ConsultationQuestion>> => {
     return request.get('/consultation/questions/my', { params })
+  },
+  getQuestionHistory: (id: number): Promise<any[]> => {
+    return request.get(`/consultation/questions/${id}/history`)
   },
   transferToHuman: (id: number, data: TransferToHumanRequest): Promise<Result<void>> => {
     return request.post(`/consultation/questions/${id}/transfer`, data)
@@ -216,6 +220,13 @@ export const approvalConfigApi = {
   disableProcess: (id: number): Promise<any> => request.post(`/approval/config/processes/${id}/disable`),
 }
 
+export const transferConfigApi = {
+  list: (): Promise<any[]> => request.get('/consultation/transfer-config'),
+  create: (data: any): Promise<any> => request.post('/consultation/transfer-config', data),
+  update: (id: number, data: any): Promise<any> => request.put(`/consultation/transfer-config/${id}`, data),
+  delete: (id: number): Promise<void> => request.delete(`/consultation/transfer-config/${id}`),
+}
+
 export const processApi = {
   getProcessList: (): Promise<any> => request.get('/process/list'),
   getCompletedProcesses: (): Promise<any> => request.get('/process/completed'),
@@ -257,7 +268,7 @@ export const systemApi = {
   getAllRoles: (): Promise<{ id: number; code: string; name: string; pagePath: string }[]> => {
     return request.get('/system/roles')
   },
-  getUsers: (params?: { roleId?: number; teacherKeyword?: string }): Promise<{
+  getUsers: (params?: { pageNum?: number; pageSize?: number; roleId?: number; teacherKeyword?: string; username?: string; nick?: string; status?: number }): Promise<PageResult<{
     id: number
     username: string
     nick: string
@@ -268,7 +279,7 @@ export const systemApi = {
     roleName: string
     status: number
     name: string
-  }[]> => {
+  }>> => {
     return request.get('/system/users', { params: params || {} })
   },
 }

@@ -39,12 +39,7 @@
                         {{ item.status === 'pending' ? '待处理' : '已处理' }}
                       </a-tag>
                       <a-button
-                        v-if="
-                          item.status === 'pending' &&
-                          (userStore.roleName === 'COUNSELOR' ||
-                            userStore.roleName === 'COLLEGE_LEADER' ||
-                            userStore.roleName === 'DEPARTMENT_LEADER')
-                        "
+                        v-if="item.allowAction"
                         type="primary"
                         size="small"
                         style="margin-right: 4px"
@@ -99,9 +94,8 @@
           </a-tabs>
         </a-tab-pane>
 
-        <!-- 人工处理中心标签页（仅辅导员和管理员可见） -->
+        <!-- 人工处理中心标签页 -->
         <a-tab-pane
-          v-if="userStore.isCounselor() || userStore.isAdmin()"
           key="human"
           tab="人工处理中心"
         >
@@ -188,9 +182,8 @@
           </a-tabs>
         </a-tab-pane>
 
-        <!-- 我的转人工记录标签页（仅非辅导员和非管理员可见） -->
+        <!-- 我的转人工记录标签页 -->
         <a-tab-pane
-          v-if="!userStore.isCounselor() && !userStore.isAdmin()"
           key="transfers"
           tab="我的转人工记录"
         >
@@ -817,8 +810,6 @@ const loadProcesses = async () => {
 
 // 加载人工处理中心数据
 const loadHumanProcessData = async () => {
-  if (!(userStore.isCounselor() || userStore.isAdmin())) return
-
   humanProcessLoading.value = true
   try {
     const params: PageRequest = {
@@ -838,8 +829,6 @@ const loadHumanProcessData = async () => {
 
 // 加载已完成记录数据
 const loadCompletedProcessData = async () => {
-  if (!(userStore.isCounselor() || userStore.isAdmin())) return
-
   completedProcessLoading.value = true
   try {
     const params: PageRequest = {
@@ -904,7 +893,6 @@ const handleGoApprove = async (item: ProcessItem) => {
       const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
       const matchedTask = tasks.find(
         (t: any) =>
-          String(t.instance?.businessId) === String(item.id) ||
           String(t.businessId) === String(item.id)
       )
       if (matchedTask) {
@@ -960,7 +948,6 @@ const handleViewProcess = async (item: ProcessItem) => {
       const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
       const matchedTask = tasks.find(
         (t: any) =>
-          String(t.instance?.businessId) === String(item.id) ||
           String(t.businessId) === String(item.id)
       )
       if (matchedTask) {
@@ -978,7 +965,7 @@ const handleViewProcess = async (item: ProcessItem) => {
 }
 
 const canApprove = () => {
-  const role = userStore.role
+  const role = userStore.roleName
   const isApprover =
     role === 'COUNSELOR' ||
     role === 'COLLEGE_LEADER' ||
@@ -1145,27 +1132,20 @@ const handleViewTransferDetail = async (record: any) => {
 
 onMounted(() => {
   loadProcesses()
-  if (userStore.isCounselor() || userStore.isAdmin()) {
-    if (humanActiveTab.value === 'pending') {
-      loadHumanProcessData()
-    } else {
-      loadCompletedProcessData()
-    }
+  if (humanActiveTab.value === 'pending') {
+    loadHumanProcessData()
+  } else {
+    loadCompletedProcessData()
   }
-  // 只有非辅导员和非管理员用户才加载转人工记录
-  if (!userStore.isCounselor() && !userStore.isAdmin()) {
-    loadTransferData()
-  }
+  loadTransferData()
 })
 
 // 监听人工处理中心标签页变化
 watch(humanActiveTab, (newTab) => {
-  if (userStore.isCounselor() || userStore.isAdmin()) {
-    if (newTab === 'pending') {
-      loadHumanProcessData()
-    } else if (newTab === 'completed') {
-      loadCompletedProcessData()
-    }
+  if (newTab === 'pending') {
+    loadHumanProcessData()
+  } else if (newTab === 'completed') {
+    loadCompletedProcessData()
   }
 })
 

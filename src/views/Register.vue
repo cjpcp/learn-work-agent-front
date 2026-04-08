@@ -5,7 +5,7 @@
       <template #title>
         <div class="register-title">
           <h2>用户注册</h2>
-          <p>创建系统登录账号并绑定教师信息</p>
+          <p>{{ form.teacher ? '创建系统登录账号并绑定教师信息' : '创建系统登录账号' }}</p>
         </div>
       </template>
       <a-form :model="form" :rules="rules" layout="vertical" @finish="handleRegister">
@@ -22,27 +22,38 @@
           <a-form-item name="nick" label="昵称">
             <a-input v-model:value="form.nick" placeholder="请输入昵称" size="large" class="register-input" />
           </a-form-item>
-          <a-form-item name="teacherName" label="教师姓名">
-            <a-input v-model:value="form.teacherName" placeholder="请输入教师姓名" size="large" class="register-input" />
+          <a-form-item name="roleId" label="角色">
+            <a-select v-model:value="form.roleId" placeholder="请选择角色" size="large" :loading="loadingRoles">
+              <a-select-option v-for="role in roles" :key="role.id" :value="role.id">
+                {{ role.name }}
+              </a-select-option>
+            </a-select>
           </a-form-item>
         </div>
 
-        <div class="form-row">
-          <a-form-item name="cardNumber" label="学工号">
-            <a-input v-model:value="form.cardNumber" placeholder="请输入学工号" size="large" class="register-input" />
-          </a-form-item>
-          <a-form-item name="phone" label="联系电话">
-            <a-input v-model:value="form.phone" placeholder="请输入联系电话" size="large" class="register-input" />
-          </a-form-item>
-        </div>
-
-        <a-form-item name="roleId" label="角色">
-          <a-select v-model:value="form.roleId" placeholder="请选择角色" size="large" :loading="loadingRoles">
-            <a-select-option v-for="role in roles" :key="role.id" :value="role.id">
-              {{ role.name }}
-            </a-select-option>
-          </a-select>
+        <a-form-item name="teacher" label="是否为教师">
+          <a-radio-group v-model:value="form.teacher" @change="handleTeacherChange">
+            <a-radio :value="true">是</a-radio>
+            <a-radio :value="false">否</a-radio>
+          </a-radio-group>
         </a-form-item>
+
+        <template v-if="form.teacher">
+          <div class="form-row">
+            <a-form-item name="teacherName" label="教师姓名">
+              <a-input v-model:value="form.teacherName" placeholder="请输入教师姓名" size="large" class="register-input" />
+            </a-form-item>
+            <a-form-item name="cardNumber" label="学工号">
+              <a-input v-model:value="form.cardNumber" placeholder="请输入学工号" size="large" class="register-input" />
+            </a-form-item>
+          </div>
+
+          <div class="form-row">
+            <a-form-item name="phone" label="联系电话">
+              <a-input v-model:value="form.phone" placeholder="请输入联系电话" size="large" class="register-input" />
+            </a-form-item>
+          </div>
+        </template>
 
         <a-form-item>
           <a-button type="primary" html-type="submit" size="large" block :loading="loading" class="register-button">注册</a-button>
@@ -73,6 +84,7 @@ const form = reactive({
   username: '',
   password: '',
   nick: '',
+  teacher: undefined as boolean | undefined,
   teacherName: '',
   cardNumber: '',
   phone: '',
@@ -94,9 +106,34 @@ const rules: Record<string, Rule[]> = {
   ],
   password: [{ required: true, message: '请输入密码', trigger: 'blur' }],
   nick: [{ required: true, message: '请输入昵称', trigger: 'blur' }],
-  teacherName: [{ required: true, message: '请输入教师姓名', trigger: 'blur' }],
-  cardNumber: [{ required: true, message: '请输入学工号', trigger: 'blur' }],
-  phone: [{ required: true, message: '请输入联系电话', trigger: 'blur' }],
+  teacher: [{ required: true, message: '请选择是否为教师', trigger: 'change', type: 'boolean' }],
+  teacherName: [
+    {
+      validator: async (_rule: Rule, value: string) => {
+        if (!form.teacher || (value && value.trim())) return Promise.resolve()
+        return Promise.reject(new Error('请输入教师姓名'))
+      },
+      trigger: 'blur',
+    },
+  ],
+  cardNumber: [
+    {
+      validator: async (_rule: Rule, value: string) => {
+        if (!form.teacher || (value && value.trim())) return Promise.resolve()
+        return Promise.reject(new Error('请输入学工号'))
+      },
+      trigger: 'blur',
+    },
+  ],
+  phone: [
+    {
+      validator: async (_rule: Rule, value: string) => {
+        if (!form.teacher || (value && value.trim())) return Promise.resolve()
+        return Promise.reject(new Error('请输入联系电话'))
+      },
+      trigger: 'blur',
+    },
+  ],
   roleId: [{ required: true, message: '请选择角色', trigger: 'change' }],
 }
 
@@ -111,18 +148,28 @@ const loadRoles = async () => {
   }
 }
 
+const handleTeacherChange = () => {
+  if (!form.teacher) {
+    form.teacherName = ''
+    form.cardNumber = ''
+    form.phone = ''
+  }
+}
+
 const handleRegister = async () => {
   loading.value = true
   try {
-    await authApi.register({
+    const payload = {
       username: form.username,
       password: form.password,
       nick: form.nick,
-      teacherName: form.teacherName,
-      cardNumber: form.cardNumber,
-      phone: form.phone,
       roleId: Number(form.roleId),
-    })
+      teacher: Boolean(form.teacher),
+      teacherName: form.teacher ? form.teacherName : undefined,
+      cardNumber: form.teacher ? form.cardNumber : undefined,
+      phone: form.teacher ? form.phone : undefined,
+    }
+    await authApi.register(payload)
     message.success('注册成功，请登录')
     router.push({
       path: '/login',

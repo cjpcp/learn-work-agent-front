@@ -25,36 +25,31 @@
       </template>
     </a-table>
 
-    <a-modal v-model:open="visible" title="问题详情" width="800px" :footer="null">
-      <a-descriptions :column="2" bordered>
-        <a-descriptions-item label="问题内容" :span="2">
-          {{ currentQuestion?.questionText }}
-        </a-descriptions-item>
-        <a-descriptions-item label="问题类型">
-          <a-tag v-if="currentQuestion?.questionType === 'TEXT'">文本</a-tag>
-          <a-tag v-else-if="currentQuestion?.questionType === 'VOICE'">语音</a-tag>
-          <a-tag v-else-if="currentQuestion?.questionType === 'IMAGE'">图片</a-tag>
-        </a-descriptions-item>
-        <a-descriptions-item label="问题分类">
-          {{ getCategoryName(currentQuestion?.category) }}
-        </a-descriptions-item>
-        <a-descriptions-item label="状态">
-          <a-tag v-if="currentQuestion?.status === 'PENDING'">待回答</a-tag>
-          <a-tag v-else-if="currentQuestion?.status === 'ANSWERED'" color="success">已回答</a-tag>
-          <a-tag v-else-if="currentQuestion?.status === 'TRANSFERRED'" color="warning">
-            已转人工
-          </a-tag>
-        </a-descriptions-item>
-        <a-descriptions-item v-if="currentQuestion?.answerText" label="回答内容" :span="2">
-          {{ currentQuestion.answerText }}
-        </a-descriptions-item>
-        <a-descriptions-item v-if="currentQuestion?.satisfactionScore" label="满意度评分">
-          {{ currentQuestion.satisfactionScore }}
-        </a-descriptions-item>
-        <a-descriptions-item label="创建时间">
-          {{ currentQuestion?.createTime }}
-        </a-descriptions-item>
-      </a-descriptions>
+    <a-modal v-model:open="visible" title="对话详情" width="700px" :footer="null">
+      <div class="conversation-container">
+        <a-spin v-if="historyLoading" />
+        <template v-else>
+          <div v-if="conversationHistory.length === 0" class="no-history">
+            暂无对话历史
+          </div>
+          <div v-else class="conversation-list">
+            <div
+              v-for="(msg, index) in conversationHistory"
+              :key="index"
+              class="conversation-item"
+            >
+              <div class="user-message">
+                <div class="message-label">我的问题</div>
+                <div class="message-content">{{ msg.query }}</div>
+              </div>
+              <div class="ai-message">
+                <div class="message-label">智能助手回答</div>
+                <div class="message-content">{{ msg.answer || '正在处理中...' }}</div>
+              </div>
+            </div>
+          </div>
+        </template>
+      </div>
     </a-modal>
   </a-card>
 </template>
@@ -64,10 +59,19 @@ import { ref, reactive, onMounted } from 'vue'
 import { consultationApi } from '@/api'
 import type { ConsultationQuestion, PageRequest } from '@/types'
 
+interface ConversationMessage {
+  id: string
+  query: string
+  answer: string
+  createdAt: string
+}
+
 const loading = ref(false)
+const historyLoading = ref(false)
 const dataSource = ref<ConsultationQuestion[]>([])
 const visible = ref(false)
 const currentQuestion = ref<ConsultationQuestion | null>(null)
+const conversationHistory = ref<ConversationMessage[]>([])
 
 const pagination = reactive({
   current: 1,
@@ -115,14 +119,29 @@ const loadData = async () => {
       pageSize: pagination.pageSize,
     }
     const response = await consultationApi.getMyQuestions(params)
-    if (response.data) {
-      dataSource.value = response.data.records
-      pagination.total = response.data.total
+    if (response) {
+      dataSource.value = response.records
+      pagination.total = response.total
     }
   } catch (error: any) {
     console.error('加载数据失败', error)
   } finally {
     loading.value = false
+  }
+}
+
+const loadConversationHistory = async (questionId: number) => {
+  historyLoading.value = true
+  try {
+    const response = await consultationApi.getQuestionHistory(questionId)
+    if (response) {
+      conversationHistory.value = response
+    }
+  } catch (error: any) {
+    console.error('加载对话历史失败', error)
+    conversationHistory.value = []
+  } finally {
+    historyLoading.value = false
   }
 }
 
@@ -134,7 +153,9 @@ const handleTableChange = (pag: any) => {
 
 const handleView = (record: ConsultationQuestion) => {
   currentQuestion.value = record
+  conversationHistory.value = []
   visible.value = true
+  loadConversationHistory(record.id)
 }
 
 const getCategoryName = (category?: string) => {
@@ -157,3 +178,57 @@ onMounted(() => {
   loadData()
 })
 </script>
+
+<style scoped>
+.conversation-container {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.no-history {
+  text-align: center;
+  color: #999;
+  padding: 40px;
+}
+
+.conversation-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.conversation-item {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.user-message,
+.ai-message {
+  padding: 12px;
+  border-radius: 8px;
+}
+
+.user-message {
+  background-color: #e6f4ff;
+  border: 1px solid #91caff;
+}
+
+.ai-message {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+}
+
+.message-label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.message-content {
+  color: #333;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+</style>
