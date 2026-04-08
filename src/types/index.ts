@@ -70,7 +70,7 @@ export interface ConsultationRequest {
 }
 
 export interface ConsultationQuestion {
-  id?: number
+  id: number
   userId: number
   questionText: string
   questionType: string
@@ -89,12 +89,15 @@ export interface TransferToHumanRequest {
 }
 
 export interface LeaveApplicationRequest {
-  leaveType: 'SICK' | 'PERSONAL' | 'PUBLIC'
+  leaveType: 'PERSONAL' | 'OFFICIAL'
   startDate: string
   endDate: string
   reason?: string
   attachmentUrl?: string
   studentName?: string
+  departmentName?: string
+  grade?: string
+  className?: string
 }
 
 export interface LeaveApplication {
@@ -114,6 +117,10 @@ export interface LeaveApplication {
   leaveSlipUrl?: string
   cancelled?: boolean
   cancelTime?: string
+  cancelRequested?: boolean
+  cancelApprovalStatus?: 'PENDING' | 'APPROVED' | 'REJECTED'
+  cancelApprovalComment?: string
+  cancelApprovalTime?: string
   studentName?: string
   createTime?: string
   updateTime?: string
@@ -129,7 +136,7 @@ export interface AwardApplicationRequest {
   awardName: string
   amount?: number
   reason?: string
-  attachmentUrls?: string[]
+  attachmentUrls?: string
   studentName?: string
 }
 

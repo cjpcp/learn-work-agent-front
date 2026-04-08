@@ -26,9 +26,20 @@
           <h2 class="login-title">用户登录</h2>
           <p class="login-subtitle">请输入您的账号信息以登录系统</p>
 
-          <a-form :model="form" :rules="rules" layout="vertical" class="login-form" @finish="handleLogin">
+          <a-form
+            :model="form"
+            :rules="rules"
+            layout="vertical"
+            class="login-form"
+            @finish="handleLogin"
+          >
             <a-form-item name="username" class="form-item">
-              <a-input v-model:value="form.username" placeholder="请输入用户名" size="large" class="login-input">
+              <a-input
+                v-model:value="form.username"
+                placeholder="请输入用户名"
+                size="large"
+                class="login-input"
+              >
                 <template #prefix>
                   <UserOutlined />
                 </template>
@@ -36,7 +47,12 @@
             </a-form-item>
 
             <a-form-item name="password" class="form-item">
-              <a-input-password v-model:value="form.password" placeholder="请输入密码" size="large" class="login-input">
+              <a-input-password
+                v-model:value="form.password"
+                placeholder="请输入密码"
+                size="large"
+                class="login-input"
+              >
                 <template #prefix>
                   <LockOutlined />
                 </template>
@@ -48,7 +64,14 @@
             </div>
 
             <a-form-item class="form-item">
-              <a-button type="primary" html-type="submit" size="large" block :loading="loading" class="login-button">
+              <a-button
+                type="primary"
+                html-type="submit"
+                size="large"
+                block
+                :loading="loading"
+                class="login-button"
+              >
                 <span v-if="!loading">登录</span>
                 <template v-else>
                   <div class="loading-spinner"></div>
@@ -59,7 +82,9 @@
 
             <div class="register-section">
               <span>还没有账号？</span>
-              <a-button type="link" class="register-button" @click="$router.push('/register')">立即注册</a-button>
+              <a-button type="link" class="register-button" @click="$router.push('/register')"
+                >立即注册</a-button
+              >
             </div>
           </a-form>
         </div>
@@ -146,20 +171,110 @@ const handleLogin = async () => {
   backdrop-filter: blur(10px);
   animation: float 6s ease-in-out infinite;
 }
-.shape-1 { width: 300px; height: 300px; top: -150px; right: -150px; animation-delay: 0s; }
-.shape-2 { width: 200px; height: 200px; bottom: -100px; left: -100px; animation-delay: 2s; }
-.shape-3 { width: 150px; height: 150px; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: 4s; }
-@keyframes float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-20px); } }
-.login-container { position: relative; z-index: 1; padding: 24px; width: 100%; max-width: 520px; }
-.login-card { background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(24px); border-radius: 28px; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12); overflow: hidden; animation: card-float 8s ease-in-out infinite; border: 1px solid rgba(255, 255, 255, 0.3); transition: all 0.3s ease; }
-.login-card:hover { box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15); transform: translateY(-2px); }
-@keyframes card-float { 0%,100% { transform: translateY(0px); } 50% { transform: translateY(-6px); } }
-.card-header,.card-body,.card-footer { padding: 24px 32px; }
-.logo-container { display: flex; align-items: center; gap: 16px; }
-.logo-icon { width: 56px; height: 56px; display: flex; align-items: center; justify-content: center; border-radius: 16px; background: linear-gradient(135deg, #1677ff, #69b1ff); color: #fff; font-size: 28px; }
-.logo-text h1 { margin: 0; font-size: 28px; }
-.logo-text p,.login-subtitle,.copyright { margin: 0; color: #666; }
-.login-title { margin-bottom: 8px; }
-.form-footer,.register-section { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.login-button { height: 46px; border-radius: 12px; }
+.shape-1 {
+  width: 300px;
+  height: 300px;
+  top: -150px;
+  right: -150px;
+  animation-delay: 0s;
+}
+.shape-2 {
+  width: 200px;
+  height: 200px;
+  bottom: -100px;
+  left: -100px;
+  animation-delay: 2s;
+}
+.shape-3 {
+  width: 150px;
+  height: 150px;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  animation-delay: 4s;
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+.login-container {
+  position: relative;
+  z-index: 1;
+  padding: 24px;
+  width: 100%;
+  max-width: 520px;
+}
+.login-card {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(24px);
+  border-radius: 28px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+  overflow: hidden;
+  animation: card-float 8s ease-in-out infinite;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+}
+.login-card:hover {
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.15);
+  transform: translateY(-2px);
+}
+@keyframes card-float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+.card-header,
+.card-body,
+.card-footer {
+  padding: 24px 32px;
+}
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.logo-icon {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #1677ff, #69b1ff);
+  color: #fff;
+  font-size: 28px;
+}
+.logo-text h1 {
+  margin: 0;
+  font-size: 28px;
+}
+.logo-text p,
+.login-subtitle,
+.copyright {
+  margin: 0;
+  color: #666;
+}
+.login-title {
+  margin-bottom: 8px;
+}
+.form-footer,
+.register-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.login-button {
+  height: 46px;
+  border-radius: 12px;
+}
 </style>

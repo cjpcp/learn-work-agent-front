@@ -11,94 +11,147 @@
             @change="handleProcessTabChange"
           >
             <a-tab-pane key="pending" tab="待办流程">
-              <div v-if="pendingProcesses.length === 0" class="empty-state">
-                <a-empty description="暂无待办流程" />
+              <div class="process-toolbar">
+                <a-select
+                  v-model:value="pendingFilter"
+                  style="width: 160px"
+                  @change="handlePendingFilterChange"
+                >
+                  <a-select-option value="all">全部类型</a-select-option>
+                  <a-select-option value="leave">请假申请</a-select-option>
+                  <a-select-option value="award">奖助申请</a-select-option>
+                  <a-select-option value="leave_cancel">销假申请</a-select-option>
+                </a-select>
               </div>
-              <a-list v-else :data-source="pendingProcesses" class="process-list">
-                <template #renderItem="{ item }">
-                  <a-list-item class="process-item">
-                    <a-list-item-meta>
-                      <template #title>
-                        <div class="process-title">
-                          <span>{{ item.name }}</span>
-                        </div>
+              <a-spin :spinning="pendingLoading">
+                <div v-if="pendingProcesses.length === 0" class="empty-state">
+                  <a-empty description="暂无待办流程" />
+                </div>
+                <a-list v-else :data-source="pendingProcesses" class="process-list">
+                  <template #renderItem="{ item }">
+                    <a-list-item class="process-item">
+                      <a-list-item-meta>
+                        <template #title>
+                          <div class="process-title">
+                            <span>{{ item.name }}</span>
+                          </div>
+                        </template>
+                        <template #description>
+                          <div class="process-info">
+                            <div>{{ item.description }}</div>
+                            <div class="process-time">创建时间: {{ item.createTime }}</div>
+                          </div>
+                        </template>
+                      </a-list-item-meta>
+                      <template #actions>
+                        <a-tag
+                          :color="item.status === 'pending' ? 'blue' : 'green'"
+                          class="process-status"
+                          style="margin-right: 8px"
+                        >
+                          {{ item.status === 'pending' ? '待处理' : '已处理' }}
+                        </a-tag>
+                        <a-button
+                          v-if="item.allowAction"
+                          type="primary"
+                          size="small"
+                          style="margin-right: 4px"
+                          @click="handleGoApprove(item)"
+                        >
+                          去审批
+                        </a-button>
+                        <a-button type="default" size="small" @click="handleViewProcess(item)">
+                          查看详情
+                        </a-button>
                       </template>
-                      <template #description>
-                        <div class="process-info">
-                          <div>{{ item.description }}</div>
-                          <div class="process-time">创建时间: {{ item.createTime }}</div>
-                        </div>
-                      </template>
-                    </a-list-item-meta>
-                    <template #actions>
-                      <a-tag
-                        :color="item.status === 'pending' ? 'blue' : 'green'"
-                        class="process-status"
-                        style="margin-right: 8px"
-                      >
-                        {{ item.status === 'pending' ? '待处理' : '已处理' }}
-                      </a-tag>
-                      <a-button
-                        v-if="item.allowAction"
-                        type="primary"
-                        size="small"
-                        style="margin-right: 4px"
-                        @click="handleGoApprove(item)"
-                      >
-                        去审批
-                      </a-button>
-                      <a-button type="default" size="small" @click="handleViewProcess(item)">
-                        查看详情
-                      </a-button>
-                    </template>
-                  </a-list-item>
-                </template>
-              </a-list>
+                    </a-list-item>
+                  </template>
+                </a-list>
+                <div v-if="pendingProcesses.length > 0" class="pagination-wrapper">
+                  <a-pagination
+                    v-model:current="pendingPagination.current"
+                    v-model:page-size="pendingPagination.pageSize"
+                    :total="pendingPagination.total"
+                    :show-size-changer="true"
+                    :page-size-options="['5', '10', '20', '50']"
+                    :show-total="(total: number) => `共 ${total} 条`"
+                    :show-quick-jumper="true"
+                    :hide-on-single-page="false"
+                    @change="handlePendingPageChange"
+                    @showSizeChange="handlePendingPageChange"
+                  />
+                </div>
+              </a-spin>
             </a-tab-pane>
             <a-tab-pane key="completed" tab="已办理流程">
-              <div v-if="completedProcesses.length === 0" class="empty-state">
-                <a-empty description="暂无已办理流程" />
+              <div class="process-toolbar">
+                <a-select
+                  v-model:value="completedFilter"
+                  style="width: 160px"
+                  @change="handleCompletedFilterChange"
+                >
+                  <a-select-option value="all">全部类型</a-select-option>
+                  <a-select-option value="leave">请假申请</a-select-option>
+                  <a-select-option value="award">奖助申请</a-select-option>
+                  <a-select-option value="leave_cancel">销假申请</a-select-option>
+                </a-select>
               </div>
-              <a-list v-else :data-source="completedProcesses" class="process-list">
-                <template #renderItem="{ item }">
-                  <a-list-item class="process-item">
-                    <a-list-item-meta>
-                      <template #title>
-                        <div class="process-title">
-                          <span>{{ item.name }}</span>
-                        </div>
+              <a-spin :spinning="completedLoading">
+                <div v-if="completedProcesses.length === 0" class="empty-state">
+                  <a-empty description="暂无已办理流程" />
+                </div>
+                <a-list v-else :data-source="completedProcesses" class="process-list">
+                  <template #renderItem="{ item }">
+                    <a-list-item class="process-item">
+                      <a-list-item-meta>
+                        <template #title>
+                          <div class="process-title">
+                            <span>{{ item.name }}</span>
+                          </div>
+                        </template>
+                        <template #description>
+                          <div class="process-info">
+                            <div>{{ item.description }}</div>
+                            <div class="process-time">创建时间: {{ item.createTime }}</div>
+                          </div>
+                        </template>
+                      </a-list-item-meta>
+                      <template #actions>
+                        <a-tag
+                          :color="item.status === 'pending' ? 'blue' : 'green'"
+                          class="process-status"
+                          style="margin-right: 8px"
+                        >
+                          {{ item.status === 'pending' ? '待处理' : '已处理' }}
+                        </a-tag>
+                        <a-button type="primary" size="small" @click="handleViewProcess(item)">
+                          查看详情
+                        </a-button>
                       </template>
-                      <template #description>
-                        <div class="process-info">
-                          <div>{{ item.description }}</div>
-                          <div class="process-time">创建时间: {{ item.createTime }}</div>
-                        </div>
-                      </template>
-                    </a-list-item-meta>
-                    <template #actions>
-                      <a-tag
-                        :color="item.status === 'pending' ? 'blue' : 'green'"
-                        class="process-status"
-                        style="margin-right: 8px"
-                      >
-                        {{ item.status === 'pending' ? '待处理' : '已处理' }}
-                      </a-tag>
-                      <a-button type="primary" size="small" @click="handleViewProcess(item)">
-                        查看详情
-                      </a-button>
-                    </template>
-                  </a-list-item>
-                </template>
-              </a-list>
+                    </a-list-item>
+                  </template>
+                </a-list>
+                <div v-if="completedProcesses.length > 0" class="pagination-wrapper">
+                  <a-pagination
+                    v-model:current="completedPagination.current"
+                    v-model:page-size="completedPagination.pageSize"
+                    :total="completedPagination.total"
+                    :show-size-changer="true"
+                    :page-size-options="['5', '10', '20', '50']"
+                    :show-total="(total: number) => `共 ${total} 条`"
+                    :show-quick-jumper="true"
+                    :hide-on-single-page="false"
+                    @change="handleCompletedPageChange"
+                    @showSizeChange="handleCompletedPageChange"
+                  />
+                </div>
+              </a-spin>
             </a-tab-pane>
           </a-tabs>
         </a-tab-pane>
 
         <!-- 人工处理中心标签页 -->
-        <a-tab-pane
-          key="human"
-          tab="人工处理中心"
-        >
+        <a-tab-pane key="human" tab="人工处理中心">
           <a-tabs v-model:active-key="humanActiveTab" class="sub-tabs">
             <a-tab-pane key="pending" tab="待完成">
               <a-table
@@ -183,10 +236,7 @@
         </a-tab-pane>
 
         <!-- 我的转人工记录标签页 -->
-        <a-tab-pane
-          key="transfers"
-          tab="我的转人工记录"
-        >
+        <a-tab-pane key="transfers" tab="我的转人工记录">
           <a-table
             :columns="transferColumns"
             :data-source="transferData"
@@ -224,9 +274,8 @@
         <!-- 请假详情 -->
         <a-descriptions v-if="currentType === 'leave' && leaveDetail" :column="2" bordered>
           <a-descriptions-item label="请假类型">
-            <a-tag v-if="leaveDetail?.leaveType === 'SICK'" color="red">病假</a-tag>
-            <a-tag v-else-if="leaveDetail?.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
-            <a-tag v-else-if="leaveDetail?.leaveType === 'PUBLIC'" color="blue">公假</a-tag>
+            <a-tag v-if="leaveDetail?.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
+            <a-tag v-else-if="leaveDetail?.leaveType === 'OFFICIAL'" color="blue">公假</a-tag>
             <span v-else>{{ leaveDetail?.leaveType }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="审批状态">
@@ -262,6 +311,21 @@
           </a-descriptions-item>
           <a-descriptions-item v-if="leaveDetail?.approvalComment" label="审批意见" :span="2">
             {{ leaveDetail?.approvalComment }}
+          </a-descriptions-item>
+          <a-descriptions-item v-if="leaveDetail?.attachmentUrl" label="附件" :span="2">
+            <template
+              v-for="(url, idx) in (leaveDetail?.attachmentUrl || '').split(',').filter(Boolean)"
+              :key="idx"
+            >
+              <a :href="url" target="_blank" rel="noopener" download>
+                <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
+              </a>
+              <br
+                v-if="
+                  idx < (leaveDetail?.attachmentUrl || '').split(',').filter(Boolean).length - 1
+                "
+              />
+            </template>
           </a-descriptions-item>
         </a-descriptions>
 
@@ -306,9 +370,15 @@
             <span v-else>{{ awardDetail?.applicationType }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="审批状态">
-            <a-tag v-if="awardDetail?.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
-            <a-tag v-else-if="awardDetail?.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
-            <a-tag v-else-if="awardDetail?.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
+            <a-tag v-if="awardDetail?.approvalStatus === 'PENDING'" color="processing"
+              >待审批</a-tag
+            >
+            <a-tag v-else-if="awardDetail?.approvalStatus === 'APPROVED'" color="success"
+              >已批准</a-tag
+            >
+            <a-tag v-else-if="awardDetail?.approvalStatus === 'REJECTED'" color="error"
+              >已拒绝</a-tag
+            >
             <span v-else>{{ awardDetail?.approvalStatus }}</span>
           </a-descriptions-item>
           <a-descriptions-item label="申请名称" :span="2">
@@ -343,22 +413,26 @@
           <a-textarea v-model:value="replyForm.questionText" disabled rows="4" />
         </a-form-item>
         <!-- 历史对话上下文 -->
-        <div
-          v-if="transferHistory.length > 0"
-          style="margin-bottom: 16px"
-        >
+        <div v-if="transferHistory.length > 0" style="margin-bottom: 16px">
           <p style="font-weight: 600; margin-bottom: 8px">咨询历史对话：</p>
           <div
             v-for="(item, idx) in transferHistory"
             :key="idx"
-            style="margin-bottom: 10px; border: 1px solid #f0f0f0; border-radius: 6px; padding: 10px; background: #fafafa"
+            style="
+              margin-bottom: 10px;
+              border: 1px solid #f0f0f0;
+              border-radius: 6px;
+              padding: 10px;
+              background: #fafafa;
+            "
           >
             <a-tag color="blue" style="margin-bottom: 6px">第 {{ idx + 1 }} 轮</a-tag>
             <div style="margin-bottom: 4px">
               <span style="font-weight: 600; color: #1890ff">用户：</span>{{ item.questionText }}
             </div>
             <div v-if="item.aiAnswer">
-              <span style="font-weight: 600; color: #52c41a">AI：</span><span style="color: #555">{{ item.aiAnswer }}</span>
+              <span style="font-weight: 600; color: #52c41a">AI：</span
+              ><span style="color: #555">{{ item.aiAnswer }}</span>
             </div>
           </div>
         </div>
@@ -380,11 +454,8 @@
           <a-divider orientation="left">请假申请信息</a-divider>
           <a-descriptions :column="2" bordered size="small" style="margin-bottom: 16px">
             <a-descriptions-item label="请假类型">
-              <a-tag v-if="approveLeaveDetail?.leaveType === 'SICK'" color="red">病假</a-tag>
-              <a-tag v-else-if="approveLeaveDetail?.leaveType === 'PERSONAL'" color="orange"
-                >事假</a-tag
-              >
-              <a-tag v-else-if="approveLeaveDetail?.leaveType === 'PUBLIC'" color="blue"
+              <a-tag v-if="approveLeaveDetail?.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
+              <a-tag v-else-if="approveLeaveDetail?.leaveType === 'OFFICIAL'" color="blue"
                 >公假</a-tag
               >
               <span v-else>{{ approveLeaveDetail?.leaveType }}</span>
@@ -407,6 +478,24 @@
             <a-descriptions-item label="请假原因" :span="2">{{
               approveLeaveDetail?.reason || '无'
             }}</a-descriptions-item>
+            <a-descriptions-item v-if="approveLeaveDetail?.attachmentUrl" label="附件" :span="2">
+              <template
+                v-for="(url, idx) in (approveLeaveDetail?.attachmentUrl || '')
+                  .split(',')
+                  .filter(Boolean)"
+                :key="idx"
+              >
+                <a :href="url" target="_blank" rel="noopener" download>
+                  <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
+                </a>
+                <br
+                  v-if="
+                    idx <
+                    (approveLeaveDetail?.attachmentUrl || '').split(',').filter(Boolean).length - 1
+                  "
+                />
+              </template>
+            </a-descriptions-item>
           </a-descriptions>
         </template>
 
@@ -441,6 +530,24 @@
             <a-descriptions-item label="申请原因" :span="2">{{
               approveAwardDetail?.reason || '无'
             }}</a-descriptions-item>
+            <a-descriptions-item v-if="approveAwardDetail?.attachmentUrls" label="附件" :span="2">
+              <template
+                v-for="(url, idx) in (approveAwardDetail?.attachmentUrls || '')
+                  .split(',')
+                  .filter(Boolean)"
+                :key="idx"
+              >
+                <a :href="url" target="_blank" rel="noopener" download>
+                  <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
+                </a>
+                <br
+                  v-if="
+                    idx <
+                    (approveAwardDetail?.attachmentUrls || '').split(',').filter(Boolean).length - 1
+                  "
+                />
+              </template>
+            </a-descriptions-item>
           </a-descriptions>
         </template>
 
@@ -513,15 +620,18 @@
       </a-descriptions>
 
       <!-- 历史对话上下文 -->
-      <div
-        v-if="transferHistory.length > 0"
-        style="margin-top: 20px"
-      >
+      <div v-if="transferHistory.length > 0" style="margin-top: 20px">
         <a-divider orientation="left">咨询历史对话</a-divider>
         <div
           v-for="(item, idx) in transferHistory"
           :key="idx"
-          style="margin-bottom: 16px; border: 1px solid #f0f0f0; border-radius: 6px; padding: 12px; background: #fafafa"
+          style="
+            margin-bottom: 16px;
+            border: 1px solid #f0f0f0;
+            border-radius: 6px;
+            padding: 12px;
+            background: #fafafa;
+          "
         >
           <div style="margin-bottom: 8px">
             <a-tag color="blue" style="margin-right: 6px">第 {{ idx + 1 }} 轮</a-tag>
@@ -544,6 +654,7 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
+import { PaperClipOutlined } from '@ant-design/icons-vue'
 import { processApi, leaveApi, awardApi, consultationApi, approvalApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import type { ProcessItem, LeaveApplication, AwardApplication, PageRequest } from '@/types'
@@ -566,9 +677,28 @@ const loadingDetail = ref(false)
 const currentProcessId = ref<number>(0)
 const approvalProcess = ref<any>(null)
 
+// 待办流程分页和筛选
+const pendingPagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
+})
+const pendingFilter = ref<'all' | 'leave' | 'award' | 'leave_cancel'>('all')
+const pendingLoading = ref(false)
+
+// 已办理流程分页和筛选
+const completedPagination = reactive({
+  current: 1,
+  pageSize: 10,
+  total: 0,
+})
+const completedFilter = ref<'all' | 'leave' | 'award' | 'leave_cancel'>('all')
+const completedLoading = ref(false)
+
 // 当前待审批任务ID
 const currentTaskId = ref<number | null>(null)
 const approving = ref(false)
+const approvingCancelRequest = ref(false)
 const approveModalLoading = ref(false)
 const approveLeaveDetail = ref<LeaveApplication | null>(null)
 const approveAwardDetail = ref<AwardApplication | null>(null)
@@ -756,7 +886,9 @@ const formatTransferReason = (reason?: string) => {
 }
 
 // 解析转人工原因，分离基本信息和历史对话
-const parseTransferContext = (reason?: string): { reason: string; history: { question: string; answer: string }[] } => {
+const parseTransferContext = (
+  reason?: string
+): { reason: string; history: { question: string; answer: string }[] } => {
   if (!reason) return { reason: '', history: [] }
 
   const historyMarker = '\n\n===历史对话===\n'
@@ -794,17 +926,73 @@ const parseTransferContext = (reason?: string): { reason: string; history: { que
 
 // 加载流程数据
 const loadProcesses = async () => {
+  pendingLoading.value = true
+  completedLoading.value = true
   try {
-    // 获取待办流程
-    const pendingResponse = await processApi.getProcessList()
-    pendingProcesses.value = pendingResponse.pending
+    const pendingParams = {
+      pageNum: pendingPagination.current,
+      pageSize: pendingPagination.pageSize,
+      type: pendingFilter.value === 'all' ? undefined : pendingFilter.value,
+    }
+    const pendingResponse = await processApi.getProcessList(pendingParams)
+    let pendingList = pendingResponse.pending || []
 
-    // 获取已办理流程
-    const completedResponse = await processApi.getCompletedProcesses()
-    completedProcesses.value = completedResponse
+    const cancelResponse = await leaveApi.getPendingCancelRequests({
+      pageNum: 1,
+      pageSize: 100,
+    })
+    console.log('销假申请返回数据:', cancelResponse)
+    const cancelProcesses: ProcessItem[] = (cancelResponse.records || []).map((record: any) => ({
+      id: record.id,
+      name: `销假申请 - ${record.studentName || ''}`,
+      description: `请假类型: ${record.leaveType === 'PERSONAL' ? '事假' : '公假'} | ${record.startDate} 至 ${record.endDate}`,
+      type: 'leave_cancel',
+      status: 'pending',
+      allowAction: true,
+      createTime: record.createTime || '',
+      businessId: record.id,
+    }))
+
+    console.log('销假申请列表:', cancelProcesses)
+    console.log('当前筛选条件:', pendingFilter.value)
+
+    if (pendingFilter.value === 'all' || pendingFilter.value === 'leave_cancel') {
+      pendingList = [...pendingList, ...cancelProcesses]
+    }
+
+    if (pendingFilter.value !== 'all') {
+      pendingList = pendingList.filter((p: ProcessItem) => p.type === pendingFilter.value)
+    }
+
+    const start = (pendingPagination.current - 1) * pendingPagination.pageSize
+    const end = start + pendingPagination.pageSize
+    pendingProcesses.value = pendingList.slice(start, end)
+    pendingPagination.total = pendingList.length
+
+    console.log('最终待办列表:', pendingProcesses.value)
+    console.log('分页信息:', pendingPagination)
+
+    const completedParams = {
+      pageNum: 1,
+      pageSize: 100,
+    }
+    const completedResponse = await processApi.getCompletedProcesses(completedParams)
+    let completedList = completedResponse.records || completedResponse || []
+
+    if (completedFilter.value !== 'all') {
+      completedList = completedList.filter((p: ProcessItem) => p.type === completedFilter.value)
+    }
+
+    const completedStart = (completedPagination.current - 1) * completedPagination.pageSize
+    const completedEnd = completedStart + completedPagination.pageSize
+    completedProcesses.value = completedList.slice(completedStart, completedEnd)
+    completedPagination.total = completedList.length
   } catch (error) {
     message.error('获取流程数据失败')
     console.error('获取流程数据失败:', error)
+  } finally {
+    pendingLoading.value = false
+    completedLoading.value = false
   }
 }
 
@@ -866,7 +1054,7 @@ const loadTransferData = async () => {
 }
 
 const handleGoApprove = async (item: ProcessItem) => {
-  currentType.value = item.type as 'leave' | 'award'
+  currentType.value = item.type === 'leave_cancel' ? 'leave' : (item.type as 'leave' | 'award')
   currentProcessId.value = Number(item.id)
   currentTaskId.value = null
   approveLeaveDetail.value = null
@@ -879,30 +1067,37 @@ const handleGoApprove = async (item: ProcessItem) => {
   approveModalLoading.value = true
 
   try {
-    // 并行加载申请详情和待办任务
-    const detailPromise =
-      item.type === 'leave'
-        ? leaveApi.getApplication(Number(item.id)).then((data) => {
-            approveLeaveDetail.value = data
-          })
-        : awardApi.getApplicationDetail(Number(item.id)).then((data) => {
-            approveAwardDetail.value = data
-          })
+    // 如果是销假申请，不需要查找审批任务
+    if (item.type === 'leave_cancel') {
+      approvingCancelRequest.value = true
+      const detailPromise = leaveApi.getApplication(Number(item.id)).then((data) => {
+        approveLeaveDetail.value = data
+      })
+      await detailPromise
+    } else {
+      // 普通请假或奖助申请，需要查找审批任务
+      approvingCancelRequest.value = false
+      const detailPromise =
+        item.type === 'leave'
+          ? leaveApi.getApplication(Number(item.id)).then((data) => {
+              approveLeaveDetail.value = data
+            })
+          : awardApi.getApplicationDetail(Number(item.id)).then((data) => {
+              approveAwardDetail.value = data
+            })
 
-    const taskPromise = approvalApi.getPendingTasks().then((pendingTasks) => {
-      const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
-      const matchedTask = tasks.find(
-        (t: any) =>
-          String(t.businessId) === String(item.id)
-      )
-      if (matchedTask) {
-        currentTaskId.value = matchedTask.id
-      } else {
-        throw new Error('未找到对应的审批任务，您可能已处理或无权限审批')
-      }
-    })
+      const taskPromise = approvalApi.getPendingTasks().then((pendingTasks) => {
+        const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
+        const matchedTask = tasks.find((t: any) => String(t.businessId) === String(item.id))
+        if (matchedTask) {
+          currentTaskId.value = matchedTask.id
+        } else {
+          throw new Error('未找到对应的审批任务，您可能已处理或无权限审批')
+        }
+      })
 
-    await Promise.all([detailPromise, taskPromise])
+      await Promise.all([detailPromise, taskPromise])
+    }
   } catch (e: any) {
     message.error(e?.message || '加载审批信息失败')
     approveVisible.value = false
@@ -914,7 +1109,7 @@ const handleGoApprove = async (item: ProcessItem) => {
 const handleViewProcess = async (item: ProcessItem) => {
   currentType.value = item.type as 'leave' | 'award'
   currentProcessId.value = Number(item.id)
-  currentTaskId.value = null  // 重置：打开详情时先清空，防止上次残留值导致误判
+  currentTaskId.value = null // 重置：打开详情时先清空，防止上次残留值导致误判
   loadingDetail.value = true
   detailVisible.value = true
   approvalProcess.value = null
@@ -946,10 +1141,7 @@ const handleViewProcess = async (item: ProcessItem) => {
     try {
       const pendingTasks = await approvalApi.getPendingTasks()
       const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
-      const matchedTask = tasks.find(
-        (t: any) =>
-          String(t.businessId) === String(item.id)
-      )
+      const matchedTask = tasks.find((t: any) => String(t.businessId) === String(item.id))
       if (matchedTask) {
         currentTaskId.value = matchedTask.id
       }
@@ -991,24 +1183,38 @@ const submitApproval = async () => {
     return
   }
 
-  if (!currentTaskId.value) {
-    message.error('未找到对应的审批任务，请确认您有权限审批此申请')
-    return
-  }
-
   approving.value = true
   try {
-    // 通过审批任务流程处理，而不是直接修改业务状态
-    await approvalApi.processTask(currentTaskId.value, {
-      status: approveForm.approvalStatus,
-      comment: approveForm.approvalComment,
-    })
-    message.success('审批成功')
-    approveVisible.value = false
-    approveLeaveDetail.value = null
-    approveAwardDetail.value = null
-    detailVisible.value = false
-    loadProcesses()
+    // 如果是销假审批
+    if (approvingCancelRequest.value) {
+      await leaveApi.approveCancelRequest(
+        currentProcessId.value,
+        approveForm.approvalStatus,
+        approveForm.approvalComment
+      )
+      message.success('销假审批成功')
+      approveVisible.value = false
+      approveLeaveDetail.value = null
+      detailVisible.value = false
+      loadProcesses()
+      approvingCancelRequest.value = false
+    } else {
+      // 普通请假审批
+      if (!currentTaskId.value) {
+        message.error('未找到对应的审批任务，请确认您有权限审批此申请')
+        return
+      }
+      await approvalApi.processTask(currentTaskId.value, {
+        status: approveForm.approvalStatus,
+        comment: approveForm.approvalComment,
+      })
+      message.success('审批成功')
+      approveVisible.value = false
+      approveLeaveDetail.value = null
+      approveAwardDetail.value = null
+      detailVisible.value = false
+      loadProcesses()
+    }
   } catch (error: any) {
     console.error('审批失败', error)
     message.error('审批失败: ' + (error.message || '未知错误'))
@@ -1023,7 +1229,7 @@ const handleCloseDetail = () => {
   awardDetail.value = null
   approvalProcess.value = null
   currentType.value = ''
-  currentTaskId.value = null  // 关闭时重置，防止残留
+  currentTaskId.value = null // 关闭时重置，防止残留
 }
 
 // 人工处理中心操作
@@ -1041,13 +1247,14 @@ const handleCompletedProcessTableChange = (pag: any) => {
 
 const handleProcess = async (record: any) => {
   currentTransferId.value = record.id
-  replyForm.questionText = record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
+  replyForm.questionText =
+    record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
   replyForm.transferReason = record.transferReason || ''
   replyForm.reply = ''
   // 加载历史对话
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = (response as any)
+    const data = response as any
     transferHistory.value = data.history ?? []
   } catch {
     transferHistory.value = []
@@ -1057,13 +1264,14 @@ const handleProcess = async (record: any) => {
 
 const handleReply = async (record: any) => {
   currentTransferId.value = record.id
-  replyForm.questionText = record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
+  replyForm.questionText =
+    record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
   replyForm.transferReason = record.transferReason || ''
   replyForm.reply = ''
   // 加载历史对话
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = (response as any)
+    const data = response as any
     transferHistory.value = data.history ?? []
   } catch {
     transferHistory.value = []
@@ -1100,7 +1308,7 @@ const submitReply = async () => {
 const handleViewTransfer = async (record: any) => {
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = (response as any)
+    const data = response as any
     currentTransfer.value = data.transfer ?? data
     transferHistory.value = data.history ?? []
     transferDetailVisible.value = true
@@ -1120,7 +1328,7 @@ const handleTransferTableChange = (pag: any) => {
 const handleViewTransferDetail = async (record: any) => {
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = (response as any)
+    const data = response as any
     currentTransfer.value = data.transfer ?? data
     transferHistory.value = data.history ?? []
     transferDetailVisible.value = true
@@ -1153,6 +1361,24 @@ watch(humanActiveTab, (newTab) => {
 const handleProcessTabChange = (_key: string) => {
   loadProcesses()
 }
+
+const handlePendingPageChange = (_page: number, _pageSize: number) => {
+  loadProcesses()
+}
+
+const handlePendingFilterChange = () => {
+  pendingPagination.current = 1
+  loadProcesses()
+}
+
+const handleCompletedPageChange = (_page: number, _pageSize: number) => {
+  loadProcesses()
+}
+
+const handleCompletedFilterChange = () => {
+  completedPagination.current = 1
+  loadProcesses()
+}
 </script>
 
 <style scoped>
@@ -1171,6 +1397,17 @@ const handleProcessTabChange = (_key: string) => {
 
 .sub-tabs {
   margin-top: 16px;
+}
+
+.process-toolbar {
+  margin-bottom: 16px;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-top: 20px;
+  padding: 16px 0;
 }
 
 .empty-state {

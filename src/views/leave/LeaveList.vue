@@ -24,40 +24,58 @@
     >
       <template #bodyCell="{ column, record }">
         <template v-if="column.key === 'leaveType'">
-          <a-tag v-if="record.leaveType === 'SICK'" color="red">病假</a-tag>
-          <a-tag v-else-if="record.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
+          <a-tag v-if="record.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
           <a-tag v-else-if="record.leaveType === 'OFFICIAL'" color="blue">公假</a-tag>
         </template>
         <template v-else-if="column.key === 'status'">
           <a-tag v-if="record.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
+          <a-tag
+            v-else-if="record.approvalStatus === 'APPROVED' && record.cancelled"
+            color="default"
+            >已销假</a-tag
+          >
+          <a-tag
+            v-else-if="
+              record.approvalStatus === 'APPROVED' &&
+              record.cancelRequested &&
+              record.cancelApprovalStatus === 'PENDING'
+            "
+            color="warning"
+            >销假审批中</a-tag
+          >
           <a-tag
             v-else-if="record.approvalStatus === 'APPROVED' && !record.cancelled"
             color="success"
             >已批准</a-tag
           >
           <a-tag v-else-if="record.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
-          <a-tag v-else-if="record.cancelled" color="default">已销假</a-tag>
+          <a-tag v-else-if="record.cancelApprovalStatus === 'REJECTED'" color="error"
+            >销假已拒绝</a-tag
+          >
         </template>
         <template v-else-if="column.key === 'createTime'">
           {{ formatDateTime(record.createTime) }}
         </template>
         <template v-else-if="column.key === 'action'">
           <a-button type="link" @click="handleView(record)">查看详情</a-button>
-          <a-button
-            v-if="record.approvalStatus === 'APPROVED' && !record.cancelled"
-            type="link"
-            @click="handleDownload(record)"
-          >
+          <a-button v-if="!record.cancelled" type="link" @click="handleDownload(record)">
             下载请假条
           </a-button>
           <a-button
-            v-if="record.approvalStatus === 'APPROVED' && !record.cancelled"
+            v-if="
+              record.approvalStatus === 'APPROVED' && !record.cancelled && !record.cancelRequested
+            "
             type="link"
             danger
             @click="handleCancel(record)"
           >
-            销假
+            申请销假
           </a-button>
+          <a-tag
+            v-else-if="record.cancelRequested && record.cancelApprovalStatus === 'PENDING'"
+            color="warning"
+            >销假审批中</a-tag
+          >
         </template>
       </template>
     </a-table>
@@ -65,8 +83,7 @@
     <a-modal v-model:open="visible" title="请假详情" width="800px" :footer="null">
       <a-descriptions :column="2" bordered>
         <a-descriptions-item label="请假类型">
-          <a-tag v-if="currentRecord?.leaveType === 'SICK'" color="red">病假</a-tag>
-          <a-tag v-else-if="currentRecord?.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
+          <a-tag v-if="currentRecord?.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
           <a-tag v-else-if="currentRecord?.leaveType === 'OFFICIAL'" color="blue">公假</a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="状态">
@@ -219,15 +236,15 @@ const handleDownload = async (record: LeaveApplication) => {
 
 const handleCancel = (record: LeaveApplication) => {
   Modal.confirm({
-    title: '确认销假',
-    content: '确定要销假吗？',
+    title: '确认申请销假',
+    content: '确定要申请销假吗？审批通过后将完成销假。',
     onOk: async () => {
       try {
         await leaveApi.cancelLeave(record.id!)
-        message.success('销假成功')
+        message.success('销假申请已提交')
         loadData()
       } catch (error: any) {
-        message.error('销假失败')
+        message.error(error.message || '销假申请失败')
       }
     },
   })

@@ -150,9 +150,7 @@ export const consultationApi = {
   uploadFile: (file: File | Blob, filename?: string): Promise<Result<string>> => {
     const formData = new FormData()
     formData.append('file', file, filename || 'file')
-    return request.post('/consultation/upload/file', formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    })
+    return request.post('/consultation/upload/file', formData)
   },
   getUserTransfers: (params: PageRequest): Promise<PageResult<any>> => {
     return request.get('/consultation/transfers', { params })
@@ -176,32 +174,48 @@ export const consultationApi = {
 }
 
 export const awardApi = {
-  submitApplication: (data: never): Promise<Result<void>> => request.post('/award/applications', data),
-  getMyApplications: (params?: any): Promise<AwardApplication[]> => request.get('/award/applications/my', { params }),
-  getApplicationDetail: (id: number): Promise<AwardApplication> => request.get(`/award/applications/${id}`),
-  getApplication: (id: number): Promise<AwardApplication> => request.get(`/award/applications/${id}`),
+  submitApplication: (data: never): Promise<Result<void>> =>
+    request.post('/award/applications', data),
+  getMyApplications: (params?: any): Promise<AwardApplication[]> =>
+    request.get('/award/applications/my', { params }),
+  getApplicationDetail: (id: number): Promise<AwardApplication> =>
+    request.get(`/award/applications/${id}`),
+  getApplication: (id: number): Promise<AwardApplication> =>
+    request.get(`/award/applications/${id}`),
   approveApplication: (id: number, approved: boolean, comment?: string): Promise<void> => {
     return request.post(`/award/applications/${id}/approve`, { approved, comment })
   },
-  getPendingApplications: (): Promise<AwardApplication[]> => request.get('/award/applications/pending'),
+  getPendingApplications: (): Promise<AwardApplication[]> =>
+    request.get('/award/applications/pending'),
 }
 
 export const leaveApi = {
-  submitApplication: (data: any): Promise<Result<void>> => request.post('/leave/applications', data),
+  submitApplication: (data: any): Promise<Result<void>> =>
+    request.post('/leave/applications', data),
   getMyApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
     return request.get('/leave/applications/my', { params })
   },
-  getApplication: (id: number): Promise<LeaveApplication> => request.get(`/leave/applications/${id}`),
+  getApplication: (id: number): Promise<LeaveApplication> =>
+    request.get(`/leave/applications/${id}`),
   downloadLeaveSlip: (id: number): void => {
     window.open(`/api/v1/leave/applications/${id}/download-slip`)
   },
   cancelLeave: (id: number): Promise<void> => request.post(`/leave/applications/${id}/cancel`),
-  generateLeaveSlip: (id: number): Promise<void> => request.post(`/leave/applications/${id}/generate-slip`),
+  approveCancelRequest: (id: number, status: string, comment: string): Promise<void> =>
+    request.post(`/leave/applications/${id}/approve-cancel`, {
+      approvalStatus: status,
+      approvalComment: comment,
+    }),
+  getPendingCancelRequests: (params?: any): Promise<any> =>
+    request.get('/leave/applications/pending-cancel', { params }),
+  generateLeaveSlip: (id: number): Promise<void> =>
+    request.post(`/leave/applications/${id}/generate-slip`),
 }
 
 export const approvalApi = {
   getPendingTasks: (): Promise<any> => request.get('/approval/tasks/pending'),
-  processTask: (id: number, data: any): Promise<any> => request.post(`/approval/tasks/${id}/process`, data),
+  processTask: (id: number, data: any): Promise<any> =>
+    request.post(`/approval/tasks/${id}/process`, data),
   getApprovalInstance: (businessType: string, businessId: number): Promise<any> => {
     return request.get(`/approval/instances/${businessType}/${businessId}`)
   },
@@ -210,27 +224,35 @@ export const approvalApi = {
 export const approvalConfigApi = {
   getProcesses: (): Promise<any> => request.get('/approval/config/processes'),
   createProcess: (data: any): Promise<any> => request.post('/approval/config/processes', data),
-  updateProcess: (id: number, data: any): Promise<any> => request.put(`/approval/config/processes/${id}`, data),
+  updateProcess: (id: number, data: any): Promise<any> =>
+    request.put(`/approval/config/processes/${id}`, data),
   deleteProcess: (id: number): Promise<any> => request.delete(`/approval/config/processes/${id}`),
-  getSteps: (processId: number): Promise<any> => request.get(`/approval/config/processes/${processId}/steps`),
+  getSteps: (processId: number): Promise<any> =>
+    request.get(`/approval/config/processes/${processId}/steps`),
   addStep: (data: any): Promise<any> => request.post('/approval/config/steps', data),
-  updateStep: (id: number, data: any): Promise<any> => request.put(`/approval/config/steps/${id}`, data),
+  updateStep: (id: number, data: any): Promise<any> =>
+    request.put(`/approval/config/steps/${id}`, data),
   deleteStep: (id: number): Promise<any> => request.delete(`/approval/config/steps/${id}`),
-  enableProcess: (id: number): Promise<any> => request.post(`/approval/config/processes/${id}/enable`),
-  disableProcess: (id: number): Promise<any> => request.post(`/approval/config/processes/${id}/disable`),
+  enableProcess: (id: number): Promise<any> =>
+    request.post(`/approval/config/processes/${id}/enable`),
+  disableProcess: (id: number): Promise<any> =>
+    request.post(`/approval/config/processes/${id}/disable`),
 }
 
 export const transferConfigApi = {
   list: (): Promise<any[]> => request.get('/consultation/transfer-config'),
   create: (data: any): Promise<any> => request.post('/consultation/transfer-config', data),
-  update: (id: number, data: any): Promise<any> => request.put(`/consultation/transfer-config/${id}`, data),
+  update: (id: number, data: any): Promise<any> =>
+    request.put(`/consultation/transfer-config/${id}`, data),
   delete: (id: number): Promise<void> => request.delete(`/consultation/transfer-config/${id}`),
 }
 
 export const processApi = {
-  getProcessList: (): Promise<any> => request.get('/process/list'),
-  getCompletedProcesses: (): Promise<any> => request.get('/process/completed'),
-  getProcessDetail: (id: string, type: string): Promise<any> => request.get(`/process/${id}`, { params: { type } }),
+  getProcessList: (params?: any): Promise<any> => request.get('/process/list', { params }),
+  getCompletedProcesses: (params?: any): Promise<any> =>
+    request.get('/process/completed', { params }),
+  getProcessDetail: (id: string, type: string): Promise<any> =>
+    request.get(`/process/${id}`, { params: { type } }),
 }
 
 export const fileApi = {
@@ -256,9 +278,11 @@ export const fileApi = {
 }
 
 export const notificationApi = {
-  getNotifications: (params?: any): Promise<Result<any>> => request.get('/notifications', { params }),
+  getNotifications: (params?: any): Promise<Result<any>> =>
+    request.get('/notifications', { params }),
   markAsRead: (id: number): Promise<Result<void>> => request.post(`/notifications/${id}/read`),
-  getUnreadCount: (): Promise<Result<{ count: number }>> => request.get('/notifications/unread-count'),
+  getUnreadCount: (): Promise<Result<{ count: number }>> =>
+    request.get('/notifications/unread-count'),
 }
 
 export const systemApi = {
@@ -268,18 +292,28 @@ export const systemApi = {
   getAllRoles: (): Promise<{ id: number; code: string; name: string; pagePath: string }[]> => {
     return request.get('/system/roles')
   },
-  getUsers: (params?: { pageNum?: number; pageSize?: number; roleId?: number; teacherKeyword?: string; username?: string; nick?: string; status?: number }): Promise<PageResult<{
-    id: number
-    username: string
-    nick: string
-    teacherId: number
-    teacherName: string
-    cardNumber: string
-    roleId: number
-    roleName: string
-    status: number
-    name: string
-  }>> => {
+  getUsers: (params?: {
+    pageNum?: number
+    pageSize?: number
+    roleId?: number
+    teacherKeyword?: string
+    username?: string
+    nick?: string
+    status?: number
+  }): Promise<
+    PageResult<{
+      id: number
+      username: string
+      nick: string
+      teacherId: number
+      teacherName: string
+      cardNumber: string
+      roleId: number
+      roleName: string
+      status: number
+      name: string
+    }>
+  > => {
     return request.get('/system/users', { params: params || {} })
   },
 }

@@ -5,9 +5,7 @@
         <p>审批相关功能已移至流程代办服务</p>
         <p>请通过以下链接访问流程代办服务</p>
       </template>
-      <a-button type="primary" @click="navigateToProcessService">
-        前往流程代办服务
-      </a-button>
+      <a-button type="primary" @click="navigateToProcessService"> 前往流程代办服务 </a-button>
     </a-empty>
   </a-card>
 </template>

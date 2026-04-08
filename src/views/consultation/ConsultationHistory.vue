@@ -29,15 +29,9 @@
       <div class="conversation-container">
         <a-spin v-if="historyLoading" />
         <template v-else>
-          <div v-if="conversationHistory.length === 0" class="no-history">
-            暂无对话历史
-          </div>
+          <div v-if="conversationHistory.length === 0" class="no-history">暂无对话历史</div>
           <div v-else class="conversation-list">
-            <div
-              v-for="(msg, index) in conversationHistory"
-              :key="index"
-              class="conversation-item"
-            >
+            <div v-for="(msg, index) in conversationHistory" :key="index" class="conversation-item">
               <div class="user-message">
                 <div class="message-label">我的问题</div>
                 <div class="message-content">{{ msg.query }}</div>
@@ -152,6 +146,10 @@ const handleTableChange = (pag: any) => {
 }
 
 const handleView = (record: ConsultationQuestion) => {
+  if (record.id === undefined) {
+    console.error('记录缺少ID')
+    return
+  }
   currentQuestion.value = record
   conversationHistory.value = []
   visible.value = true

@@ -71,7 +71,7 @@ export const useUserStore = defineStore('user', () => {
       if (tokenParts.length !== 3) return true
       const base64Url = tokenParts[1]
       const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
-      const paddedBase64 = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=')
+      const paddedBase64 = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
       const payload = JSON.parse(decodeURIComponent(escape(atob(paddedBase64))))
       return Date.now() >= payload.exp * 1000
     } catch (e) {

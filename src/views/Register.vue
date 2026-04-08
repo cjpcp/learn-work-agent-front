@@ -11,19 +11,39 @@
       <a-form :model="form" :rules="rules" layout="vertical" @finish="handleRegister">
         <div class="form-row">
           <a-form-item name="username" label="用户名">
-            <a-input v-model:value="form.username" placeholder="请输入用户名" size="large" class="register-input" />
+            <a-input
+              v-model:value="form.username"
+              placeholder="请输入用户名"
+              size="large"
+              class="register-input"
+            />
           </a-form-item>
           <a-form-item name="password" label="密码">
-            <a-input-password v-model:value="form.password" placeholder="请输入密码" size="large" class="register-input" />
+            <a-input-password
+              v-model:value="form.password"
+              placeholder="请输入密码"
+              size="large"
+              class="register-input"
+            />
           </a-form-item>
         </div>
 
         <div class="form-row">
           <a-form-item name="nick" label="昵称">
-            <a-input v-model:value="form.nick" placeholder="请输入昵称" size="large" class="register-input" />
+            <a-input
+              v-model:value="form.nick"
+              placeholder="请输入昵称"
+              size="large"
+              class="register-input"
+            />
           </a-form-item>
           <a-form-item name="roleId" label="角色">
-            <a-select v-model:value="form.roleId" placeholder="请选择角色" size="large" :loading="loadingRoles">
+            <a-select
+              v-model:value="form.roleId"
+              placeholder="请选择角色"
+              size="large"
+              :loading="loadingRoles"
+            >
               <a-select-option v-for="role in roles" :key="role.id" :value="role.id">
                 {{ role.name }}
               </a-select-option>
@@ -41,22 +61,45 @@
         <template v-if="form.teacher">
           <div class="form-row">
             <a-form-item name="teacherName" label="教师姓名">
-              <a-input v-model:value="form.teacherName" placeholder="请输入教师姓名" size="large" class="register-input" />
+              <a-input
+                v-model:value="form.teacherName"
+                placeholder="请输入教师姓名"
+                size="large"
+                class="register-input"
+              />
             </a-form-item>
             <a-form-item name="cardNumber" label="学工号">
-              <a-input v-model:value="form.cardNumber" placeholder="请输入学工号" size="large" class="register-input" />
+              <a-input
+                v-model:value="form.cardNumber"
+                placeholder="请输入学工号"
+                size="large"
+                class="register-input"
+              />
             </a-form-item>
           </div>
 
           <div class="form-row">
             <a-form-item name="phone" label="联系电话">
-              <a-input v-model:value="form.phone" placeholder="请输入联系电话" size="large" class="register-input" />
+              <a-input
+                v-model:value="form.phone"
+                placeholder="请输入联系电话"
+                size="large"
+                class="register-input"
+              />
             </a-form-item>
           </div>
         </template>
 
         <a-form-item>
-          <a-button type="primary" html-type="submit" size="large" block :loading="loading" class="register-button">注册</a-button>
+          <a-button
+            type="primary"
+            html-type="submit"
+            size="large"
+            block
+            :loading="loading"
+            class="register-button"
+            >注册</a-button
+          >
         </a-form-item>
         <a-form-item>
           <div class="login-link">
@@ -191,16 +234,76 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.register-container { position: relative; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; padding: 20px; }
-.register-background { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, #764ba2 0%, #667eea 100%); z-index: -1; }
-.register-card { width: 600px; max-width: 100%; padding: 32px; border-radius: 16px; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2); background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); }
-.register-title { text-align: center; margin-bottom: 32px; }
-.register-title h2 { font-size: 28px; font-weight: 700; color: #333; margin-bottom: 8px; }
-.register-title p { font-size: 16px; color: #666; margin-top: 8px; }
-.form-row { display: flex; gap: 16px; margin-bottom: 16px; }
-.form-row > .ant-form-item { flex: 1; margin-bottom: 0; }
-.register-input,.register-button { border-radius: 12px; }
-.register-button { height: 48px; margin-top: 16px; }
-.login-link { text-align: center; margin-top: 16px; }
-@media (max-width: 768px) { .register-card { width: 90%; padding: 24px; } .form-row { flex-direction: column; } }
+.register-container {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  overflow: hidden;
+  padding: 20px;
+}
+.register-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
+  z-index: -1;
+}
+.register-card {
+  width: 600px;
+  max-width: 100%;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+}
+.register-title {
+  text-align: center;
+  margin-bottom: 32px;
+}
+.register-title h2 {
+  font-size: 28px;
+  font-weight: 700;
+  color: #333;
+  margin-bottom: 8px;
+}
+.register-title p {
+  font-size: 16px;
+  color: #666;
+  margin-top: 8px;
+}
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.form-row > .ant-form-item {
+  flex: 1;
+  margin-bottom: 0;
+}
+.register-input,
+.register-button {
+  border-radius: 12px;
+}
+.register-button {
+  height: 48px;
+  margin-top: 16px;
+}
+.login-link {
+  text-align: center;
+  margin-top: 16px;
+}
+@media (max-width: 768px) {
+  .register-card {
+    width: 90%;
+    padding: 24px;
+  }
+  .form-row {
+    flex-direction: column;
+  }
+}
 </style>

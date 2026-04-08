@@ -209,11 +209,17 @@
         <!-- 语音暂存提示 -->
         <div v-if="pendingVoiceFile" class="uploaded-files-list">
           <div class="uploaded-file-item">
-            <span style="margin-right:4px">🎤</span>
+            <span style="margin-right: 4px">🎤</span>
             <span class="file-name">{{ pendingVoiceFile.name }}（语音）</span>
             <button class="remove-file-btn" @click="pendingVoiceFile = null">
               <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                <path
+                  d="M18 6L6 18M6 6L18 18"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                />
               </svg>
             </button>
           </div>
@@ -223,7 +229,9 @@
             v-model="questionText"
             type="text"
             class="question-input"
-            :placeholder="pendingVoiceFile ? '语音已就绪，可补充文字说明（可选）...' : '请输入您的问题...'"
+            :placeholder="
+              pendingVoiceFile ? '语音已就绪，可补充文字说明（可选）...' : '请输入您的问题...'
+            "
             @keyup.enter="handleSubmit"
           />
           <input
@@ -274,7 +282,9 @@
           </button>
         </div>
         <div class="input-hint">
-          <span class="format-hint">📎 附件：jpg/png/gif/pdf/doc/xls（≤10MB）&nbsp;&nbsp;🎤 语音：最长2分钟</span>
+          <span class="format-hint"
+            >📎 附件：jpg/png/gif/pdf/doc/xls（≤10MB）&nbsp;&nbsp;🎤 语音：最长2分钟</span
+          >
           <span class="hint-divider">｜</span>
           <a href="#" @click.prevent="showManualForm">申请人工帮助</a>
         </div>
@@ -382,14 +392,11 @@ const handleSubmit = async () => {
   const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
 
   try {
-    const response = await fetch(
-      `${baseUrl}/api/v1/consultation/questions/stream/multipart`,
-      {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      }
-    )
+    const response = await fetch(`${baseUrl}/api/v1/consultation/questions/stream/multipart`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: formData,
+    })
 
     if (!response.ok) {
       throw new Error(`请求失败: ${response.status} ${response.statusText}`)
@@ -488,7 +495,7 @@ const submitManual = async () => {
     // 上传文件（如果有）
     // 注意：request.ts 响应拦截器已解包，返回的直接是 string URL（不是 Result<string>）
     if (selectedFile.value) {
-      const fileUrl = await consultationApi.uploadFile(selectedFile.value) as unknown as string
+      const fileUrl = (await consultationApi.uploadFile(selectedFile.value)) as unknown as string
       if (fileUrl) {
         attachmentUrl = fileUrl
       } else {

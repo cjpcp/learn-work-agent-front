@@ -48,9 +48,15 @@
           </a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="状态">
-          <a-tag v-if="currentRecord?.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
-          <a-tag v-else-if="currentRecord?.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
-          <a-tag v-else-if="currentRecord?.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
+          <a-tag v-if="currentRecord?.approvalStatus === 'PENDING'" color="processing"
+            >待审批</a-tag
+          >
+          <a-tag v-else-if="currentRecord?.approvalStatus === 'APPROVED'" color="success"
+            >已批准</a-tag
+          >
+          <a-tag v-else-if="currentRecord?.approvalStatus === 'REJECTED'" color="error"
+            >已拒绝</a-tag
+          >
         </a-descriptions-item>
         <a-descriptions-item label="申请名称">
           {{ currentRecord?.awardName }}

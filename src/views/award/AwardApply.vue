@@ -35,7 +35,13 @@
         <a-row :gutter="24">
           <a-col :span="12">
             <a-form-item name="amount" label="申请金额">
-              <a-input-number v-model:value="form.amount" :min="0" :precision="2" style="width: 100%" placeholder="请输入申请金额" />
+              <a-input-number
+                v-model:value="form.amount"
+                :min="0"
+                :precision="2"
+                style="width: 100%"
+                placeholder="请输入申请金额"
+              />
             </a-form-item>
           </a-col>
         </a-row>
@@ -49,9 +55,17 @@
         <a-row :gutter="24">
           <a-col :span="24">
             <a-form-item name="attachmentUrls" label="附件">
-              <a-upload v-model:file-list="fileList" :before-upload="beforeUpload" :max-count="5" multiple>
+              <a-upload
+                :file-list="fileList"
+                :before-upload="beforeUpload"
+                :max-count="5"
+                multiple
+                @remove="handleRemove"
+              >
                 <a-button><UploadOutlined />上传附件</a-button>
-                <template #tip><div class="ant-upload-hint">最多上传5个文件，支持PDF、Word等格式</div></template>
+                <template #tip
+                  ><div class="ant-upload-hint">最多上传5个文件，支持PDF、Word等格式</div></template
+                >
               </a-upload>
             </a-form-item>
           </a-col>
@@ -72,7 +86,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { UploadOutlined } from '@ant-design/icons-vue'
-import { awardApi } from '@/api'
+import { awardApi, consultationApi } from '@/api'
 import type { AwardApplicationRequest } from '@/types'
 import type { Rule } from 'ant-design-vue/es/form'
 import type { UploadFile } from 'ant-design-vue'
@@ -88,7 +102,7 @@ const form = reactive<AwardApplicationRequest>({
   awardName: '',
   amount: undefined,
   reason: '',
-  attachmentUrls: [],
+  attachmentUrls: '',
   studentName: '',
 })
 
@@ -102,12 +116,37 @@ const rules: Record<string, Rule[]> = {
   awardName: [{ required: true, message: '请输入申请名称', trigger: 'blur' }],
 }
 
-const beforeUpload = (_file: File) => false
+const handleRemove = (file: UploadFile) => {
+  fileList.value = fileList.value.filter((item) => item.uid !== file.uid)
+}
+
+const beforeUpload = async (file: File) => {
+  try {
+    const url: any = await consultationApi.uploadFile(file, file.name)
+    if (url) {
+      const uploadedFile: UploadFile = {
+        uid: String(Date.now()),
+        name: file.name,
+        status: 'done',
+        url: url,
+        thumbUrl: url,
+      }
+      fileList.value = [...fileList.value, uploadedFile]
+      message.success(`${file.name} 上传成功`)
+    }
+  } catch (error: any) {
+    message.error(`${file.name} 上传失败`)
+  }
+  return false
+}
 
 const handleSubmit = async () => {
   loading.value = true
   try {
-    form.attachmentUrls = fileList.value.map(file => file.thumbUrl || '')
+    form.attachmentUrls = fileList.value
+      .map((file) => file.url || file.thumbUrl || '')
+      .filter(Boolean)
+      .join(',')
     await awardApi.submitApplication(form as never)
     message.success('申请提交成功')
     router.push('/award')
@@ -120,7 +159,16 @@ const handleSubmit = async () => {
 </script>
 
 <style scoped>
-.award-apply-container { padding: 24px; background-color: #f0f2f5; min-height: calc(100vh - 64px); }
-.page-header { margin-bottom: 16px; }
-.apply-card { max-width: 1000px; margin: 0 auto; }
+.award-apply-container {
+  padding: 24px;
+  background-color: #f0f2f5;
+  min-height: calc(100vh - 64px);
+}
+.page-header {
+  margin-bottom: 16px;
+}
+.apply-card {
+  max-width: 1000px;
+  margin: 0 auto;
+}
 </style>

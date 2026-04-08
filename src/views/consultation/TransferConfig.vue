@@ -1,6 +1,10 @@
 <template>
   <div class="transfer-config-container">
-    <a-page-header title="人工转接配置中心" sub-title="配置不同问题类型的人工转接处理人" @back="$router.back()" />
+    <a-page-header
+      title="人工转接配置中心"
+      sub-title="配置不同问题类型的人工转接处理人"
+      @back="$router.back()"
+    />
     <a-card class="config-card">
       <div class="toolbar">
         <div>
@@ -21,11 +25,15 @@
             <a-tag>{{ record.businessType }}</a-tag>
           </template>
           <template v-else-if="column.key === 'target'">
-            <span v-if="record.assignMode === 'USER'">{{ (record.userNames || []).join('、') || '-' }}</span>
+            <span v-if="record.assignMode === 'USER'">{{
+              (record.userNames || []).join('、') || '-'
+            }}</span>
             <span v-else>{{ record.roleName || '-' }}</span>
           </template>
           <template v-else-if="column.key === 'enabled'">
-            <a-tag :color="record.enabled ? 'green' : 'default'">{{ record.enabled ? '启用' : '禁用' }}</a-tag>
+            <a-tag :color="record.enabled ? 'green' : 'default'">{{
+              record.enabled ? '启用' : '禁用'
+            }}</a-tag>
           </template>
           <template v-else-if="column.key === 'action'">
             <a-button type="link" size="small" @click="handleEdit(record)">编辑</a-button>
@@ -35,7 +43,13 @@
       </a-table>
     </a-card>
 
-    <a-modal v-model:open="modalVisible" :title="editingRecord ? '编辑转接规则' : '新增转接规则'" width="960px" @ok="handleSave" @cancel="handleCancel">
+    <a-modal
+      v-model:open="modalVisible"
+      :title="editingRecord ? '编辑转接规则' : '新增转接规则'"
+      width="960px"
+      @ok="handleSave"
+      @cancel="handleCancel"
+    >
       <a-form :model="form" layout="vertical">
         <div class="form-row">
           <a-form-item label="问题类型">
@@ -64,15 +78,24 @@
 
         <a-form-item v-if="form.assignMode === 'ROLE'" label="目标角色">
           <a-select v-model:value="form.roleId" placeholder="请选择角色" :loading="loadingRoles">
-            <a-select-option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</a-select-option>
+            <a-select-option v-for="role in roles" :key="role.id" :value="role.id">{{
+              role.name
+            }}</a-select-option>
           </a-select>
         </a-form-item>
 
         <template v-if="form.assignMode === 'USER'">
           <div class="filter-grid">
             <a-form-item label="角色筛选">
-              <a-select v-model:value="filters.roleId" placeholder="选择角色后仅列举该角色用户" allow-clear :loading="loadingRoles">
-                <a-select-option v-for="role in roles" :key="role.id" :value="role.id">{{ role.name }}</a-select-option>
+              <a-select
+                v-model:value="filters.roleId"
+                placeholder="选择角色后仅列举该角色用户"
+                allow-clear
+                :loading="loadingRoles"
+              >
+                <a-select-option v-for="role in roles" :key="role.id" :value="role.id">{{
+                  role.name
+                }}</a-select-option>
               </a-select>
             </a-form-item>
             <a-form-item label="用户名">
@@ -89,7 +112,10 @@
             </a-form-item>
           </div>
           <div class="filter-actions">
-            <a-input v-model:value="filters.teacherKeyword" placeholder="教师姓名 / 学工号 / 用户名模糊匹配" />
+            <a-input
+              v-model:value="filters.teacherKeyword"
+              placeholder="教师姓名 / 学工号 / 用户名模糊匹配"
+            />
             <a-button type="primary" @click="handleSearch">查询</a-button>
             <a-button @click="handleResetFilters">重置</a-button>
           </div>
@@ -107,14 +133,20 @@
           >
             <template #bodyCell="{ column, record }">
               <template v-if="column.key === 'status'">
-                <a-tag :color="record.status === 1 ? 'green' : 'default'">{{ record.status === 1 ? '启用' : '禁用' }}</a-tag>
+                <a-tag :color="record.status === 1 ? 'green' : 'default'">{{
+                  record.status === 1 ? '启用' : '禁用'
+                }}</a-tag>
               </template>
             </template>
           </a-table>
         </template>
 
         <a-form-item label="备注">
-          <a-textarea v-model:value="form.remark" :rows="3" placeholder="例如：请假类默认优先转接辅导员" />
+          <a-textarea
+            v-model:value="form.remark"
+            :rows="3"
+            placeholder="例如：请假类默认优先转接辅导员"
+          />
         </a-form-item>
       </a-form>
     </a-modal>
@@ -185,7 +217,7 @@ const userColumns = [
 const rowSelection = computed(() => ({
   selectedRowKeys: selectedRowKeys.value,
   onChange: (keys: (string | number)[]) => {
-    selectedRowKeys.value = keys.map(key => Number(key))
+    selectedRowKeys.value = keys.map((key) => Number(key))
   },
 }))
 
@@ -377,16 +409,57 @@ onMounted(() => {
 </script>
 
 <style scoped>
-.transfer-config-container { padding: 20px; min-height: 80vh; }
-.config-card { margin-top: 20px; }
-.toolbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 16px; }
-.toolbar h3 { margin: 0; }
-.toolbar p { margin: 4px 0 0; color: #666; }
-.form-row { display: flex; gap: 16px; }
-.form-row > .ant-form-item { flex: 1; }
-.filter-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
-.filter-actions { display: flex; gap: 12px; margin-bottom: 16px; }
-.filter-actions .ant-input { flex: 1; }
-.selected-summary { margin-bottom: 12px; color: #666; }
-@media (max-width: 768px) { .filter-grid { grid-template-columns: 1fr; } .filter-actions { flex-direction: column; } }
+.transfer-config-container {
+  padding: 20px;
+  min-height: 80vh;
+}
+.config-card {
+  margin-top: 20px;
+}
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  gap: 16px;
+}
+.toolbar h3 {
+  margin: 0;
+}
+.toolbar p {
+  margin: 4px 0 0;
+  color: #666;
+}
+.form-row {
+  display: flex;
+  gap: 16px;
+}
+.form-row > .ant-form-item {
+  flex: 1;
+}
+.filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+.filter-actions {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.filter-actions .ant-input {
+  flex: 1;
+}
+.selected-summary {
+  margin-bottom: 12px;
+  color: #666;
+}
+@media (max-width: 768px) {
+  .filter-grid {
+    grid-template-columns: 1fr;
+  }
+  .filter-actions {
+    flex-direction: column;
+  }
+}
 </style>

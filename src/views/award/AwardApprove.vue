@@ -167,7 +167,7 @@ const handleConfirmApprove = async () => {
     await awardApi.approveApplication(
       currentRecord.value.id!,
       approveForm.approvalStatus === 'APPROVED',
-      approveForm.approvalComment,
+      approveForm.approvalComment
     )
     message.success('审批成功')
     approveVisible.value = false
