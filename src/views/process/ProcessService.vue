@@ -265,7 +265,7 @@
     <!-- 流程详情弹窗 -->
     <a-modal
       v-model:open="detailVisible"
-      :title="currentType === 'leave' ? '请假详情' : '奖助详情'"
+      :title="currentType === 'leave' ? '请假详情' : currentType === 'award' ? '奖助详情' : '销假详情'"
       width="700px"
       :footer="null"
       @cancel="handleCloseDetail"
@@ -395,6 +395,28 @@
           </a-descriptions-item>
           <a-descriptions-item label="创建时间">
             {{ awardDetail?.createTime }}
+          </a-descriptions-item>
+        </a-descriptions>
+
+        <!-- 销假详情 -->
+        <a-descriptions v-if="currentType === 'leave' && leaveDetail?.cancelRequested" :column="2" bordered>
+          <a-descriptions-item label="销假状态" :span="2">
+            <a-tag v-if="leaveDetail?.cancelApprovalStatus === 'PENDING'" color="processing"
+              >待审批</a-tag
+            >
+            <a-tag v-else-if="leaveDetail?.cancelApprovalStatus === 'APPROVED'" color="success"
+              >已批准</a-tag
+            >
+            <a-tag v-else-if="leaveDetail?.cancelApprovalStatus === 'REJECTED'" color="error"
+              >已拒绝</a-tag
+            >
+            <span v-else>{{ leaveDetail?.cancelApprovalStatus }}</span>
+          </a-descriptions-item>
+          <a-descriptions-item label="销假审批意见" :span="2">
+            {{ leaveDetail?.cancelApprovalComment || '无' }}
+          </a-descriptions-item>
+          <a-descriptions-item v-if="leaveDetail?.cancelTime" label="销假时间">
+            {{ leaveDetail?.cancelTime }}
           </a-descriptions-item>
         </a-descriptions>
       </a-spin>
@@ -532,9 +554,7 @@
             }}</a-descriptions-item>
             <a-descriptions-item v-if="approveAwardDetail?.attachmentUrls" label="附件" :span="2">
               <template
-                v-for="(url, idx) in (approveAwardDetail?.attachmentUrls || '')
-                  .split(',')
-                  .filter(Boolean)"
+                v-for="(url, idx) in (approveAwardDetail?.attachmentUrls || [])"
                 :key="idx"
               >
                 <a :href="url" target="_blank" rel="noopener" download>
@@ -543,7 +563,7 @@
                 <br
                   v-if="
                     idx <
-                    (approveAwardDetail?.attachmentUrls || '').split(',').filter(Boolean).length - 1
+                    (approveAwardDetail?.attachmentUrls || []).filter(Boolean).length - 1
                   "
                 />
               </template>
@@ -1090,7 +1110,7 @@ const handleGoApprove = async (item: ProcessItem) => {
 }
 
 const handleViewProcess = async (item: ProcessItem) => {
-  currentType.value = item.type as 'leave' | 'award'
+  currentType.value = item.type === 'leave_cancel' ? 'leave' : (item.type as 'leave' | 'award')
   currentProcessId.value = Number(item.id)
   currentTaskId.value = null // 重置：打开详情时先清空，防止上次残留值导致误判
   loadingDetail.value = true
@@ -1102,21 +1122,25 @@ const handleViewProcess = async (item: ProcessItem) => {
       leaveDetail.value = await leaveApi.getApplication(Number(item.id))
     } else if (item.type === 'award') {
       awardDetail.value = await awardApi.getApplicationDetail(Number(item.id))
+    } else if (item.type === 'leave_cancel') {
+      leaveDetail.value = await leaveApi.getApplication(Number(item.id))
     }
 
-    // 加载审批流程状态
-    const businessType = item.type === 'leave' ? 'LEAVE' : 'AWARD'
-    const instance = await approvalApi.getApprovalInstance(businessType, Number(item.id))
-    if (instance.steps) {
-      approvalProcess.value = {
-        status: instance.status,
-        steps: instance.steps.map((step: any) => ({
-          name: step.stepName,
-          status: step.status,
-          approver: step.approverName,
-          time: step.approvalTime,
-          comment: step.comment,
-        })),
+    // 加载审批流程状态（销假申请不需要加载审批流程）
+    if (item.type !== 'leave_cancel') {
+      const businessType = item.type === 'leave' ? 'LEAVE' : 'AWARD'
+      const instance = await approvalApi.getApprovalInstance(businessType, Number(item.id))
+      if (instance.steps) {
+        approvalProcess.value = {
+          status: instance.status,
+          steps: instance.steps.map((step: any) => ({
+            name: step.stepName,
+            status: step.status,
+            approver: step.approverName,
+            time: step.approvalTime,
+            comment: step.comment,
+          })),
+        }
       }
     }
 
