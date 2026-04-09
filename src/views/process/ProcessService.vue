@@ -932,61 +932,44 @@ const loadProcesses = async () => {
     const pendingParams = {
       pageNum: pendingPagination.current,
       pageSize: pendingPagination.pageSize,
-      type: pendingFilter.value === 'all' ? undefined : pendingFilter.value,
     }
-    const pendingResponse = await processApi.getProcessList(pendingParams)
-    let pendingList = pendingResponse.pending || []
-
-    const cancelResponse = await leaveApi.getPendingCancelRequests({
-      pageNum: 1,
-      pageSize: 100,
-    })
-    console.log('销假申请返回数据:', cancelResponse)
-    const cancelProcesses: ProcessItem[] = (cancelResponse.records || []).map((record: any) => ({
-      id: record.id,
-      name: `销假申请 - ${record.studentName || ''}`,
-      description: `请假类型: ${record.leaveType === 'PERSONAL' ? '事假' : '公假'} | ${record.startDate} 至 ${record.endDate}`,
-      type: 'leave_cancel',
-      status: 'pending',
-      allowAction: true,
-      createTime: record.createTime || '',
-      businessId: record.id,
-    }))
-
-    console.log('销假申请列表:', cancelProcesses)
-    console.log('当前筛选条件:', pendingFilter.value)
-
-    if (pendingFilter.value === 'all' || pendingFilter.value === 'leave_cancel') {
-      pendingList = [...pendingList, ...cancelProcesses]
+    let pendingResponse: any
+    switch (pendingFilter.value) {
+      case 'award':
+        pendingResponse = await processApi.getPendingAward(pendingParams)
+        break
+      case 'leave':
+        pendingResponse = await processApi.getPendingLeave(pendingParams)
+        break
+      case 'leave_cancel':
+        pendingResponse = await processApi.getPendingLeaveCancel(pendingParams)
+        break
+      default:
+        pendingResponse = await processApi.getPendingAll(pendingParams)
     }
-
-    if (pendingFilter.value !== 'all') {
-      pendingList = pendingList.filter((p: ProcessItem) => p.type === pendingFilter.value)
-    }
-
-    const start = (pendingPagination.current - 1) * pendingPagination.pageSize
-    const end = start + pendingPagination.pageSize
-    pendingProcesses.value = pendingList.slice(start, end)
-    pendingPagination.total = pendingList.length
-
-    console.log('最终待办列表:', pendingProcesses.value)
-    console.log('分页信息:', pendingPagination)
+    pendingProcesses.value = pendingResponse.records || []
+    pendingPagination.total = pendingResponse.total || 0
 
     const completedParams = {
-      pageNum: 1,
-      pageSize: 100,
+      pageNum: completedPagination.current,
+      pageSize: completedPagination.pageSize,
     }
-    const completedResponse = await processApi.getCompletedProcesses(completedParams)
-    let completedList = completedResponse.records || completedResponse || []
-
-    if (completedFilter.value !== 'all') {
-      completedList = completedList.filter((p: ProcessItem) => p.type === completedFilter.value)
+    let completedResponse: any
+    switch (completedFilter.value) {
+      case 'award':
+        completedResponse = await processApi.getCompletedAward(completedParams)
+        break
+      case 'leave':
+        completedResponse = await processApi.getCompletedLeave(completedParams)
+        break
+      case 'leave_cancel':
+        completedResponse = await processApi.getCompletedLeaveCancel(completedParams)
+        break
+      default:
+        completedResponse = await processApi.getCompletedAll(completedParams)
     }
-
-    const completedStart = (completedPagination.current - 1) * completedPagination.pageSize
-    const completedEnd = completedStart + completedPagination.pageSize
-    completedProcesses.value = completedList.slice(completedStart, completedEnd)
-    completedPagination.total = completedList.length
+    completedProcesses.value = completedResponse.records || []
+    completedPagination.total = completedResponse.total || 0
   } catch (error) {
     message.error('获取流程数据失败')
     console.error('获取流程数据失败:', error)

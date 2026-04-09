@@ -248,9 +248,14 @@ export const transferConfigApi = {
 }
 
 export const processApi = {
-  getProcessList: (params?: any): Promise<any> => request.get('/process/list', { params }),
-  getCompletedProcesses: (params?: any): Promise<any> =>
-    request.get('/process/completed', { params }),
+  getPendingAll: (params?: any): Promise<any> => request.get('/process/pending/all', { params }),
+  getPendingAward: (params?: any): Promise<any> => request.get('/process/pending/award', { params }),
+  getPendingLeave: (params?: any): Promise<any> => request.get('/process/pending/leave', { params }),
+  getPendingLeaveCancel: (params?: any): Promise<any> => request.get('/process/pending/leave-cancel', { params }),
+  getCompletedAll: (params?: any): Promise<any> => request.get('/process/completed/all', { params }),
+  getCompletedAward: (params?: any): Promise<any> => request.get('/process/completed/award', { params }),
+  getCompletedLeave: (params?: any): Promise<any> => request.get('/process/completed/leave', { params }),
+  getCompletedLeaveCancel: (params?: any): Promise<any> => request.get('/process/completed/leave-cancel', { params }),
   getProcessDetail: (id: string, type: string): Promise<any> =>
     request.get(`/process/${id}`, { params: { type } }),
 }
