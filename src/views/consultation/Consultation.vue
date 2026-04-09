@@ -224,16 +224,15 @@
             </button>
           </div>
         </div>
-        <div class="input-container">
-          <input
+        <div class="input-container-new">
+          <textarea
             v-model="questionText"
-            type="text"
-            class="question-input"
+            class="question-textarea"
             :placeholder="
-              pendingVoiceFile ? '语音已就绪，可补充文字说明（可选）...' : '请输入您的问题...'
-            "
-            @keyup.enter="handleSubmit"
-          />
+              pendingVoiceFile ? '语音已就绪，可补充文字说明（可选）...' : '请输入您的问题...'"
+            @keyup.enter.exact="handleSubmit"
+            rows="1"
+          ></textarea>
           <input
             ref="chatFileInput"
             type="file"
@@ -242,22 +241,53 @@
             accept="image/jpeg,image/png,image/gif,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
             @change="handleChatFileUpload"
           />
-          <a-tooltip placement="top">
-            <template #title>
-              <div class="upload-tooltip">
-                <div>📎 附件支持：.jpg .png .gif .pdf .doc .docx .xls .xlsx</div>
-                <div>（单文件最大 10MB）</div>
-              </div>
-            </template>
-            <button class="input-button" @click="triggerChatFileUpload">
+          <div class="input-actions">
+            <div class="left-actions">
+              <a-tooltip placement="top">
+                <template #title>
+                  <div class="upload-tooltip">
+                    <div>📎 附件支持：.jpg .png .gif .pdf .doc .docx .xls .xlsx</div>
+                    <div>（单文件最大 10MB）</div>
+                  </div>
+                </template>
+                <button class="action-button" @click="triggerChatFileUpload">
+                  <svg
+                    class="action-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      d="M21.1525 10.8995L12.1369 19.9151C10.0866 21.9653 6.7625 21.9653 4.71225 19.9151C2.662 17.8648 2.662 14.5407 4.71225 12.4904L13.7279 3.47483C15.0947 2.108 17.2198 2.108 18.5866 3.47483C19.9534 4.84167 19.9534 6.96675 18.5866 8.33358L10.3797 16.5405C9.69633 17.2238 8.59637 17.2238 7.91304 16.5405C7.22971 15.8572 7.22971 14.7572 7.91304 14.0739L14.914 7.07295"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                    />
+                  </svg>
+                </button>
+              </a-tooltip>
+              <a-tooltip placement="top">
+                <template #title>
+                  <div class="upload-tooltip">
+                    <div>🎤 语音录制，最长 2 分钟</div>
+                    <div>录制完成后自动上传（支持 webm/wav）</div>
+                  </div>
+                </template>
+                <button class="action-button" :class="{ recording: isRecording }" @click="toggleVoice">
+                  <span class="action-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
+                </button>
+              </a-tooltip>
+            </div>
+            <button class="send-button-new" @click="handleSubmit">
               <svg
-                class="button-icon-svg"
+                class="send-icon-svg"
                 viewBox="0 0 24 24"
                 fill="none"
                 xmlns="http://www.w3.org/2000/svg"
               >
                 <path
-                  d="M21.1525 10.8995L12.1369 19.9151C10.0866 21.9653 6.7625 21.9653 4.71225 19.9151C2.662 17.8648 2.662 14.5407 4.71225 12.4904L13.7279 3.47483C15.0947 2.108 17.2198 2.108 18.5866 3.47483C19.9534 4.84167 19.9534 6.96675 18.5866 8.33358L10.3797 16.5405C9.69633 17.2238 8.59637 17.2238 7.91304 16.5405C7.22971 15.8572 7.22971 14.7572 7.91304 14.0739L14.914 7.07295"
+                  d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13"
                   stroke="currentColor"
                   stroke-width="2"
                   stroke-linecap="round"
@@ -265,28 +295,10 @@
                 />
               </svg>
             </button>
-          </a-tooltip>
-          <a-tooltip placement="top">
-            <template #title>
-              <div class="upload-tooltip">
-                <div>🎤 语音录制，最长 2 分钟</div>
-                <div>录制完成后自动上传（支持 webm/wav）</div>
-              </div>
-            </template>
-            <button class="input-button" :class="{ recording: isRecording }" @click="toggleVoice">
-              <span class="button-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
-            </button>
-          </a-tooltip>
-          <button class="send-button" @click="handleSubmit">
-            <span class="send-icon">➤</span>
-          </button>
+          </div>
         </div>
-        <div class="input-hint">
-          <span class="format-hint"
-            >📎 附件：jpg/png/gif/pdf/doc/xls（≤10MB）&nbsp;&nbsp;🎤 语音：最长2分钟</span
-          >
-          <span class="hint-divider">｜</span>
-          <a href="#" @click.prevent="showManualForm">申请人工帮助</a>
+        <div class="input-footer">
+          <a href="#" @click.prevent="showManualForm" class="manual-help-link">申请人工帮助</a>
         </div>
       </div>
     </main>
@@ -1015,13 +1027,13 @@ const removeUploadedFile = (index: number) => {
   left: 0;
   right: 0;
   background-color: white;
-  padding: 16px 20px;
-  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+  padding: 16px 20px 24px;
   z-index: 100;
 }
 
 /* 已上传文件列表 */
-.uploaded-files-container {
+.uploaded-files-container,
+.uploaded-files-list {
   max-width: 800px;
   margin: 0 auto 12px;
   display: flex;
@@ -1076,48 +1088,79 @@ const removeUploadedFile = (index: number) => {
   height: 14px;
 }
 
-.input-container {
+/* 新的输入容器样式 - 按照用户提供的图片设计 */
+.input-container-new {
   max-width: 800px;
   margin: 0 auto;
+  border: 1.5px solid #e0e0e0;
+  border-radius: 16px;
+  padding: 12px 16px;
+  background-color: #fff;
+  transition: border-color 0.3s, box-shadow 0.3s;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.input-container-new:focus-within {
+  border-color: #2196f3;
+  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+}
+
+.question-textarea {
+  width: 100%;
+  min-height: 60px;
+  max-height: 120px;
+  padding: 4px 0;
+  border: none;
+  font-size: 15px;
+  line-height: 1.6;
+  resize: none;
+  outline: none;
+  font-family: inherit;
+  color: #333;
+  background: transparent;
+}
+
+.question-textarea::placeholder {
+  color: #aaa;
+}
+
+.input-actions {
   display: flex;
   align-items: center;
-  gap: 12px;
+  justify-content: space-between;
 }
 
-.question-input {
-  flex: 1;
-  padding: 12px 16px;
-  border: 1px solid #e0e0e0;
-  border-radius: 24px;
-  font-size: 14px;
-  transition: border-color 0.3s;
+.left-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.question-input:focus {
-  outline: none;
-  border-color: #2196f3;
-}
-
-.input-button,
-.send-button {
-  width: 40px;
-  height: 40px;
+.action-button {
+  width: 36px;
+  height: 36px;
   border-radius: 50%;
-  border: none;
-  background-color: #f5f5f5;
+  border: 1.5px solid #e0e0e0;
+  background-color: #fff;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
+  color: #666;
 }
 
-.input-button:hover {
-  background-color: #e0e0e0;
+.action-button:hover {
+  border-color: #2196f3;
+  color: #2196f3;
+  background-color: #f5f9ff;
 }
 
-.input-button.recording {
+.action-button.recording {
   background-color: #ff4757;
+  border-color: #ff4757;
   color: white;
   animation: pulse 1.5s infinite;
 }
@@ -1134,58 +1177,63 @@ const removeUploadedFile = (index: number) => {
   }
 }
 
-.send-button {
-  background-color: #2196f3;
-  color: white;
-}
-
-.send-button:hover {
-  background-color: #1976d2;
-}
-
-.button-icon,
-.send-icon {
-  font-size: 18px;
-}
-
-.button-icon-svg {
+.action-icon {
+  font-size: 16px;
   width: 20px;
   height: 20px;
-  color: #666;
+}
+
+.send-button-new {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+.send-button-new:hover {
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+}
+
+.send-button-new:active {
+  transform: scale(0.95);
+}
+
+.send-icon-svg {
+  width: 20px;
+  height: 20px;
+  margin-left: 2px;
+  margin-top: 2px;
 }
 
 .chat-file-input {
   display: none;
 }
 
-.input-hint {
+/* 输入框底部提示文字 */
+.input-footer {
   text-align: center;
-  margin-top: 8px;
+  margin-top: 10px;
 }
 
-.input-hint a {
+.manual-help-link {
   color: #2196f3;
   text-decoration: none;
-  font-size: 12px;
+  font-size: 13px;
+  transition: all 0.3s;
+  display: inline-block;
 }
 
-.input-hint a:hover {
+.manual-help-link:hover {
+  color: #1976d2;
   text-decoration: underline;
-}
-
-.format-hint {
-  font-size: 11px;
-  color: #aaa;
-}
-
-.hint-divider {
-  font-size: 11px;
-  color: #ccc;
-  margin: 0 4px;
-}
-
-.upload-tooltip div {
-  font-size: 12px;
-  line-height: 1.6;
 }
 </style>
