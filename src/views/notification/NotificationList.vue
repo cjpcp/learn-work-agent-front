@@ -2,9 +2,6 @@
   <div class="notification-list-page">
     <div class="page-header">
       <h2>通知中心</h2>
-      <a-button type="primary" :disabled="unreadCount === 0" @click="handleMarkAllRead">
-        全部标记已读
-      </a-button>
     </div>
 
     <a-card :bordered="false" class="notification-card">
@@ -32,9 +29,6 @@
                 <span class="notification-item-time">{{
                   formatTime(notification.createTime)
                 }}</span>
-                <a-button type="link" size="small" @click="handleDelete(notification.id!)">
-                  删除
-                </a-button>
               </div>
             </div>
             <div class="notification-item-content">{{ notification.content }}</div>
@@ -76,7 +70,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { message, Modal } from 'ant-design-vue'
+import { message } from 'ant-design-vue'
 import { notificationApi } from '@/api'
 import type { Notification } from '@/types'
 
@@ -93,19 +87,17 @@ const unreadCount = ref(0)
 const fetchNotifications = async () => {
   loading.value = true
   try {
-    const res = await notificationApi.getNotifications({
+    const page = await notificationApi.getNotifications({
       pageNum: pageNum.value,
       pageSize: pageSize.value,
     })
-    if (res.code === 200) {
-      const records = res.data.records
-      if (activeTab.value === 'unread') {
-        notifications.value = records.filter((n: Notification) => !n.isRead)
-      } else {
-        notifications.value = records
-      }
-      total.value = res.data.total
+    const records = page.records
+    if (activeTab.value === 'unread') {
+      notifications.value = records.filter((n: Notification) => !n.isRead)
+    } else {
+      notifications.value = records
     }
+    total.value = page.total
   } catch (error) {
     console.error('获取通知列表失败:', error)
   } finally {
@@ -115,10 +107,7 @@ const fetchNotifications = async () => {
 
 const fetchUnreadCount = async () => {
   try {
-    const res = await notificationApi.getUnreadCount()
-    if (res.code === 200) {
-      unreadCount.value = res.data.count
-    }
+    unreadCount.value = await notificationApi.getUnreadCount()
   } catch (error) {
     console.error('获取未读数量失败:', error)
   }
@@ -144,36 +133,6 @@ const handleMarkAsRead = async (notification: Notification) => {
   } catch (error) {
     message.error('操作失败')
   }
-}
-
-const handleMarkAllRead = async () => {
-  try {
-    await notificationApi.markAllAsRead()
-    notifications.value.forEach((n) => (n.isRead = true))
-    unreadCount.value = 0
-    message.success('已全部标记为已读')
-  } catch (error) {
-    message.error('操作失败')
-  }
-}
-
-const handleDelete = (id: number) => {
-  Modal.confirm({
-    title: '确认删除',
-    content: '确定要删除这条通知吗？',
-    okText: '确定',
-    cancelText: '取消',
-    onOk: async () => {
-      try {
-        await notificationApi.deleteNotification(id)
-        message.success('删除成功')
-        fetchNotifications()
-        fetchUnreadCount()
-      } catch (error) {
-        message.error('删除失败')
-      }
-    },
-  })
 }
 
 const goToDetail = (notification: Notification) => {

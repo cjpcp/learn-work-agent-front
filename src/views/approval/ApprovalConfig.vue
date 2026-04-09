@@ -124,7 +124,7 @@
           <a-form-item label="审批类型"
             ><a-select
               v-model:value="stepForm.approvalType"
-              :get-popup-container="(trigger) => trigger.parentNode"
+              :get-popup-container="(trigger: HTMLElement) => trigger.parentNode"
               ><a-select-option value="SINGLE">单人审批</a-select-option
               ><a-select-option value="MULTIPLE">多人审批</a-select-option></a-select
             ></a-form-item
@@ -141,7 +141,7 @@
             ><a-select
               v-model:value="stepForm.approverRole"
               :loading="loadingRoles"
-              :get-popup-container="(trigger) => trigger.parentNode"
+              :get-popup-container="(trigger: HTMLElement) => trigger.parentNode"
               @change="handleRoleChange"
               ><a-select-option v-for="role in approverRoles" :key="role.code" :value="role.code">{{
                 role.name
@@ -158,7 +158,7 @@
             v-model:value="stepForm.roleId"
             placeholder="请选择角色"
             :loading="loadingRoles"
-            :get-popup-container="(trigger) => trigger.parentNode"
+            :get-popup-container="(trigger: HTMLElement) => trigger.parentNode"
           >
             <a-select-option v-for="role in approverRoles" :key="role.code" :value="role.code">{{
               role.name
@@ -174,7 +174,7 @@
                 placeholder="选择角色后仅列举该角色用户"
                 allow-clear
                 :loading="loadingRoles"
-                :get-popup-container="(trigger) => trigger.parentNode"
+                :get-popup-container="(trigger: HTMLElement) => trigger.parentNode"
               >
                 <a-select-option v-for="role in approverRoles" :key="role.id" :value="role.id">{{
                   role.name
@@ -192,7 +192,7 @@
                 v-model:value="filters.status"
                 placeholder="全部状态"
                 allow-clear
-                :get-popup-container="(trigger) => trigger.parentNode"
+                :get-popup-container="(trigger: HTMLElement) => trigger.parentNode"
               >
                 <a-select-option :value="1">启用</a-select-option>
                 <a-select-option :value="0">禁用</a-select-option>

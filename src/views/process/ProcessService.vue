@@ -1085,7 +1085,7 @@ const handleGoApprove = async (item: ProcessItem) => {
           ? leaveApi.getApplication(Number(item.id)).then((data) => {
               approveLeaveDetail.value = data
             })
-          : awardApi.getApplicationDetail(Number(item.id)).then((data) => {
+          : awardApi.getApplication(Number(item.id)).then((data) => {
               approveAwardDetail.value = data
             })
 
@@ -1121,7 +1121,7 @@ const handleViewProcess = async (item: ProcessItem) => {
     if (item.type === 'leave') {
       leaveDetail.value = await leaveApi.getApplication(Number(item.id))
     } else if (item.type === 'award') {
-      awardDetail.value = await awardApi.getApplicationDetail(Number(item.id))
+      awardDetail.value = await awardApi.getApplication(Number(item.id))
     } else if (item.type === 'leave_cancel') {
       leaveDetail.value = await leaveApi.getApplication(Number(item.id))
     }

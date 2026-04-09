@@ -389,48 +389,10 @@ const handleSubmit = async () => {
     formData.append('files', pendingVoiceFile.value)
   }
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-
   try {
-    const response = await fetch(`${baseUrl}/api/v1/consultation/questions/stream/multipart`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: formData,
-    })
-
-    if (!response.ok) {
-      throw new Error(`请求失败: ${response.status} ${response.statusText}`)
-    }
-
-    const reader = response.body?.getReader()
-    const decoder = new TextDecoder('utf-8')
-    let buffer = ''
-
-    if (!reader) throw new Error('无法获取响应流')
-
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      let eventEndIndex
-      while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
-        const event = buffer.substring(0, eventEndIndex)
-        buffer = buffer.substring(eventEndIndex + 2)
-        for (const line of event.split('\n')) {
-          if (line.startsWith('data:')) {
-            const jsonStr = line.substring(5).trim()
-            if (jsonStr && jsonStr !== '[DONE]') {
-              try {
-                const parsed = JSON.parse(jsonStr)
-                if (parsed.answer) aiAnswer.value += parsed.answer
-              } catch {
-                aiAnswer.value += jsonStr
-              }
-            }
-          }
-        }
-      }
-    }
+    await consultationApi.submitQuestionStreamMultipart(formData, (chunk) => {
+      aiAnswer.value += chunk
+    }, token)
     isStreaming.value = false
     uploadedFiles.value = []
     pendingVoiceFile.value = null
