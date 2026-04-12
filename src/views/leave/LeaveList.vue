@@ -1,84 +1,86 @@
 <template>
-  <a-card title="我的请假申请">
-    <template #extra>
-      <a-button type="primary" @click="$router.push('/leave/apply')">
-        <PlusOutlined />
-        申请请假
-      </a-button>
-      <a-button
-        v-if="userStore.isCounselor() || userStore.isAdmin()"
-        style="margin-left: 8px"
-        @click="$router.push('/leave/approve')"
+  <div class="leave-list-container">
+    <div class="page-header">
+      <h2 class="page-title">申请记录</h2>
+      <a-button type="primary" class="back-btn" @click="$router.back()">返回</a-button>
+    </div>
+
+    <a-card class="list-card" :bordered="false">
+      <a-table
+        :columns="columns"
+        :data-source="dataSource"
+        :loading="loading"
+        :pagination="false"
+        row-key="id"
+        :row-class-name="(record: LeaveApplication) => (record.cancelled ? 'cancelled-record' : '')"
       >
-        待审批列表
-      </a-button>
-    </template>
-    <a-table
-      :columns="columns"
-      :data-source="dataSource"
-      :loading="loading"
-      :pagination="pagination"
-      row-key="id"
-      :row-class-name="(record: LeaveApplication) => (record.cancelled ? 'cancelled-record' : '')"
-      @change="handleTableChange"
-    >
-      <template #bodyCell="{ column, record }">
-        <template v-if="column.key === 'leaveType'">
-          <a-tag v-if="record.leaveType === 'PERSONAL'" color="orange">事假</a-tag>
-          <a-tag v-else-if="record.leaveType === 'OFFICIAL'" color="blue">公假</a-tag>
+        <template #bodyCell="{ column, record, index }">
+          <template v-if="column.key === 'index'">
+            {{ (pagination.current - 1) * pagination.pageSize + index + 1 }}
+          </template>
+          <template v-else-if="column.key === 'leaveType'">请假</template>
+          <template v-else-if="column.key === 'createTime'">
+            {{ formatDateTime(record.createTime) }}
+          </template>
+          <template v-else-if="column.key === 'content'">
+            <span class="content-text">{{ getContentText(record) }}</span>
+          </template>
+          <template v-else-if="column.key === 'status'">
+            <span :class="['status-text', getStatusClass(record)]">{{ getStatusText(record) }}</span>
+          </template>
+          <template v-else-if="column.key === 'action'">
+            <a-space>
+              <a-button
+                v-if="canCancelApplication(record)"
+                type="link"
+                size="small"
+                class="cancel-link"
+                @click="handleWithdraw(record)"
+              >
+                撤销
+              </a-button>
+              <a-button
+                v-if="
+                  record.approvalStatus === 'APPROVED' &&
+                  !record.cancelled &&
+                  !record.cancelRequested
+                "
+                type="link"
+                size="small"
+                class="cancel-link"
+                danger
+                @click="handleCancel(record)"
+              >
+                销假
+              </a-button>
+              <a-tag
+                v-else-if="record.cancelRequested && record.cancelApprovalStatus === 'PENDING'"
+                color="warning"
+                style="font-size: 12px"
+                >销假审批中</a-tag
+              >
+              <a-button type="link" size="small" class="view-link" @click="handleView(record)">
+                查看
+              </a-button>
+            </a-space>
+          </template>
         </template>
-        <template v-else-if="column.key === 'status'">
-          <a-tag v-if="record.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
-          <a-tag
-            v-else-if="record.approvalStatus === 'APPROVED' && record.cancelled"
-            color="default"
-            >已销假</a-tag
-          >
-          <a-tag
-            v-else-if="
-              record.approvalStatus === 'APPROVED' &&
-              record.cancelRequested &&
-              record.cancelApprovalStatus === 'PENDING'
-            "
-            color="warning"
-            >销假审批中</a-tag
-          >
-          <a-tag
-            v-else-if="record.approvalStatus === 'APPROVED' && !record.cancelled"
-            color="success"
-            >已批准</a-tag
-          >
-          <a-tag v-else-if="record.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
-          <a-tag v-else-if="record.cancelApprovalStatus === 'REJECTED'" color="error"
-            >销假已拒绝</a-tag
-          >
-        </template>
-        <template v-else-if="column.key === 'createTime'">
-          {{ formatDateTime(record.createTime) }}
-        </template>
-        <template v-else-if="column.key === 'action'">
-          <a-button type="link" @click="handleView(record)">查看详情</a-button>
-          <a-button v-if="!record.cancelled" type="link" @click="handleDownload(record)">
-            下载请假条
-          </a-button>
-          <a-button
-            v-if="
-              record.approvalStatus === 'APPROVED' && !record.cancelled && !record.cancelRequested
-            "
-            type="link"
-            danger
-            @click="handleCancel(record)"
-          >
-            申请销假
-          </a-button>
-          <a-tag
-            v-else-if="record.cancelRequested && record.cancelApprovalStatus === 'PENDING'"
-            color="warning"
-            >销假审批中</a-tag
-          >
-        </template>
-      </template>
-    </a-table>
+      </a-table>
+
+      <div class="pagination-wrapper">
+        <span class="total-text">共 {{ pagination.total }} 条记录</span>
+        <a-pagination
+          v-model:current="pagination.current"
+          v-model:pageSize="pagination.pageSize"
+          :total="pagination.total"
+          show-size-changer
+          show-quick-jumper
+          :show-total="(total: number) => `共 ${total} 条`"
+          :page-size-options="['10', '20', '50']"
+          @change="handlePageChange"
+        />
+      </div>
+    </a-card>
 
     <a-modal v-model:open="visible" title="请假详情" width="800px" :footer="null">
       <a-descriptions :column="2" bordered>
@@ -90,14 +92,36 @@
           <a-tag v-if="currentRecord?.approvalStatus === 'PENDING'" color="processing"
             >待审批</a-tag
           >
-          <a-tag v-else-if="currentRecord?.approvalStatus === 'APPROVED'" color="success"
+          <a-tag
+            v-else-if="currentRecord?.approvalStatus === 'APPROVED' && currentRecord?.cancelled"
+            color="default"
+            >已销假</a-tag
+          >
+          <a-tag
+            v-else-if="
+              currentRecord?.approvalStatus === 'APPROVED' &&
+              currentRecord?.cancelRequested &&
+              currentRecord?.cancelApprovalStatus === 'PENDING'
+            "
+            color="warning"
+            >销假审批中</a-tag
+          >
+          <a-tag
+            v-else-if="currentRecord?.approvalStatus === 'APPROVED' && !currentRecord?.cancelled"
+            color="success"
             >已批准</a-tag
           >
           <a-tag v-else-if="currentRecord?.approvalStatus === 'REJECTED'" color="error"
             >已拒绝</a-tag
           >
-          <a-tag v-else-if="currentRecord?.cancelled" color="default">已销假</a-tag>
+          <a-tag v-else-if="currentRecord?.cancelApprovalStatus === 'REJECTED'" color="error"
+            >销假已拒绝</a-tag
+          >
         </a-descriptions-item>
+        <a-descriptions-item label="院系">{{ currentRecord?.departmentName || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="年级">{{ currentRecord?.grade || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="班级">{{ currentRecord?.className || '-' }}</a-descriptions-item>
+        <a-descriptions-item label="姓名">{{ currentRecord?.studentName }}</a-descriptions-item>
         <a-descriptions-item label="开始日期">
           {{ currentRecord?.startDate }}
         </a-descriptions-item>
@@ -124,19 +148,16 @@
         </a-descriptions-item>
       </a-descriptions>
     </a-modal>
-  </a-card>
+  </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
 import { message, Modal } from 'ant-design-vue'
-import { PlusOutlined } from '@ant-design/icons-vue'
 import { leaveApi } from '@/api'
-import { useUserStore } from '@/stores/user'
 import { formatDateTime } from '@/utils/format'
 import type { LeaveApplication, PageRequest } from '@/types'
 
-const userStore = useUserStore()
 const loading = ref(false)
 const dataSource = ref<LeaveApplication[]>([])
 const visible = ref(false)
@@ -150,41 +171,81 @@ const pagination = reactive({
 
 const columns = [
   {
-    title: '请假类型',
+    title: '序号',
+    key: 'index',
+    width: 70,
+    align: 'center',
+  },
+  {
+    title: '申请类型',
     dataIndex: 'leaveType',
     key: 'leaveType',
-    width: 100,
-  },
-  {
-    title: '开始日期',
-    dataIndex: 'startDate',
-    key: 'startDate',
     width: 120,
   },
   {
-    title: '结束日期',
-    dataIndex: 'endDate',
-    key: 'endDate',
-    width: 120,
-  },
-  {
-    title: '状态',
-    dataIndex: 'status',
-    key: 'status',
-    width: 100,
-  },
-  {
-    title: '创建时间',
+    title: '申请时间',
     dataIndex: 'createTime',
     key: 'createTime',
     width: 180,
   },
   {
+    title: '申请内容',
+    key: 'content',
+    ellipsis: true,
+  },
+  {
+    title: '当前结果',
+    dataIndex: 'status',
+    key: 'status',
+    width: 100,
+  },
+  {
     title: '操作',
     key: 'action',
-    width: 200,
+    width: 180,
   },
 ]
+
+const canCancelApplication = (record: LeaveApplication) => {
+  return record.approvalStatus === 'PENDING'
+}
+
+const getStatusText = (record: LeaveApplication) => {
+  if (record.approvalStatus === 'PENDING') return '审批中'
+  if (record.approvalStatus === 'APPROVED') {
+    if (record.cancelled) return '已销假'
+    if (record.cancelRequested && record.cancelApprovalStatus === 'PENDING') return '销假审批中'
+    return '已通过'
+  }
+  if (record.approvalStatus === 'REJECTED') return '已反驳'
+  if (record.cancelApprovalStatus === 'REJECTED') return '销假已拒绝'
+  return '-'
+}
+
+const getStatusClass = (record: LeaveApplication) => {
+  if (record.approvalStatus === 'PENDING') return 'status-pending'
+  if (record.approvalStatus === 'APPROVED') {
+    if (record.cancelled) return 'status-cancelled'
+    if (record.cancelRequested && record.cancelApprovalStatus === 'PENDING') return 'status-processing'
+    return 'status-approved'
+  }
+  if (record.approvalStatus === 'REJECTED') return 'status-rejected'
+  return ''
+}
+
+const getContentText = (record: LeaveApplication) => {
+  const reason = record.reason ? `，${record.reason.slice(0, 10)}...` : ''
+  const days = calculateDays(record.startDate, record.endDate)
+  return `申请请假${days}天${reason}`
+}
+
+const calculateDays = (start?: string, end?: string) => {
+  if (!start || !end) return 0
+  const startDate = new Date(start)
+  const endDate = new Date(end)
+  const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
 
 const loadData = async () => {
   loading.value = true
@@ -198,16 +259,14 @@ const loadData = async () => {
       dataSource.value = response.records
       pagination.total = response.total
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('加载数据失败', error)
   } finally {
     loading.value = false
   }
 }
 
-const handleTableChange = (pag: any) => {
-  pagination.current = pag.current
-  pagination.pageSize = pag.pageSize
+const handlePageChange = () => {
   loadData()
 }
 
@@ -218,33 +277,42 @@ const handleView = async (record: LeaveApplication) => {
       currentRecord.value = response
       visible.value = true
     }
-  } catch (error: any) {
+  } catch (error) {
     message.error('获取详情失败')
   }
 }
 
-const handleDownload = async (record: LeaveApplication) => {
-  try {
-    // 先生成请假条
-    await leaveApi.generateLeaveSlip(record.id!)
-    // 然后下载请假条
-    leaveApi.downloadLeaveSlip(record.id!)
-  } catch (error: any) {
-    message.error(error.message || '生成请假条失败')
-  }
+const handleWithdraw = (record: LeaveApplication) => {
+  Modal.confirm({
+    title: '确认撤销',
+    content: '确定要撤销该申请吗？撤销后无法恢复。',
+    okText: '确认',
+    cancelText: '取消',
+    onOk: async () => {
+      try {
+        await leaveApi.withdrawApplication(record.id!)
+        message.success('撤销成功')
+        loadData()
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '撤销失败')
+      }
+    },
+  })
 }
 
 const handleCancel = (record: LeaveApplication) => {
   Modal.confirm({
     title: '确认申请销假',
     content: '确定要申请销假吗？审批通过后将完成销假。',
+    okText: '确认',
+    cancelText: '取消',
     onOk: async () => {
       try {
         await leaveApi.cancelLeave(record.id!)
         message.success('销假申请已提交')
         loadData()
-      } catch (error: any) {
-        message.error(error.message || '销假申请失败')
+      } catch (error) {
+        message.error(error instanceof Error ? error.message : '销假申请失败')
       }
     },
   })
@@ -256,7 +324,111 @@ onMounted(() => {
 </script>
 
 <style scoped>
-/* 已销假记录的样式 */
+.leave-list-container {
+  padding: 24px 40px;
+  background-color: #f5f7fa;
+  min-height: calc(100vh - 64px);
+}
+
+.page-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding: 0 8px;
+}
+
+.page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.back-btn {
+  border-radius: 6px;
+  height: 36px;
+  padding: 0 24px;
+}
+
+.list-card {
+  border-radius: 8px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+  background: #fff;
+}
+
+.list-card :deep(.ant-table-thead > tr > th) {
+  background-color: #fafafa;
+  font-weight: 500;
+  color: #333;
+  font-size: 14px;
+}
+
+.list-card :deep(.ant-table-tbody > tr > td) {
+  font-size: 14px;
+  color: #666;
+}
+
+.content-text {
+  color: #333;
+}
+
+.status-text {
+  font-weight: 500;
+}
+
+.status-pending {
+  color: #1890ff;
+}
+
+.status-approved {
+  color: #52c41a;
+}
+
+.status-rejected {
+  color: #ff4d4f;
+}
+
+.status-cancelled {
+  color: #999;
+}
+
+.status-processing {
+  color: #faad14;
+}
+
+.cancel-link {
+  color: #1890ff;
+  padding: 0 4px;
+}
+
+.cancel-link:hover {
+  color: #40a9ff;
+}
+
+.view-link {
+  color: #1890ff;
+  padding: 0 4px;
+}
+
+.view-link:hover {
+  color: #40a9ff;
+}
+
+.pagination-wrapper {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid #f0f0f0;
+}
+
+.total-text {
+  color: #999;
+  font-size: 13px;
+}
+
 .cancelled-record {
   background-color: #f5f5f5 !important;
   opacity: 0.8;

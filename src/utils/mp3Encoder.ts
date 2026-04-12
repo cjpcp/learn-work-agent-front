@@ -15,6 +15,7 @@ function loadLame(): Promise<void> {
     const script = document.createElement('script')
     script.src = '/lame.all.js'
     script.onload = () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const win = window as any
       // lame.all.js defines a global function `lamejs` — call it to populate Mp3Encoder
       if (typeof win.lamejs === 'function') {
@@ -43,11 +44,12 @@ export async function encodePcmToMp3(
   kbps = 128
 ): Promise<Blob> {
   await loadLame()
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Mp3Encoder = (window as any).lamejs.Mp3Encoder
 
   const encoder = new Mp3Encoder(1, sampleRate, kbps)
   const blockSize = 1152
-  const mp3Chunks: Int8Array[] = []
+  const mp3Chunks: BlobPart[] = []
 
   // Float32 PCM → Int16
   const int16 = new Int16Array(pcmFloat32.length)
@@ -58,10 +60,10 @@ export async function encodePcmToMp3(
   for (let i = 0; i < int16.length; i += blockSize) {
     const chunk = int16.subarray(i, i + blockSize)
     const encoded = encoder.encodeBuffer(chunk)
-    if (encoded.length > 0) mp3Chunks.push(encoded)
+    if (encoded.length > 0) mp3Chunks.push(new Uint8Array(encoded))
   }
   const flushed = encoder.flush()
-  if (flushed.length > 0) mp3Chunks.push(flushed)
+  if (flushed.length > 0) mp3Chunks.push(new Uint8Array(flushed))
 
   return new Blob(mp3Chunks, { type: 'audio/mp3' })
 }

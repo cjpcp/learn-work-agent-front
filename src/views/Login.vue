@@ -133,8 +133,8 @@ const handleLogin = async () => {
     setTimeout(() => {
       router.push('/')
     }, 500)
-  } catch (error: any) {
-    message.error(error.message || '登录失败')
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '登录失败')
   } finally {
     loading.value = false
   }
@@ -210,7 +210,8 @@ const handleLogin = async () => {
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg);
     opacity: 1;
   }
@@ -253,7 +254,8 @@ const handleLogin = async () => {
 }
 
 @keyframes card-float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px);
     box-shadow:
       0 25px 50px -12px rgba(0, 0, 0, 0.25),

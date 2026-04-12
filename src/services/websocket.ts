@@ -2,16 +2,18 @@ import { Client, IMessage } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs.min.js'
 import { useUserStore } from '@/stores/user'
 
-/**
- * WebSocket服务
- * 用于实时接收站内信通知
- */
+export interface Notification {
+  id: number
+  title: string
+  content: string
+  isRead: boolean
+  createTime: string
+}
+
 class WebSocketService {
   private client: Client | null = null
-  private reconnectAttempts = 0
-  private maxReconnectAttempts = 5
   private reconnectDelay = 3000
-  private notificationCallbacks: ((notification: any) => void)[] = []
+  private notificationCallbacks: ((notification: Notification) => void)[] = []
   private unreadCountCallbacks: ((count: number) => void)[] = []
 
   /**
@@ -36,7 +38,6 @@ class WebSocketService {
         heartbeatOutgoing: 4000,
         onConnect: () => {
           console.log('WebSocket连接成功')
-          this.reconnectAttempts = 0
           this.subscribe()
         },
         onDisconnect: () => {
@@ -103,7 +104,7 @@ class WebSocketService {
   /**
    * 注册通知回调
    */
-  onNotification(callback: (notification: any) => void) {
+  onNotification(callback: (notification: Notification) => void) {
     this.notificationCallbacks.push(callback)
     return () => {
       const index = this.notificationCallbacks.indexOf(callback)

@@ -1,4 +1,5 @@
 // 统一响应结果
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export interface Result<T = any> {
   code: number
   message: string
@@ -11,6 +12,14 @@ export interface PageRequest {
   pageSize?: number
   orderBy?: string
   orderDirection?: 'ASC' | 'DESC'
+}
+
+export interface TablePagination {
+  current?: number
+  pageSize?: number
+  total?: number
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  [key: string]: any
 }
 
 export interface PageResult<T> {
@@ -138,6 +147,9 @@ export interface AwardApplicationRequest {
   reason?: string
   attachmentUrls?: string
   studentName?: string
+  departmentName?: string
+  grade?: string
+  className?: string
 }
 
 export interface AwardApplication {
@@ -157,6 +169,9 @@ export interface AwardApplication {
   approvalComment?: string
   approvalTime?: string
   studentName?: string
+  departmentName?: string
+  grade?: string
+  className?: string
   createTime?: string
   updateTime?: string
 }
@@ -178,16 +193,9 @@ export interface UnreadCountResponse {
   count: number
 }
 
-export interface ProcessItem {
+export interface ConversationMessage {
   id: string
-  name: string
-  type: string
-  createTime: string
-  status: string
-  description: string
-}
-
-export interface ProcessListResponse {
-  pending: ProcessItem[]
-  completed: ProcessItem[]
+  query: string
+  answer: string
+  createdAt: string
 }

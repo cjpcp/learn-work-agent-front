@@ -1,10 +1,10 @@
-import type { LeaveApplication, PageResult, Result } from '@/types'
+import type { LeaveApplication, LeaveApplicationRequest, PageResult } from '@/types'
 import request from '@/utils/request'
 
 export const leaveApi = {
-  submitApplication: (data: any): Promise<Result<void>> =>
+  submitApplication: (data: LeaveApplicationRequest): Promise<LeaveApplication> =>
     request.post('/leave/applications', data),
-  getMyApplications: (params?: any): Promise<PageResult<LeaveApplication>> => {
+  getMyApplications: (params?: object): Promise<PageResult<LeaveApplication>> => {
     return request.get('/leave/applications/my', { params })
   },
   getApplication: (id: number): Promise<LeaveApplication> =>
@@ -13,12 +13,14 @@ export const leaveApi = {
     window.open(`/api/v1/leave/applications/${id}/download-slip`)
   },
   cancelLeave: (id: number): Promise<void> => request.post(`/leave/applications/${id}/cancel`),
+  withdrawApplication: (id: number): Promise<void> =>
+    request.delete(`/leave/applications/${id}`),
   approveCancelRequest: (id: number, status: string, comment: string): Promise<void> =>
     request.post(`/leave/applications/${id}/approve-cancel`, {
       approvalStatus: status,
       approvalComment: comment,
     }),
-  getPendingCancelRequests: (params?: any): Promise<any> =>
+  getPendingCancelRequests: (params?: object): Promise<PageResult<LeaveApplication>> =>
     request.get('/leave/applications/pending-cancel', { params }),
   generateLeaveSlip: (id: number): Promise<void> =>
     request.post(`/leave/applications/${id}/generate-slip`),

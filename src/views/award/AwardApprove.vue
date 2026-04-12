@@ -44,9 +44,9 @@
           </a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="状态">
-          <a-tag v-if="currentRecord.status === 'PENDING'" color="processing">待审批</a-tag>
-          <a-tag v-else-if="currentRecord.status === 'APPROVED'" color="success">已批准</a-tag>
-          <a-tag v-else-if="currentRecord.status === 'REJECTED'" color="error">已拒绝</a-tag>
+          <a-tag v-if="currentRecord.approvalStatus === 'PENDING'" color="processing">待审批</a-tag>
+          <a-tag v-else-if="currentRecord.approvalStatus === 'APPROVED'" color="success">已批准</a-tag>
+          <a-tag v-else-if="currentRecord.approvalStatus === 'REJECTED'" color="error">已拒绝</a-tag>
         </a-descriptions-item>
         <a-descriptions-item label="申请名称">
           {{ currentRecord.awardName }}
@@ -70,7 +70,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { awardApi } from '@/api'
-import type { AwardApplication, PageRequest, ApprovalRequest } from '@/types'
+import type { AwardApplication, ApprovalRequest, TablePagination } from '@/types'
 
 const route = useRoute()
 const loading = ref(false)
@@ -131,24 +131,19 @@ const columns = [
 const loadData = async () => {
   loading.value = true
   try {
-    const params: PageRequest = {
-      pageNum: pagination.current,
-      pageSize: pagination.pageSize,
-    }
-    const response = await awardApi.getPendingApplications(params)
-    const pageResult = (response as any).data ?? response
-    dataSource.value = pageResult.records ?? (Array.isArray(pageResult) ? pageResult : [])
-    pagination.total = pageResult.total ?? dataSource.value.length
-  } catch (error: any) {
+    const response = await awardApi.getPendingApplications()
+    dataSource.value = response.records
+    pagination.total = response.total
+  } catch (error) {
     console.error('加载数据失败', error)
   } finally {
     loading.value = false
   }
 }
 
-const handleTableChange = (pag: any) => {
-  pagination.current = pag.current
-  pagination.pageSize = pag.pageSize
+const handleTableChange = (pag: TablePagination) => {
+  pagination.current = pag.current ?? 1
+  pagination.pageSize = pag.pageSize ?? 10
   loadData()
 }
 
@@ -172,7 +167,7 @@ const handleConfirmApprove = async () => {
     message.success('审批成功')
     approveVisible.value = false
     loadData()
-  } catch (error: any) {
+  } catch (error) {
     message.error('审批失败')
   }
 }
@@ -180,9 +175,9 @@ const handleConfirmApprove = async () => {
 const handleView = async (record: AwardApplication) => {
   try {
     const response = await awardApi.getApplication(record.id!)
-    currentRecord.value = (response as any).data ?? response
+    currentRecord.value = response
     viewVisible.value = true
-  } catch (error: any) {
+  } catch (error) {
     message.error('获取详情失败')
   }
 }

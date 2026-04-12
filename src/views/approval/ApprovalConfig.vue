@@ -236,12 +236,15 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { approvalConfigApi, systemApi } from '@/api'
+import type { ApprovalProcess, ApprovalStepConfig } from '@/api/approval'
+import type { User } from '@/api/system'
+import type { TablePagination } from '@/types'
 
 const activeTab = ref('processes')
-const processes = ref<any[]>([])
+const processes = ref<ApprovalProcess[]>([])
 const loadingProcesses = ref(false)
 const processModalVisible = ref(false)
-const editingProcess = ref<any>(null)
+const editingProcess = ref<ApprovalProcess | null>(null)
 const processForm = reactive({
   processName: '',
   processType: '',
@@ -250,11 +253,11 @@ const processForm = reactive({
   version: 1,
 })
 
-const currentProcess = ref<any>(null)
-const steps = ref<any[]>([])
+const currentProcess = ref<ApprovalProcess | null>(null)
+const steps = ref<ApprovalStepConfig[]>([])
 const loadingSteps = ref(false)
 const stepModalVisible = ref(false)
-const editingStep = ref<any>(null)
+const editingStep = ref<ApprovalStepConfig | null>(null)
 const stepForm = reactive({
   stepName: '',
   stepOrder: 1,
@@ -268,7 +271,7 @@ const stepForm = reactive({
 
 const approverRoles = ref<{ id: number; code: string; name: string }[]>([])
 const loadingRoles = ref(false)
-const users = ref<any[]>([])
+const users = ref<User[]>([])
 const loadingUsers = ref(false)
 const selectedRowKeys = ref<number[]>([])
 
@@ -328,7 +331,7 @@ const getRoleName = (role: string) => approverRoles.value.find((r) => r.code ===
 const getUserLabel = (userId?: number) =>
   users.value.find((u) => u.id === userId)?.teacherName || '-'
 
-const getTargetLabel = (record: any) => {
+const getTargetLabel = (record: ApprovalStepConfig) => {
   if (record.assignMode === 'ROLE') {
     return approverRoles.value.find((r) => r.code === record.roleId)?.name || record.roleId || '-'
   }
@@ -339,8 +342,8 @@ const loadApproverRoles = async () => {
   loadingRoles.value = true
   try {
     approverRoles.value = (await systemApi.getStaffRoles()) || []
-  } catch (error: any) {
-    message.error('获取角色列表失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取角色列表失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loadingRoles.value = false
   }
@@ -361,8 +364,8 @@ const loadUsers = async () => {
     userPagination.current = page.pageNum
     userPagination.pageSize = page.pageSize
     userPagination.total = page.total
-  } catch (error: any) {
-    message.error('获取用户列表失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取用户列表失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loadingUsers.value = false
   }
@@ -405,9 +408,9 @@ const handleResetFilters = async () => {
   await loadUsers()
 }
 
-const handleUserTableChange = async (pagination: any) => {
-  filters.pageNum = pagination.current
-  filters.pageSize = pagination.pageSize
+const handleUserTableChange = async (pagination: TablePagination) => {
+  filters.pageNum = pagination.current ?? 1
+  filters.pageSize = pagination.pageSize ?? 10
   await loadUsers()
 }
 
@@ -415,8 +418,8 @@ const loadProcesses = async () => {
   loadingProcesses.value = true
   try {
     processes.value = (await approvalConfigApi.getProcesses()) || []
-  } catch (error: any) {
-    message.error('获取流程列表失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取流程列表失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loadingProcesses.value = false
   }
@@ -426,8 +429,8 @@ const loadSteps = async (processId: number) => {
   try {
     steps.value = (await approvalConfigApi.getSteps(processId)) || []
     if (users.value.length === 0) await loadUsers()
-  } catch (error: any) {
-    message.error('获取步骤列表失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取步骤列表失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loadingSteps.value = false
   }
@@ -444,7 +447,7 @@ const handleAddProcess = () => {
   })
   processModalVisible.value = true
 }
-const handleEditProcess = (record: any) => {
+const handleEditProcess = (record: ApprovalProcess) => {
   editingProcess.value = record
   Object.assign(processForm, {
     processName: record.processName,
@@ -463,15 +466,15 @@ const handleSaveProcess = async () => {
     message.success('保存成功')
     processModalVisible.value = false
     loadProcesses()
-  } catch (error: any) {
-    message.error('保存失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'))
   }
 }
 const handleCancelProcess = () => {
   processModalVisible.value = false
   editingProcess.value = null
 }
-const handleDeleteProcess = (record: any) =>
+const handleDeleteProcess = (record: ApprovalProcess) =>
   Modal.confirm({
     title: '确认删除',
     content: `确定要删除流程 "${record.processName}" 吗？`,
@@ -481,17 +484,17 @@ const handleDeleteProcess = (record: any) =>
       loadProcesses()
     },
   })
-const handleEnableProcess = async (record: any) => {
+const handleEnableProcess = async (record: ApprovalProcess) => {
   await approvalConfigApi.enableProcess(record.id)
   message.success('启用成功')
   loadProcesses()
 }
-const handleDisableProcess = async (record: any) => {
+const handleDisableProcess = async (record: ApprovalProcess) => {
   await approvalConfigApi.disableProcess(record.id)
   message.success('禁用成功')
   loadProcesses()
 }
-const handleViewSteps = (record: any) => {
+const handleViewSteps = (record: ApprovalProcess) => {
   currentProcess.value = record
   activeTab.value = 'steps'
   loadSteps(record.id)
@@ -514,7 +517,7 @@ const handleAddStep = () => {
   stepModalVisible.value = true
   loadUsers()
 }
-const handleEditStep = async (record: any) => {
+const handleEditStep = async (record: ApprovalStepConfig) => {
   editingStep.value = record
   Object.assign(stepForm, {
     stepName: record.stepName,
@@ -540,38 +543,40 @@ const handleSaveStep = async () => {
       approvalType: stepForm.approvalType,
       approverRole: stepForm.approverRole,
       approverUserId:
-        stepForm.assignMode === 'USER'
-          ? selectedRowKeys.value.length > 0
-            ? selectedRowKeys.value[0]
-            : undefined
+        stepForm.assignMode === 'USER' && selectedRowKeys.value.length > 0
+          ? selectedRowKeys.value[0]
           : undefined,
       mustPass: stepForm.mustPass,
       assignMode: stepForm.assignMode,
       roleId: stepForm.assignMode === 'ROLE' ? stepForm.roleId : undefined,
       processId: currentProcess.value.id,
     }
-    editingStep.value
-      ? await approvalConfigApi.updateStep(editingStep.value.id, stepData)
-      : await approvalConfigApi.addStep(stepData)
+    if (editingStep.value && editingStep.value.id != null) {
+      await approvalConfigApi.updateStep(editingStep.value.id, stepData)
+    } else {
+      await approvalConfigApi.addStep(stepData)
+    }
     message.success('保存成功')
     stepModalVisible.value = false
     loadSteps(currentProcess.value.id)
-  } catch (error: any) {
-    message.error('保存失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'))
   }
 }
 const handleCancelStep = () => {
   stepModalVisible.value = false
   editingStep.value = null
 }
-const handleDeleteStep = (record: any) =>
+const handleDeleteStep = (record: ApprovalStepConfig) =>
   Modal.confirm({
     title: '确认删除',
     content: `确定要删除步骤 "${record.stepName}" 吗？`,
     onOk: async () => {
-      await approvalConfigApi.deleteStep(record.id)
-      message.success('删除成功')
-      if (currentProcess.value) loadSteps(currentProcess.value.id)
+      if (record.id != null) {
+        await approvalConfigApi.deleteStep(record.id)
+        message.success('删除成功')
+        if (currentProcess.value) loadSteps(currentProcess.value.id)
+      }
     },
   })
 

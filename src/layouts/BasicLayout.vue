@@ -283,10 +283,14 @@ onMounted(() => {})
 }
 
 .footer {
-  background-color: #ffffff;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background-color: #f5f7fa;
   border-top: 1px solid #e8e8e8;
-  padding: 20px 0;
-  margin-top: auto;
+  padding: 12px 0;
+  z-index: 99;
 }
 
 .footer-content {
@@ -296,8 +300,8 @@ onMounted(() => {})
 }
 
 .footer-text {
-  color: #666;
-  font-size: 14px;
+  color: #999;
+  font-size: 12px;
   margin: 0;
 }
 

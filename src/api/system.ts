@@ -3,16 +3,21 @@ import type { PageResult } from '@/types'
 
 export interface Role {
   id: number
-  name: string
   code: string
+  name: string
+  pagePath?: string
 }
 
 export interface User {
   id: number
   username: string
   nick: string
+  teacherId?: number
+  teacherName?: string
+  cardNumber?: string
   roleId: number
   roleName?: string
+  status?: number
 }
 
 export interface UserQueryParams {

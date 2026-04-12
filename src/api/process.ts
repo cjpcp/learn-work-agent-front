@@ -1,5 +1,5 @@
 import request from '@/utils/request'
-import type { PageRequest } from '@/types'
+import type { PageRequest, PageResult } from '@/types'
 
 export interface PendingParams extends PageRequest {
   processType?: string
@@ -9,29 +9,40 @@ export interface CompletedParams extends PageRequest {
   processType?: string
 }
 
+export interface ProcessItem {
+  id: string
+  processType: string
+  title: string
+  content: string
+  status: string
+  createTime: string
+  updateTime: string
+  [key: string]: unknown
+}
+
 export const processApi = {
-  getPendingAward: (params: PageRequest) => {
+  getPendingAward: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/pending/award', { params })
   },
-  getPendingLeave: (params: PageRequest) => {
+  getPendingLeave: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/pending/leave', { params })
   },
-  getPendingLeaveCancel: (params: PageRequest) => {
+  getPendingLeaveCancel: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/pending/leave-cancel', { params })
   },
-  getPendingAll: (params: PageRequest) => {
+  getPendingAll: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/pending/all', { params })
   },
-  getCompletedAward: (params: PageRequest) => {
+  getCompletedAward: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/completed/award', { params })
   },
-  getCompletedLeave: (params: PageRequest) => {
+  getCompletedLeave: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/completed/leave', { params })
   },
-  getCompletedLeaveCancel: (params: PageRequest) => {
+  getCompletedLeaveCancel: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/completed/leave-cancel', { params })
   },
-  getCompletedAll: (params: PageRequest) => {
+  getCompletedAll: (params: PageRequest): Promise<PageResult<ProcessItem>> => {
     return request.get('/process/completed/all', { params })
   },
 }

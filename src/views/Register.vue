@@ -184,8 +184,8 @@ const loadRoles = async () => {
   loadingRoles.value = true
   try {
     roles.value = await systemApi.getAllRoles()
-  } catch (error: any) {
-    message.error('获取角色列表失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取角色列表失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loadingRoles.value = false
   }
@@ -221,8 +221,8 @@ const handleRegister = async () => {
         password: form.password,
       },
     })
-  } catch (error: any) {
-    message.error(error.message || '注册失败')
+  } catch (error) {
+    message.error(error instanceof Error ? error.message : '注册失败')
   } finally {
     loading.value = false
   }

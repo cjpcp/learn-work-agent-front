@@ -1,4 +1,3 @@
-import type { Result } from '@/types'
 import request from '@/utils/request'
 import { encrypt } from '@/utils/crypto'
 
@@ -18,20 +17,20 @@ export interface RegisterRequest {
   cardNumber?: string
 }
 
+export interface LoginResponse {
+  token: string
+  adminId: number
+  username: string
+  nick: string
+  teacherId: number
+  teacherName: string
+  roleId: number
+  roleName: string
+  status: number
+}
+
 export const authApi = {
-  login: (
-    data: LoginRequest
-  ): Promise<{
-    token: string
-    adminId: number
-    username: string
-    nick: string
-    teacherId: number
-    teacherName: string
-    roleId: number
-    roleName: string
-    status: number
-  }> => {
+  login: (data: LoginRequest): Promise<LoginResponse> => {
     const encryptedData = {
       username: data.username,
       password: encrypt(data.password),
@@ -39,7 +38,7 @@ export const authApi = {
     return request.post('/auth/login', encryptedData)
   },
 
-  register: (data: RegisterRequest): Promise<any> => {
+  register: (data: RegisterRequest): Promise<LoginResponse> => {
     const encryptedData = {
       ...data,
       password: encrypt(data.password),

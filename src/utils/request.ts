@@ -43,8 +43,10 @@ service.interceptors.response.use(
       switch (status) {
         case 401:
           message.error('未授权，请重新登录')
-          const userStore = useUserStore()
-          userStore.logout()
+          {
+            const userStore = useUserStore()
+            userStore.logout()
+          }
           break
         case 403:
           message.error('拒绝访问')

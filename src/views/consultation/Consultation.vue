@@ -151,13 +151,18 @@
           </div>
           <div class="form-group">
             <label class="form-label">文件上传</label>
-            <div class="file-upload">
-              <input type="file" class="file-input" @change="handleFileUpload" />
+            <div class="file-upload" @click="$refs.manualFileInput?.click()">
+              <input ref="manualFileInput" type="file" class="file-input" multiple @change="handleFileUpload" />
               <span class="file-icon">📎</span>
-              <span v-if="selectedFile" class="file-name">{{ selectedFile.name }}</span>
-              <span v-else class="file-placeholder">点击上传文件</span>
+              <span v-if="selectedFiles.length === 0" class="file-placeholder">点击上传文件</span>
             </div>
-            <p class="file-hint">支持上传 word、excel、pdf、jpg、png 等通用格式</p>
+            <div v-if="selectedFiles.length > 0" class="selected-files-list">
+              <div v-for="(file, index) in selectedFiles" :key="index" class="selected-file-item">
+                <span class="file-name">{{ file.name }}</span>
+                <button class="remove-file-btn" @click.stop="removeSelectedFile(index)">×</button>
+              </div>
+            </div>
+            <p class="file-hint">支持上传 word、excel、pdf、jpg、png 等通用格式（可多选）</p>
           </div>
           <div class="form-buttons">
             <button type="button" class="cancel-button" @click="cancelManual">取消</button>
@@ -229,9 +234,10 @@
             v-model="questionText"
             class="question-textarea"
             :placeholder="
-              pendingVoiceFile ? '语音已就绪，可补充文字说明（可选）...' : '请输入您的问题...'"
-            @keyup.enter.exact="handleSubmit"
+              pendingVoiceFile ? '语音已就绪，可补充文字说明（可选）...' : '请输入您的问题...'
+            "
             rows="1"
+            @keyup.enter.exact="handleSubmit"
           ></textarea>
           <input
             ref="chatFileInput"
@@ -274,7 +280,11 @@
                     <div>录制完成后自动上传（支持 webm/wav）</div>
                   </div>
                 </template>
-                <button class="action-button" :class="{ recording: isRecording }" @click="toggleVoice">
+                <button
+                  class="action-button"
+                  :class="{ recording: isRecording }"
+                  @click="toggleVoice"
+                >
                   <span class="action-icon">{{ isRecording ? '⏹️' : '🎤' }}</span>
                 </button>
               </a-tooltip>
@@ -298,7 +308,7 @@
           </div>
         </div>
         <div class="input-footer">
-          <a href="#" @click.prevent="showManualForm" class="manual-help-link">申请人工帮助</a>
+          <a href="#" class="manual-help-link" @click.prevent="showManualForm">申请人工帮助</a>
         </div>
       </div>
     </main>
@@ -306,12 +316,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick } from 'vue'
+import { ref, reactive } from 'vue'
 import { message } from 'ant-design-vue'
-
 import { consultationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { useRouter } from 'vue-router'
+import type { ConsultationQuestion } from '@/types'
 
 interface Conversation {
   question: string
@@ -340,7 +350,7 @@ const manualForm = reactive({
   questionType: '',
   questionDescription: '',
 })
-const selectedFile = ref<File | null>(null)
+const selectedFiles = ref<File[]>([])
 
 // 已选择文件列表（暂存在前端，提交时一起上传）
 interface UploadedFile {
@@ -402,15 +412,19 @@ const handleSubmit = async () => {
   }
 
   try {
-    await consultationApi.submitQuestionStreamMultipart(formData, (chunk) => {
-      aiAnswer.value += chunk
-    }, token)
+    await consultationApi.submitQuestionStreamMultipart(
+      formData,
+      (chunk) => {
+        aiAnswer.value += chunk
+      },
+      token
+    )
     isStreaming.value = false
     uploadedFiles.value = []
     pendingVoiceFile.value = null
-  } catch (error: any) {
+  } catch (error) {
     console.error('咨询请求失败:', error)
-    message.error('咨询请求失败: ' + (error.message || '未知错误'))
+    message.error('咨询请求失败: ' + (error instanceof Error ? error.message : '未知错误'))
     // 如果失败，显示转人工选项
     state.value = 'transfer'
   }
@@ -432,9 +446,14 @@ const showManualForm = () => {
 // 人工帮助表单相关
 const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
-  if (target.files && target.files[0]) {
-    selectedFile.value = target.files[0]
+  if (target.files && target.files.length > 0) {
+    const newFiles = Array.from(target.files)
+    selectedFiles.value.push(...newFiles)
   }
+}
+
+const removeSelectedFile = (index: number) => {
+  selectedFiles.value.splice(index, 1)
 }
 
 const cancelManual = () => {
@@ -442,7 +461,7 @@ const cancelManual = () => {
   // 重置表单
   manualForm.questionType = ''
   manualForm.questionDescription = ''
-  selectedFile.value = null
+  selectedFiles.value = []
 }
 
 const submitManual = async () => {
@@ -464,17 +483,24 @@ const submitManual = async () => {
   }
 
   try {
-    let attachmentUrl: string | undefined = undefined
+    const attachmentUrls: { transferMethod: string; url: string; type: string }[] = []
 
-    // 上传文件（如果有）
+    // 上传所有文件（如果有）
     // 注意：request.ts 响应拦截器已解包，返回的直接是 string URL（不是 Result<string>）
-    if (selectedFile.value) {
-      const fileUrl = (await consultationApi.uploadFile(selectedFile.value)) as unknown as string
-      if (fileUrl) {
-        attachmentUrl = fileUrl
-      } else {
-        message.error('文件上传失败，请重试')
-        return
+    if (selectedFiles.value.length > 0) {
+      for (const file of selectedFiles.value) {
+        const result = await consultationApi.uploadFile(file)
+        const fileUrl = result
+        if (fileUrl) {
+          attachmentUrls.push({
+            transferMethod: 'remote_url',
+            url: fileUrl,
+            type: file.type.startsWith('image/') ? 'image' : 'document',
+          })
+        } else {
+          message.error(`文件 ${file.name} 上传失败，请重试`)
+          return
+        }
       }
     }
 
@@ -484,33 +510,28 @@ const submitManual = async () => {
       questionType: 'TEXT',
       category: manualForm.questionType,
       sessionId: sessionId.value,
-      files: attachmentUrl
-        ? [
-            {
-              transferMethod: 'remote_url',
-              url: attachmentUrl,
-              type: selectedFile.value?.type.startsWith('image/') ? 'image' : 'document',
-            },
-          ]
-        : undefined,
+      files: attachmentUrls.length > 0 ? attachmentUrls : undefined,
     })
 
-    const questionId = (question as any)?.id
+    const questionId = (question as unknown as ConsultationQuestion)?.id
     if (!questionId) {
       message.error('创建问题失败，请重试')
       return
     }
 
     // 转移给人工处理，只传真实原因，历史对话通过 questionId 在后端查询
+    const attachmentInfo = attachmentUrls.length > 0
+      ? '\n附件: ' + attachmentUrls.map(a => a.url.split('/').pop()).join(', ')
+      : ''
     await consultationApi.transferToHuman(questionId, {
-      reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentUrl ? '\n附件: ' + attachmentUrl : ''}`,
+      reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentInfo}`,
     })
 
     message.success('申请提交成功，我们将尽快为您处理')
     cancelManual()
-  } catch (error: any) {
+  } catch (error) {
     console.error('提交人工帮助申请失败:', error)
-    message.error('提交申请失败: ' + (error.message || '未知错误'))
+    message.error('提交申请失败: ' + (error instanceof Error ? error.message : '未知错误'))
   }
 }
 
@@ -675,7 +696,7 @@ const removeUploadedFile = (index: number) => {
 /* 页面容器 */
 .consultation-page {
   min-height: 100vh;
-  background-color: #ffffff;
+  background-color: #f5f7fa;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
@@ -684,110 +705,110 @@ const removeUploadedFile = (index: number) => {
 .main-content {
   max-width: 800px;
   margin: 0 auto;
-  padding: 40px 20px;
-  min-height: calc(100vh - 60px);
+  padding: 60px 40px 200px;
+  min-height: calc(100vh - 64px);
 }
 
 /* 顶部操作栏 */
 .top-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 24px;
+  display: none;
 }
 
 /* 欢迎界面 */
 .welcome-section {
   text-align: center;
-  padding: 40px 0;
+  padding: 20px 0;
 }
 
 .ai-avatar {
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .avatar-image {
-  width: 120px;
-  height: 120px;
+  width: 100px;
+  height: 100px;
   border-radius: 50%;
   object-fit: cover;
 }
 
 .main-title {
-  font-size: 28px;
-  color: #2196f3;
-  margin-bottom: 40px;
+  font-size: 26px;
+  color: #1890ff;
+  margin-bottom: 48px;
+  font-weight: 600;
 }
 
 .quick-consultation {
-  margin-top: 60px;
+  margin-top: 48px;
 }
 
 .quick-title {
-  font-size: 18px;
-  color: #666;
+  font-size: 16px;
+  color: #333;
   margin-bottom: 24px;
+  font-weight: 500;
 }
 
 .quick-buttons {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  max-width: 600px;
+  gap: 16px 32px;
+  max-width: 640px;
   margin: 0 auto;
 }
 
 .quick-button {
-  padding: 16px 24px;
-  background-color: #f5f5f5;
-  border: 1px solid #e0e0e0;
+  padding: 14px 20px;
+  background-color: #fff;
+  border: none;
   border-radius: 8px;
   font-size: 14px;
-  color: #333;
+  color: #555;
   cursor: pointer;
   transition: all 0.3s;
+  text-align: left;
 }
 
 .quick-button:hover {
-  background-color: #2196f3;
-  color: white;
-  border-color: #2196f3;
+  background-color: #e6f7ff;
+  color: #1890ff;
 }
 
 /* 聊天区域 */
 .chat-section {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .conversation-item {
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .conversation-item.current {
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
 /* 问题显示 */
 .question-display {
   display: flex;
   justify-content: flex-end;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .question-item {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   max-width: 80%;
   margin-left: auto;
 }
 
 .question-content {
-  background-color: #2196f3;
+  background-color: #1890ff;
   color: white;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 10px 14px;
+  border-radius: 10px;
   border-bottom-right-radius: 4px;
   font-size: 14px;
   line-height: 1.6;
@@ -809,13 +830,13 @@ const removeUploadedFile = (index: number) => {
 .ai-response {
   display: flex;
   justify-content: flex-start;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .ai-message {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   max-width: 80%;
 }
 
@@ -836,22 +857,22 @@ const removeUploadedFile = (index: number) => {
 
 /* 转人工确认 */
 .transfer-section {
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .transfer-message {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  gap: 10px;
   max-width: 80%;
 }
 
 .transfer-text {
   flex: 1;
-  background-color: #fff3e0;
-  color: #e65100;
-  padding: 12px 16px;
-  border-radius: 12px;
+  background-color: #fff7e6;
+  color: #d46b08;
+  padding: 10px 14px;
+  border-radius: 10px;
   border-bottom-left-radius: 4px;
   font-size: 14px;
   line-height: 1.6;
@@ -860,15 +881,15 @@ const removeUploadedFile = (index: number) => {
 .transfer-buttons {
   display: flex;
   gap: 12px;
-  margin-top: 12px;
-  margin-left: 44px;
+  margin-top: 10px;
+  margin-left: 42px;
 }
 
 .no-button,
 .yes-button {
-  padding: 8px 24px;
+  padding: 8px 20px;
   border-radius: 6px;
-  font-size: 14px;
+  font-size: 13px;
   cursor: pointer;
   transition: all 0.3s;
 }
@@ -876,7 +897,7 @@ const removeUploadedFile = (index: number) => {
 .no-button {
   background-color: #f5f5f5;
   color: #666;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #d9d9d9;
 }
 
 .no-button:hover {
@@ -884,27 +905,27 @@ const removeUploadedFile = (index: number) => {
 }
 
 .yes-button {
-  background-color: #2196f3;
+  background-color: #1890ff;
   color: white;
   border: none;
 }
 
 .yes-button:hover {
-  background-color: #1976d2;
+  background-color: #096dd9;
 }
 
 /* 申请人工帮助 */
 .manual-section {
-  background-color: #f9f9f9;
-  padding: 32px;
+  background-color: #fafafa;
+  padding: 28px;
   border-radius: 12px;
-  margin-top: 24px;
+  margin-top: 20px;
 }
 
 .section-title {
-  font-size: 20px;
+  font-size: 18px;
   color: #333;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
 }
 
 .manual-form {
@@ -928,7 +949,7 @@ const removeUploadedFile = (index: number) => {
 .form-select,
 .form-textarea {
   padding: 10px 12px;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #d9d9d9;
   border-radius: 6px;
   font-size: 14px;
   font-family: inherit;
@@ -938,7 +959,7 @@ const removeUploadedFile = (index: number) => {
 .form-select:focus,
 .form-textarea:focus {
   outline: none;
-  border-color: #2196f3;
+  border-color: #1890ff;
 }
 
 .form-textarea {
@@ -951,14 +972,14 @@ const removeUploadedFile = (index: number) => {
   align-items: center;
   gap: 12px;
   padding: 12px;
-  border: 1px dashed #e0e0e0;
+  border: 1px dashed #d9d9d9;
   border-radius: 6px;
   cursor: pointer;
   transition: border-color 0.3s;
 }
 
 .file-upload:hover {
-  border-color: #2196f3;
+  border-color: #1890ff;
 }
 
 .file-input {
@@ -979,6 +1000,45 @@ const removeUploadedFile = (index: number) => {
   color: #999;
 }
 
+.selected-files-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.selected-file-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: #f0f5ff;
+  border-radius: 16px;
+  font-size: 13px;
+  color: #333;
+}
+
+.remove-file-btn {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: none;
+  background: #d9d9d9;
+  color: #666;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.remove-file-btn:hover {
+  background: #ff4d4f;
+  color: #fff;
+}
+
 .file-hint {
   font-size: 12px;
   color: #999;
@@ -993,7 +1053,7 @@ const removeUploadedFile = (index: number) => {
 
 .cancel-button,
 .submit-button {
-  padding: 10px 32px;
+  padding: 10px 28px;
   border-radius: 6px;
   font-size: 14px;
   cursor: pointer;
@@ -1003,7 +1063,7 @@ const removeUploadedFile = (index: number) => {
 .cancel-button {
   background-color: #f5f5f5;
   color: #666;
-  border: 1px solid #e0e0e0;
+  border: 1px solid #d9d9d9;
 }
 
 .cancel-button:hover {
@@ -1011,23 +1071,23 @@ const removeUploadedFile = (index: number) => {
 }
 
 .submit-button {
-  background-color: #2196f3;
+  background-color: #1890ff;
   color: white;
   border: none;
 }
 
 .submit-button:hover {
-  background-color: #1976d2;
+  background-color: #096dd9;
 }
 
 /* 输入区域 */
 .input-section {
   position: fixed;
-  bottom: 0;
+  bottom: 40px;
   left: 0;
   right: 0;
-  background-color: white;
-  padding: 16px 20px 24px;
+  background-color: transparent;
+  padding: 16px 20px 8px;
   z-index: 100;
 }
 
@@ -1092,29 +1152,29 @@ const removeUploadedFile = (index: number) => {
 .input-container-new {
   max-width: 800px;
   margin: 0 auto;
-  border: 1.5px solid #e0e0e0;
-  border-radius: 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 10px;
   padding: 12px 16px;
-  background-color: #fff;
-  transition: border-color 0.3s, box-shadow 0.3s;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  background-color: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(10px);
+  transition:
+    border-color 0.3s,
+    box-shadow 0.3s;
 }
 
 .input-container-new:focus-within {
-  border-color: #2196f3;
-  box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+  border-color: #1890ff;
+  background-color: #fff;
 }
 
 .question-textarea {
   width: 100%;
-  min-height: 60px;
+  min-height: 40px;
   max-height: 120px;
-  padding: 4px 0;
+  padding: 2px 0;
   border: none;
-  font-size: 15px;
-  line-height: 1.6;
+  font-size: 14px;
+  line-height: 1.5;
   resize: none;
   outline: none;
   font-family: inherit;
@@ -1139,11 +1199,11 @@ const removeUploadedFile = (index: number) => {
 }
 
 .action-button {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
-  border: 1.5px solid #e0e0e0;
-  background-color: #fff;
+  border: none;
+  background-color: #f5f5f5;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1153,9 +1213,8 @@ const removeUploadedFile = (index: number) => {
 }
 
 .action-button:hover {
-  border-color: #2196f3;
-  color: #2196f3;
-  background-color: #f5f9ff;
+  background-color: #e6f7ff;
+  color: #1890ff;
 }
 
 .action-button.recording {
@@ -1184,23 +1243,22 @@ const removeUploadedFile = (index: number) => {
 }
 
 .send-button-new {
-  width: 40px;
-  height: 40px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1890ff 0%, #096dd9 100%);
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 0.3s;
   color: white;
-  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
 }
 
 .send-button-new:hover {
-  transform: scale(1.05);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.6);
+  transform: scale(1.08);
+  box-shadow: 0 4px 12px rgba(24, 144, 255, 0.4);
 }
 
 .send-button-new:active {
@@ -1221,11 +1279,11 @@ const removeUploadedFile = (index: number) => {
 /* 输入框底部提示文字 */
 .input-footer {
   text-align: center;
-  margin-top: 10px;
+  margin-top: 12px;
 }
 
 .manual-help-link {
-  color: #2196f3;
+  color: #1890ff;
   text-decoration: none;
   font-size: 13px;
   transition: all 0.3s;
@@ -1233,7 +1291,7 @@ const removeUploadedFile = (index: number) => {
 }
 
 .manual-help-link:hover {
-  color: #1976d2;
+  color: #096dd9;
   text-decoration: underline;
 }
 </style>

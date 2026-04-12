@@ -157,15 +157,18 @@
 import { computed, onMounted, reactive, ref } from 'vue'
 import { message, Modal } from 'ant-design-vue'
 import { systemApi, transferConfigApi } from '@/api'
+import type { TransferConfig } from '@/api/transfer-config'
+import type { User } from '@/api/system'
+import type { TablePagination } from '@/types'
 
-const configs = ref<any[]>([])
+const configs = ref<TransferConfig[]>([])
 const loading = ref(false)
 const roles = ref<{ id: number; code: string; name: string }[]>([])
 const loadingRoles = ref(false)
-const users = ref<any[]>([])
+const users = ref<User[]>([])
 const loadingUsers = ref(false)
 const modalVisible = ref(false)
-const editingRecord = ref<any>(null)
+const editingRecord = ref<TransferConfig | null>(null)
 const selectedRowKeys = ref<number[]>([])
 
 const form = reactive({
@@ -225,8 +228,8 @@ const loadConfigs = async () => {
   loading.value = true
   try {
     configs.value = (await transferConfigApi.list()) || []
-  } catch (error: any) {
-    message.error('获取人工转接配置失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取人工转接配置失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loading.value = false
   }
@@ -236,8 +239,8 @@ const loadRoles = async () => {
   loadingRoles.value = true
   try {
     roles.value = (await systemApi.getAllRoles()) || []
-  } catch (error: any) {
-    message.error('获取角色列表失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取角色列表失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loadingRoles.value = false
   }
@@ -259,8 +262,8 @@ const loadUsers = async () => {
     userPagination.current = page.pageNum
     userPagination.pageSize = page.pageSize
     userPagination.total = page.total
-  } catch (error: any) {
-    message.error('获取用户列表失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('获取用户列表失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     loadingUsers.value = false
   }
@@ -298,7 +301,7 @@ const handleAdd = async () => {
   await loadUsers()
 }
 
-const handleEdit = async (record: any) => {
+const handleEdit = async (record: TransferConfig) => {
   editingRecord.value = record
   Object.assign(form, {
     businessType: record.businessType,
@@ -355,9 +358,9 @@ const handleResetFilters = async () => {
   await loadUsers()
 }
 
-const handleUserTableChange = async (pagination: any) => {
-  filters.pageNum = pagination.current
-  filters.pageSize = pagination.pageSize
+const handleUserTableChange = async (pagination: TablePagination) => {
+  filters.pageNum = pagination.current ?? 1
+  filters.pageSize = pagination.pageSize ?? 10
   await loadUsers()
 }
 
@@ -380,8 +383,8 @@ const handleSave = async () => {
     message.success('保存成功')
     modalVisible.value = false
     loadConfigs()
-  } catch (error: any) {
-    message.error('保存失败: ' + (error.message || '未知错误'))
+  } catch (error) {
+    message.error('保存失败: ' + (error instanceof Error ? error.message : '未知错误'))
   }
 }
 
@@ -390,7 +393,7 @@ const handleCancel = () => {
   editingRecord.value = null
 }
 
-const handleDelete = (record: any) => {
+const handleDelete = (record: TransferConfig) => {
   Modal.confirm({
     title: '确认删除',
     content: `确定要删除规则“${record.businessType}”吗？`,

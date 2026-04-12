@@ -1,4 +1,4 @@
-import type { ConsultationQuestion, PageRequest, PageResult, Result } from '@/types'
+import type { ConsultationQuestion, ConversationMessage, PageRequest, PageResult } from '@/types'
 import request from '@/utils/request'
 
 export interface ConsultationRequest {
@@ -14,8 +14,33 @@ export interface TransferToHumanRequest {
   reason?: string
 }
 
+export interface TransferDetail {
+  transfer: HumanTransfer
+  history: {
+    id?: number
+    questionText?: string
+    answer?: string
+    questionType?: string
+    createTime?: string
+  }[]
+}
+
+export interface HumanTransfer {
+  id: number
+  questionId?: number
+  questionText?: string
+  transferReason?: string
+  transferType?: string
+  status?: string
+  staffId?: number
+  staffName?: string
+  staffReply?: string
+  createTime?: string
+  processTime?: string
+}
+
 export const consultationApi = {
-  submitQuestion: (data: ConsultationRequest): Promise<Result<ConsultationQuestion>> => {
+  submitQuestion: (data: ConsultationRequest): Promise<ConsultationQuestion> => {
     return request.post('/consultation/questions', data)
   },
   submitQuestionStream: async (
@@ -127,28 +152,31 @@ export const consultationApi = {
   getMyQuestions: (params: PageRequest): Promise<PageResult<ConsultationQuestion>> => {
     return request.get('/consultation/questions/my', { params })
   },
-  getQuestionHistory: (id: number): Promise<any[]> => {
+  getQuestionHistory: (id: number): Promise<ConversationMessage[]> => {
     return request.get(`/consultation/questions/${id}/history`)
   },
-  transferToHuman: (id: number, data: TransferToHumanRequest): Promise<Result<void>> => {
+  transferToHuman: (id: number, data: TransferToHumanRequest): Promise<void> => {
     return request.post(`/consultation/questions/${id}/transfer`, data)
   },
-  uploadVoice: (file: File): Promise<Result<string>> => {
+  uploadVoice: (file: File): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file)
     return request.post('/consultation/upload/voice', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     })
   },
-  uploadFile: (file: File | Blob, filename?: string): Promise<Result<string>> => {
+  uploadFile: (file: File | Blob, filename?: string): Promise<string> => {
     const formData = new FormData()
     formData.append('file', file, filename || 'file')
-    return request.post('/consultation/upload/file', formData)
+    return request.post('/consultation/upload/file', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
   },
-  getUserTransfers: (params: PageRequest): Promise<PageResult<any>> => {
+  getUserTransfers: (params: PageRequest): Promise<PageResult<HumanTransfer>> => {
     return request.get('/consultation/transfers', { params })
   },
-  getTransferDetail: (id: number): Promise<any> => request.get(`/consultation/transfers/${id}`),
+  getTransferDetail: (id: number): Promise<TransferDetail> =>
+    request.get(`/consultation/transfers/${id}`),
   assignStaff: (id: number, staffId: number): Promise<void> => {
     return request.post(`/consultation/transfers/${id}/assign`, null, { params: { staffId } })
   },
@@ -158,10 +186,10 @@ export const consultationApi = {
   processTransfer: (id: number, reply: string): Promise<void> => {
     return request.post(`/consultation/transfers/${id}/process`, null, { params: { reply } })
   },
-  getStaffTransfers: (params: PageRequest): Promise<PageResult<any>> => {
+  getStaffTransfers: (params: PageRequest): Promise<PageResult<HumanTransfer>> => {
     return request.get('/consultation/transfers/staff', { params })
   },
-  getCompletedTransfers: (params: PageRequest): Promise<PageResult<any>> => {
+  getCompletedTransfers: (params: PageRequest): Promise<PageResult<HumanTransfer>> => {
     return request.get('/consultation/transfers/completed', { params })
   },
 }

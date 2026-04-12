@@ -78,7 +78,7 @@
                     :show-quick-jumper="true"
                     :hide-on-single-page="false"
                     @change="handlePendingPageChange"
-                    @showSizeChange="handlePendingPageChange"
+                    @show-size-change="handlePendingPageChange"
                   />
                 </div>
               </a-spin>
@@ -142,7 +142,7 @@
                     :show-quick-jumper="true"
                     :hide-on-single-page="false"
                     @change="handleCompletedPageChange"
-                    @showSizeChange="handleCompletedPageChange"
+                    @show-size-change="handleCompletedPageChange"
                   />
                 </div>
               </a-spin>
@@ -265,7 +265,9 @@
     <!-- 流程详情弹窗 -->
     <a-modal
       v-model:open="detailVisible"
-      :title="currentType === 'leave' ? '请假详情' : currentType === 'award' ? '奖助详情' : '销假详情'"
+      :title="
+        currentType === 'leave' ? '请假详情' : currentType === 'award' ? '奖助详情' : '销假详情'
+      "
       width="700px"
       :footer="null"
       @cancel="handleCloseDetail"
@@ -399,7 +401,11 @@
         </a-descriptions>
 
         <!-- 销假详情 -->
-        <a-descriptions v-if="currentType === 'leave' && leaveDetail?.cancelRequested" :column="2" bordered>
+        <a-descriptions
+          v-if="currentType === 'leave' && leaveDetail?.cancelRequested"
+          :column="2"
+          bordered
+        >
           <a-descriptions-item label="销假状态" :span="2">
             <a-tag v-if="leaveDetail?.cancelApprovalStatus === 'PENDING'" color="processing"
               >待审批</a-tag
@@ -553,18 +559,12 @@
               approveAwardDetail?.reason || '无'
             }}</a-descriptions-item>
             <a-descriptions-item v-if="approveAwardDetail?.attachmentUrls" label="附件" :span="2">
-              <template
-                v-for="(url, idx) in (approveAwardDetail?.attachmentUrls || [])"
-                :key="idx"
-              >
+              <template v-for="(url, idx) in approveAwardDetail?.attachmentUrls || []" :key="idx">
                 <a :href="url" target="_blank" rel="noopener" download>
                   <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
                 </a>
                 <br
-                  v-if="
-                    idx <
-                    (approveAwardDetail?.attachmentUrls || []).filter(Boolean).length - 1
-                  "
+                  v-if="idx < (approveAwardDetail?.attachmentUrls || []).filter(Boolean).length - 1"
                 />
               </template>
             </a-descriptions-item>
@@ -672,14 +672,39 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { PaperClipOutlined } from '@ant-design/icons-vue'
 import { processApi, leaveApi, awardApi, consultationApi, approvalApi } from '@/api'
+import type { HumanTransfer } from '@/api/consultation'
+import type { ProcessItem } from '@/api/process'
 import { useUserStore } from '@/stores/user'
-import type { ProcessItem, LeaveApplication, AwardApplication, PageRequest } from '@/types'
+import type {
+  LeaveApplication,
+  AwardApplication,
+  PageRequest,
+  PageResult,
+  TablePagination,
+} from '@/types'
 
-const router = useRouter()
+interface TransferHistoryItem {
+  questionText: string
+  aiAnswer?: string
+  time?: string
+}
+
+interface ApprovalStepDisplay {
+  name: string
+  status: string
+  approver: string
+  time: string
+  comment?: string
+}
+
+interface ApprovalProcessDisplay {
+  status: string
+  steps: ApprovalStepDisplay[]
+}
+
 const userStore = useUserStore()
 const activeTab = ref('process')
 const humanActiveTab = ref('pending')
@@ -695,7 +720,7 @@ const leaveDetail = ref<LeaveApplication | null>(null)
 const awardDetail = ref<AwardApplication | null>(null)
 const loadingDetail = ref(false)
 const currentProcessId = ref<number>(0)
-const approvalProcess = ref<any>(null)
+const approvalProcess = ref<ApprovalProcessDisplay | null>(null)
 
 // 待办流程分页和筛选
 const pendingPagination = reactive({
@@ -729,14 +754,14 @@ const approveForm = reactive({
 
 // 人工处理中心相关
 const humanProcessLoading = ref(false)
-const humanProcessData = ref<any[]>([])
+const humanProcessData = ref<HumanTransfer[]>([])
 const humanProcessPagination = reactive({
   current: 1,
   pageSize: 10,
   total: 0,
 })
 const replyVisible = ref(false)
-const currentTransfer = ref<any>(null)
+const currentTransfer = ref<HumanTransfer | null>(null)
 const currentTransferId = ref<number>(0)
 const replyForm = reactive({
   questionText: '',
@@ -746,7 +771,7 @@ const replyForm = reactive({
 
 // 已完成记录相关
 const completedProcessLoading = ref(false)
-const completedProcessData = ref<any[]>([])
+const completedProcessData = ref<HumanTransfer[]>([])
 const completedProcessPagination = reactive({
   current: 1,
   pageSize: 10,
@@ -841,9 +866,9 @@ const completedProcessColumns = [
 
 // 转人工记录相关
 const transferLoading = ref(false)
-const transferData = ref<any[]>([])
+const transferData = ref<HumanTransfer[]>([])
 const transferDetailVisible = ref(false)
-const transferHistory = ref<any[]>([])
+const transferHistory = ref<TransferHistoryItem[]>([])
 const transferPagination = reactive({
   current: 1,
   pageSize: 10,
@@ -900,48 +925,9 @@ const getCategoryName = (category?: string) => {
 
 const formatTransferReason = (reason?: string) => {
   if (!reason) return ''
-  return reason.replace(/问题类型: (\w+)/g, (match, category) => {
+  return reason.replace(/问题类型: (\w+)/g, (_match, category) => {
     return `问题类型: ${getCategoryName(category)}`
   })
-}
-
-// 解析转人工原因，分离基本信息和历史对话
-const parseTransferContext = (
-  reason?: string
-): { reason: string; history: { question: string; answer: string }[] } => {
-  if (!reason) return { reason: '', history: [] }
-
-  const historyMarker = '\n\n===历史对话===\n'
-  const markerIdx = reason.indexOf(historyMarker)
-
-  if (markerIdx === -1) {
-    // 没有历史对话，直接返回格式化后的原因
-    return { reason: formatTransferReason(reason), history: [] }
-  }
-
-  const basePart = reason.substring(0, markerIdx)
-  const historyPart = reason.substring(markerIdx + historyMarker.length)
-
-  // 解析历史对话，每轮以 [第N轮] 开头
-  const history: { question: string; answer: string }[] = []
-  const turns = historyPart.split(/\n\n(?=\[第\d+轮\])/).filter(Boolean)
-  for (const turn of turns) {
-    const lines = turn.split('\n')
-    let question = ''
-    let answer = ''
-    for (const line of lines) {
-      if (line.startsWith('用户: ')) {
-        question = line.substring(4)
-      } else if (line.startsWith('AI: ')) {
-        answer = line.substring(4)
-      }
-    }
-    if (question || answer) {
-      history.push({ question, answer })
-    }
-  }
-
-  return { reason: formatTransferReason(basePart), history }
 }
 
 // 加载流程数据
@@ -953,7 +939,7 @@ const loadProcesses = async () => {
       pageNum: pendingPagination.current,
       pageSize: pendingPagination.pageSize,
     }
-    let pendingResponse: any
+    let pendingResponse: PageResult<ProcessItem>
     switch (pendingFilter.value) {
       case 'award':
         pendingResponse = await processApi.getPendingAward(pendingParams)
@@ -974,7 +960,7 @@ const loadProcesses = async () => {
       pageNum: completedPagination.current,
       pageSize: completedPagination.pageSize,
     }
-    let completedResponse: any
+    let completedResponse: PageResult<ProcessItem>
     switch (completedFilter.value) {
       case 'award':
         completedResponse = await processApi.getCompletedAward(completedParams)
@@ -1010,9 +996,9 @@ const loadHumanProcessData = async () => {
     const response = await consultationApi.getStaffTransfers(params)
     humanProcessData.value = response.records
     humanProcessPagination.total = response.total
-  } catch (error: any) {
+  } catch (error) {
     console.error('加载人工处理数据失败', error)
-    message.error('加载数据失败: ' + (error.message || '未知错误'))
+    message.error('加载数据失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     humanProcessLoading.value = false
   }
@@ -1029,9 +1015,9 @@ const loadCompletedProcessData = async () => {
     const response = await consultationApi.getCompletedTransfers(params)
     completedProcessData.value = response.records
     completedProcessPagination.total = response.total
-  } catch (error: any) {
+  } catch (error) {
     console.error('加载已完成记录失败', error)
-    message.error('加载数据失败: ' + (error.message || '未知错误'))
+    message.error('加载数据失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     completedProcessLoading.value = false
   }
@@ -1048,9 +1034,9 @@ const loadTransferData = async () => {
     const response = await consultationApi.getUserTransfers(params)
     transferData.value = response.records
     transferPagination.total = response.total
-  } catch (error: any) {
+  } catch (error) {
     console.error('加载转人工记录失败', error)
-    message.error('加载数据失败: ' + (error.message || '未知错误'))
+    message.error('加载数据失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     transferLoading.value = false
   }
@@ -1090,8 +1076,8 @@ const handleGoApprove = async (item: ProcessItem) => {
             })
 
       const taskPromise = approvalApi.getPendingTasks().then((pendingTasks) => {
-        const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
-        const matchedTask = tasks.find((t: any) => String(t.businessId) === String(item.id))
+        const tasks = Array.isArray(pendingTasks) ? pendingTasks : []
+        const matchedTask = tasks.find((t) => String(t.businessId) === String(item.id))
         if (matchedTask) {
           currentTaskId.value = matchedTask.id
         } else {
@@ -1101,8 +1087,8 @@ const handleGoApprove = async (item: ProcessItem) => {
 
       await Promise.all([detailPromise, taskPromise])
     }
-  } catch (e: any) {
-    message.error(e?.message || '加载审批信息失败')
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : '加载审批信息失败')
     approveVisible.value = false
   } finally {
     approveModalLoading.value = false
@@ -1133,7 +1119,7 @@ const handleViewProcess = async (item: ProcessItem) => {
       if (instance.steps) {
         approvalProcess.value = {
           status: instance.status,
-          steps: instance.steps.map((step: any) => ({
+          steps: instance.steps.map((step) => ({
             name: step.stepName,
             status: step.status,
             approver: step.approverName,
@@ -1147,8 +1133,8 @@ const handleViewProcess = async (item: ProcessItem) => {
     // 查找当前用户对应的待处理审批任务ID
     try {
       const pendingTasks = await approvalApi.getPendingTasks()
-      const tasks = Array.isArray(pendingTasks) ? pendingTasks : (pendingTasks?.data ?? [])
-      const matchedTask = tasks.find((t: any) => String(t.businessId) === String(item.id))
+      const tasks = Array.isArray(pendingTasks) ? pendingTasks : []
+      const matchedTask = tasks.find((t) => String(t.businessId) === String(item.id))
       if (matchedTask) {
         currentTaskId.value = matchedTask.id
       }
@@ -1222,9 +1208,9 @@ const submitApproval = async () => {
       detailVisible.value = false
       loadProcesses()
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('审批失败', error)
-    message.error('审批失败: ' + (error.message || '未知错误'))
+    message.error('审批失败: ' + (error instanceof Error ? error.message : '未知错误'))
   } finally {
     approving.value = false
   }
@@ -1240,19 +1226,19 @@ const handleCloseDetail = () => {
 }
 
 // 人工处理中心操作
-const handleHumanProcessTableChange = (pag: any) => {
-  humanProcessPagination.current = pag.current
-  humanProcessPagination.pageSize = pag.pageSize
+const handleHumanProcessTableChange = (pag: TablePagination) => {
+  humanProcessPagination.current = pag.current ?? 1
+  humanProcessPagination.pageSize = pag.pageSize ?? 10
   loadHumanProcessData()
 }
 
-const handleCompletedProcessTableChange = (pag: any) => {
-  completedProcessPagination.current = pag.current
-  completedProcessPagination.pageSize = pag.pageSize
+const handleCompletedProcessTableChange = (pag: TablePagination) => {
+  completedProcessPagination.current = pag.current ?? 1
+  completedProcessPagination.pageSize = pag.pageSize ?? 10
   loadCompletedProcessData()
 }
 
-const handleProcess = async (record: any) => {
+const handleProcess = async (record: HumanTransfer) => {
   currentTransferId.value = record.id
   replyForm.questionText =
     record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
@@ -1261,15 +1247,18 @@ const handleProcess = async (record: any) => {
   // 加载历史对话
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = response as any
-    transferHistory.value = data.history ?? []
+    transferHistory.value = response.history.map((h) => ({
+      questionText: h.questionText || '',
+      aiAnswer: h.answer,
+      time: h.createTime,
+    }))
   } catch {
     transferHistory.value = []
   }
   replyVisible.value = true
 }
 
-const handleReply = async (record: any) => {
+const handleReply = async (record: HumanTransfer) => {
   currentTransferId.value = record.id
   replyForm.questionText =
     record.transferReason?.split('\n问题描述: ')[1]?.split('\n\n===历史对话===')[0] || ''
@@ -1278,8 +1267,11 @@ const handleReply = async (record: any) => {
   // 加载历史对话
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = response as any
-    transferHistory.value = data.history ?? []
+    transferHistory.value = response.history.map((h) => ({
+      questionText: h.questionText || '',
+      aiAnswer: h.answer,
+      time: h.createTime,
+    }))
   } catch {
     transferHistory.value = []
   }
@@ -1306,45 +1298,52 @@ const submitReply = async () => {
     if (humanActiveTab.value === 'completed') {
       loadCompletedProcessData() // 如果当前在已完成标签页，也重新加载
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('回复失败', error)
-    message.error('回复失败: ' + (error.message || '未知错误'))
+    message.error('回复失败: ' + (error instanceof Error ? error.message : '未知错误'))
   }
 }
 
-const handleViewTransfer = async (record: any) => {
+const handleViewTransfer = async (record: HumanTransfer) => {
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = response as any
-    currentTransfer.value = data.transfer ?? data
-    transferHistory.value = data.history ?? []
+    currentTransfer.value = response.transfer
+    transferHistory.value = response.history.map((h) => ({
+      questionText: h.questionText || '',
+      aiAnswer: h.answer,
+      time: h.createTime,
+    }))
     transferDetailVisible.value = true
-  } catch (error: any) {
+  } catch (error) {
     console.error('获取转人工记录详情失败', error)
-    message.error('获取详情失败: ' + (error.message || '未知错误'))
+    message.error('获取详情失败: ' + (error instanceof Error ? error.message : '未知错误'))
   }
 }
 
 // 转人工记录操作
-const handleTransferTableChange = (pag: any) => {
-  transferPagination.current = pag.current
-  transferPagination.pageSize = pag.pageSize
+const handleTransferTableChange = (pag: TablePagination) => {
+  transferPagination.current = pag.current ?? 1
+  transferPagination.pageSize = pag.pageSize ?? 10
   loadTransferData()
 }
 
-const handleViewTransferDetail = async (record: any) => {
+const handleViewTransferDetail = async (record: HumanTransfer) => {
   try {
     const response = await consultationApi.getTransferDetail(record.id)
-    const data = response as any
-    currentTransfer.value = data.transfer ?? data
-    transferHistory.value = data.history ?? []
+    currentTransfer.value = response.transfer
+    transferHistory.value = response.history.map((h) => ({
+      questionText: h.questionText || '',
+      aiAnswer: h.answer,
+      time: h.createTime,
+    }))
     transferDetailVisible.value = true
-  } catch (error: any) {
+  } catch (error) {
     console.error('获取转人工记录详情失败', error)
-    message.error('获取详情失败: ' + (error.message || '未知错误'))
+    message.error('获取详情失败: ' + (error instanceof Error ? error.message : '未知错误'))
   }
 }
 
+// 转人工记录操作
 onMounted(() => {
   loadProcesses()
   if (humanActiveTab.value === 'pending') {
@@ -1365,11 +1364,11 @@ watch(humanActiveTab, (newTab) => {
 })
 
 // 处理流程代办标签页变化
-const handleProcessTabChange = (_key: string) => {
+const handleProcessTabChange = () => {
   loadProcesses()
 }
 
-const handlePendingPageChange = (_page: number, _pageSize: number) => {
+const handlePendingPageChange = () => {
   loadProcesses()
 }
 
@@ -1378,7 +1377,7 @@ const handlePendingFilterChange = () => {
   loadProcesses()
 }
 
-const handleCompletedPageChange = (_page: number, _pageSize: number) => {
+const handleCompletedPageChange = () => {
   loadProcesses()
 }
 
