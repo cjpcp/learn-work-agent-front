@@ -131,6 +131,9 @@ export interface LeaveApplication {
   cancelApprovalComment?: string
   cancelApprovalTime?: string
   studentName?: string
+  departmentName?: string
+  grade?: string
+  className?: string
   createTime?: string
   updateTime?: string
 }

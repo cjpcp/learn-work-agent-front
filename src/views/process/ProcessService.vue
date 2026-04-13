@@ -151,7 +151,7 @@
         </a-tab-pane>
 
         <!-- 人工处理中心标签页 -->
-        <a-tab-pane key="human" tab="人工处理中心">
+        <a-tab-pane v-if="showHumanCenter" key="human" tab="人工处理中心">
           <a-tabs v-model:active-key="humanActiveTab" class="sub-tabs">
             <a-tab-pane key="pending" tab="待完成">
               <a-table
@@ -707,6 +707,7 @@ interface ApprovalProcessDisplay {
 
 const userStore = useUserStore()
 const activeTab = ref('process')
+const showHumanCenter = ref(false)
 const humanActiveTab = ref('pending')
 const processActiveTab = ref('pending')
 
@@ -1344,7 +1345,7 @@ const handleViewTransferDetail = async (record: HumanTransfer) => {
 }
 
 // 转人工记录操作
-onMounted(() => {
+onMounted(async () => {
   loadProcesses()
   if (humanActiveTab.value === 'pending') {
     loadHumanProcessData()
@@ -1352,6 +1353,14 @@ onMounted(() => {
     loadCompletedProcessData()
   }
   loadTransferData()
+
+  try {
+    const hasPermission = await consultationApi.checkTransferConfigPermission()
+    showHumanCenter.value = hasPermission
+  } catch (error) {
+    console.error('检查人工处理中心权限失败:', error)
+    showHumanCenter.value = false
+  }
 })
 
 // 监听人工处理中心标签页变化
@@ -1406,29 +1415,29 @@ const handleCompletedFilterChange = () => {
 }
 
 .process-toolbar {
-  margin-bottom: 16px;
+  margin-bottom: 12px;
 }
 
 .pagination-wrapper {
   display: flex;
   justify-content: center;
-  margin-top: 20px;
-  padding: 16px 0;
+  margin-top: 12px;
+  padding: 10px 0;
 }
 
 .empty-state {
-  padding: 60px 0;
+  padding: 40px 0;
   text-align: center;
 }
 
 .process-list {
-  max-height: 600px;
+  max-height: calc(100vh - 280px);
   overflow-y: auto;
 }
 
 .process-item {
   border-bottom: 1px solid #f0f0f0;
-  padding: 16px 0;
+  padding: 10px 0;
 }
 
 .process-title {
@@ -1438,12 +1447,12 @@ const handleCompletedFilterChange = () => {
 }
 
 .process-info {
-  margin-top: 8px;
+  margin-top: 6px;
   color: #666;
 }
 
 .process-time {
-  margin-top: 4px;
+  margin-top: 2px;
   font-size: 12px;
   color: #999;
 }

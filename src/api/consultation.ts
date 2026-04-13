@@ -192,4 +192,7 @@ export const consultationApi = {
   getCompletedTransfers: (params: PageRequest): Promise<PageResult<HumanTransfer>> => {
     return request.get('/consultation/transfers/completed', { params })
   },
+  checkTransferConfigPermission: (): Promise<boolean> => {
+    return request.get('/consultation/transfer-config/permission')
+  },
 }

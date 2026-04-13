@@ -72,11 +72,7 @@
                 :loading="loading"
                 class="login-button"
               >
-                <span v-if="!loading">登录</span>
-                <template v-else>
-                  <div class="loading-spinner"></div>
-                  <span>登录中...</span>
-                </template>
+                {{ loading ? '登录中...' : '登录' }}
               </a-button>
             </a-form-item>
 
@@ -427,22 +423,5 @@ const handleLogin = async () => {
   font-size: 13px;
   line-height: 1.5;
   opacity: 0.9;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  border-top-color: #fff;
-  border-radius: 50%;
-  animation: spin 0.8s linear infinite;
-  margin-right: 8px;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 </style>

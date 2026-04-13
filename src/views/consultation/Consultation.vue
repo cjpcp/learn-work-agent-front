@@ -151,8 +151,8 @@
           </div>
           <div class="form-group">
             <label class="form-label">文件上传</label>
-            <div class="file-upload" @click="$refs.manualFileInput?.click()">
-              <input ref="manualFileInput" type="file" class="file-input" multiple @change="handleFileUpload" />
+            <div class="file-upload" @click="manualFileInputRef?.click()">
+              <input ref="manualFileInputRef" type="file" class="file-input" multiple @change="handleFileUpload" />
               <span class="file-icon">📎</span>
               <span v-if="selectedFiles.length === 0" class="file-placeholder">点击上传文件</span>
             </div>
@@ -351,6 +351,7 @@ const manualForm = reactive({
   questionDescription: '',
 })
 const selectedFiles = ref<File[]>([])
+const manualFileInputRef = ref<HTMLInputElement | null>(null)
 
 // 已选择文件列表（暂存在前端，提交时一起上传）
 interface UploadedFile {
@@ -705,7 +706,7 @@ const removeUploadedFile = (index: number) => {
 .main-content {
   max-width: 800px;
   margin: 0 auto;
-  padding: 60px 40px 200px;
+  padding: 20px 40px 180px;
   min-height: calc(100vh - 64px);
 }
 
@@ -717,11 +718,11 @@ const removeUploadedFile = (index: number) => {
 /* 欢迎界面 */
 .welcome-section {
   text-align: center;
-  padding: 20px 0;
+  padding: 10px 0;
 }
 
 .ai-avatar {
-  margin-bottom: 24px;
+  margin-bottom: 16px;
 }
 
 .avatar-image {
@@ -734,12 +735,12 @@ const removeUploadedFile = (index: number) => {
 .main-title {
   font-size: 26px;
   color: #1890ff;
-  margin-bottom: 48px;
+  margin-bottom: 32px;
   font-weight: 600;
 }
 
 .quick-consultation {
-  margin-top: 48px;
+  margin-top: 32px;
 }
 
 .quick-title {
@@ -779,6 +780,8 @@ const removeUploadedFile = (index: number) => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  background-color: #f5f7fa;
+  position: relative;
 }
 
 .conversation-item {
@@ -1086,8 +1089,8 @@ const removeUploadedFile = (index: number) => {
   bottom: 40px;
   left: 0;
   right: 0;
-  background-color: transparent;
-  padding: 16px 20px 8px;
+  background-color: #f5f7fa;
+  padding: 0;
   z-index: 100;
 }
 
@@ -1099,6 +1102,7 @@ const removeUploadedFile = (index: number) => {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  background-color: #f5f7fa;
 }
 
 .uploaded-file-item {
@@ -1155,8 +1159,7 @@ const removeUploadedFile = (index: number) => {
   border: 1px solid #e8e8e8;
   border-radius: 10px;
   padding: 12px 16px;
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(10px);
+  background-color: #ffffff;
   transition:
     border-color 0.3s,
     box-shadow 0.3s;
