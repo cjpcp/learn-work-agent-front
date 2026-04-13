@@ -39,6 +39,12 @@ export interface HumanTransfer {
   processTime?: string
 }
 
+export interface UserMessagePayload {
+  questionText: string
+  messageType: string
+  files?: { url: string; type: string; name: string }[]
+}
+
 export const consultationApi = {
   submitQuestion: (data: ConsultationRequest): Promise<ConsultationQuestion> => {
     return request.post('/consultation/questions', data)
@@ -100,7 +106,8 @@ export const consultationApi = {
   submitQuestionStreamMultipart: async (
     formData: FormData,
     onChunk: (chunk: string) => void,
-    token: string
+    token: string,
+    onUserMessage?: (msg: UserMessagePayload) => void
   ): Promise<void> => {
     const response = await fetch(
       `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/consultation/questions/stream/multipart`,
@@ -139,9 +146,17 @@ export const consultationApi = {
             if (jsonStr && jsonStr !== '[DONE]') {
               try {
                 const parsed = JSON.parse(jsonStr)
-                if (parsed.answer) onChunk(parsed.answer)
+                if (parsed.messageType === 'user' && onUserMessage) {
+                  onUserMessage(parsed as UserMessagePayload)
+                } else if (parsed.answer) {
+                  onChunk(parsed.answer)
+                }
               } catch {
-                onChunk(jsonStr)
+                if (jsonStr.startsWith('{') && !jsonStr.includes('"answer"')) {
+                  try { onUserMessage?.(JSON.parse(jsonStr) as UserMessagePayload) } catch {}
+                } else {
+                  onChunk(jsonStr)
+                }
               }
             }
           }

@@ -48,7 +48,21 @@
           <!-- 问题显示 -->
           <div class="question-display">
             <div class="question-item">
-              <div class="question-content">{{ conversation.question }}</div>
+              <div class="question-bubble">
+                <div v-if="conversation.files && conversation.files.length > 0" class="question-files">
+                  <a
+                    v-for="(file, fIdx) in conversation.files"
+                    :key="fIdx"
+                    :href="file.url"
+                    target="_blank"
+                    class="question-file-link"
+                    :title="file.name"
+                  >
+                    📎 {{ file.name }}
+                  </a>
+                </div>
+                <div class="question-content">{{ conversation.question }}</div>
+              </div>
               <div class="question-avatar">
                 <img
                   src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square"
@@ -79,7 +93,21 @@
           <!-- 问题显示 -->
           <div class="question-display">
             <div class="question-item">
-              <div class="question-content">{{ currentQuestion }}</div>
+              <div class="question-bubble">
+                <div v-if="currentQuestionFiles && currentQuestionFiles.length > 0" class="question-files">
+                  <a
+                    v-for="(file, fIdx) in currentQuestionFiles"
+                    :key="fIdx"
+                    :href="file.url"
+                    target="_blank"
+                    class="question-file-link"
+                    :title="file.name"
+                  >
+                    📎 {{ file.name }}
+                  </a>
+                </div>
+                <div class="question-content">{{ currentQuestion }}</div>
+              </div>
               <div class="question-avatar">
                 <img
                   src="https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=user%20avatar%2C%20simple%20cartoon%20style&image_size=square"
@@ -116,11 +144,11 @@
               />
             </div>
             <div class="transfer-text">
-              未找到您要了解的问题答案，可申请转人工为您解答，请问需要吗？
+              若当前回答无法满足你的需求，可以转接人工服务，是否需要转接？
             </div>
             <div class="transfer-buttons">
-              <button class="no-button" @click="cancelTransfer">不需要</button>
-              <button class="yes-button" @click="confirmTransfer">需要</button>
+              <button class="no-button" @click="cancelTransfer">暂不需要</button>
+              <button class="yes-button" @click="confirmTransfer">需要转接</button>
             </div>
           </div>
         </div>
@@ -326,12 +354,14 @@ import type { ConsultationQuestion } from '@/types'
 interface Conversation {
   question: string
   answer: string
+  files?: { url: string; type: string; name: string }[]
 }
 
 // 状态管理
 const state = ref('welcome') // welcome, chat, transfer, manual
 const questionText = ref('')
 const currentQuestion = ref('')
+const currentQuestionFiles = ref<{ url: string; type: string; name: string }[]>([])
 const aiAnswer = ref('')
 const isStreaming = ref(false) // 是否正在流式接收
 const conversationHistory = ref<Conversation[]>([])
@@ -381,10 +411,12 @@ const handleSubmit = async () => {
     conversationHistory.value.push({
       question: currentQuestion.value,
       answer: aiAnswer.value,
+      files: currentQuestionFiles.value.length > 0 ? [...currentQuestionFiles.value] : undefined,
     })
   }
 
   currentQuestion.value = questionText.value.trim() || (pendingVoiceFile.value ? '🎤 语音消息' : '')
+  currentQuestionFiles.value = []
   state.value = 'chat'
   aiAnswer.value = '' // 清空之前的回答
   isStreaming.value = true // 开始流式接收
@@ -418,7 +450,12 @@ const handleSubmit = async () => {
       (chunk) => {
         aiAnswer.value += chunk
       },
-      token
+      token,
+      (userMsg) => {
+        if (userMsg.files && userMsg.files.length > 0) {
+          currentQuestionFiles.value = userMsg.files
+        }
+      }
     )
     isStreaming.value = false
     uploadedFiles.value = []
@@ -807,6 +844,12 @@ const removeUploadedFile = (index: number) => {
   margin-left: auto;
 }
 
+.question-bubble {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
 .question-content {
   background-color: #1890ff;
   color: white;
@@ -816,6 +859,36 @@ const removeUploadedFile = (index: number) => {
   font-size: 14px;
   line-height: 1.6;
   word-wrap: break-word;
+}
+
+.question-files {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 4px;
+}
+
+.question-file-link {
+  display: inline-flex;
+  align-items: center;
+  max-width: 150px;
+  height: 24px;
+  padding: 0 8px;
+  background-color: #f0f5ff;
+  color: #1677ff;
+  border-radius: 12px;
+  font-size: 12px;
+  line-height: 24px;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  transition: all 0.2s;
+}
+
+.question-file-link:hover {
+  background-color: #d6e4ff;
+  text-decoration: none;
 }
 
 .question-avatar {
