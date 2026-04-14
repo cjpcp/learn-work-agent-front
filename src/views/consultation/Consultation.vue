@@ -556,13 +556,15 @@ const submitManual = async () => {
 
     let questionId = currentQuestionId.value
 
-    const attachmentInfo = attachmentUrls.length > 0
-      ? '\n附件: ' + attachmentUrls.map(a => a.url.split('/').pop()).join(', ')
-      : ''
     const transferData = {
-      reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentInfo}`,
+      reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}`,
       questionType: manualForm.questionType,
       questionText: manualForm.questionDescription,
+      files: attachmentUrls.length > 0 ? attachmentUrls.map(a => ({
+        url: a.url,
+        type: a.type,
+        name: a.url.split('/').pop() || '附件',
+      })) : undefined,
     }
 
     if (questionId) {

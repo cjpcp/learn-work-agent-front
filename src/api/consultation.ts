@@ -14,6 +14,7 @@ export interface TransferToHumanRequest {
   reason?: string
   questionType?: string
   questionText?: string
+  files?: { url: string; type: string; name: string }[]
 }
 
 export interface TransferDetail {
@@ -38,6 +39,7 @@ export interface HumanTransfer {
   staffId?: number
   staffName?: string
   staffReply?: string
+  fileUrls?: string
   createTime?: string
   processTime?: string
 }

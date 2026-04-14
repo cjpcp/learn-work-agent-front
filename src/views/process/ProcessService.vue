@@ -634,6 +634,14 @@
         <a-descriptions-item label="转接原因" :span="2">
           {{ formatTransferReason(currentTransfer?.transferReason) }}
         </a-descriptions-item>
+        <a-descriptions-item v-if="getTransferFiles(currentTransfer?.fileUrls)?.length > 0" label="附件" :span="2">
+          <template v-for="(file, idx) in getTransferFiles(currentTransfer?.fileUrls)" :key="idx">
+            <a :href="file.url" target="_blank" style="margin-right: 8px">
+              <PaperClipOutlined /> {{ file.name }}
+            </a>
+            <br v-if="idx < getTransferFiles(currentTransfer?.fileUrls).length - 1" />
+          </template>
+        </a-descriptions-item>
         <a-descriptions-item v-if="currentTransfer?.staffId" label="处理人员ID">
           {{ currentTransfer?.staffId }}
         </a-descriptions-item>
@@ -948,6 +956,15 @@ const formatTransferReason = (reason?: string) => {
   return reason.replace(/问题类型: (\w+)/g, (_match, category) => {
     return `问题类型: ${getCategoryName(category)}`
   })
+}
+
+const getTransferFiles = (fileUrls?: string) => {
+  if (!fileUrls) return []
+  try {
+    return JSON.parse(fileUrls)
+  } catch {
+    return []
+  }
 }
 
 // 加载流程数据
