@@ -814,9 +814,9 @@ const completedProcessPagination = reactive({
 
 const humanProcessColumns = [
   {
-    title: '问题ID',
-    dataIndex: 'questionId',
-    key: 'questionId',
+    title: '转人工记录ID',
+    dataIndex: 'id',
+    key: 'id',
   },
   {
     title: '转接类型',
@@ -851,9 +851,9 @@ const humanProcessColumns = [
 
 const completedProcessColumns = [
   {
-    title: '问题ID',
-    dataIndex: 'questionId',
-    key: 'questionId',
+    title: '转人工记录ID',
+    dataIndex: 'id',
+    key: 'id',
   },
   {
     title: '转接类型',
@@ -911,9 +911,9 @@ const transferPagination = reactive({
 
 const transferColumns = [
   {
-    title: '问题ID',
-    dataIndex: 'questionId',
-    key: 'questionId',
+    title: '转人工记录ID',
+    dataIndex: 'id',
+    key: 'id',
   },
   {
     title: '转接类型',
