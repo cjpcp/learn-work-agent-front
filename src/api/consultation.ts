@@ -12,6 +12,8 @@ export interface ConsultationRequest {
 
 export interface TransferToHumanRequest {
   reason?: string
+  questionType?: string
+  questionText?: string
 }
 
 export interface TransferDetail {
@@ -28,6 +30,7 @@ export interface TransferDetail {
 export interface HumanTransfer {
   id: number
   questionId?: number
+  questionType?: string
   questionText?: string
   transferReason?: string
   transferType?: string
@@ -132,36 +135,49 @@ export const consultationApi = {
       throw new Error('无法获取响应流')
     }
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-      buffer += decoder.decode(value, { stream: true })
-      let eventEndIndex
-      while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
-        const event = buffer.substring(0, eventEndIndex)
-        buffer = buffer.substring(eventEndIndex + 2)
-        for (const line of event.split('\n')) {
-          if (line.startsWith('data:')) {
-            const jsonStr = line.substring(5).trim()
-            if (jsonStr && jsonStr !== '[DONE]') {
-              try {
-                const parsed = JSON.parse(jsonStr)
-                if (parsed.messageType === 'user' && onUserMessage) {
-                  onUserMessage(parsed as UserMessagePayload)
-                } else if (parsed.answer) {
-                  onChunk(parsed.answer)
-                }
-              } catch {
-                if (jsonStr.startsWith('{') && !jsonStr.includes('"answer"')) {
-                  try { onUserMessage?.(JSON.parse(jsonStr) as UserMessagePayload) } catch {}
-                } else {
-                  onChunk(jsonStr)
+    try {
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        buffer += decoder.decode(value, { stream: true })
+        let eventEndIndex
+        while ((eventEndIndex = buffer.indexOf('\n\n')) !== -1) {
+          const event = buffer.substring(0, eventEndIndex)
+          buffer = buffer.substring(eventEndIndex + 2)
+          for (const line of event.split('\n')) {
+            if (line.startsWith('data:')) {
+              const jsonStr = line.substring(5).trim()
+              if (jsonStr && jsonStr !== '[DONE]') {
+                try {
+                  const parsed = JSON.parse(jsonStr)
+                  if (parsed.error) {
+                    throw new Error(parsed.error)
+                  }
+                  if ((parsed.messageType === 'user' || parsed.messageType === 'init') && onUserMessage) {
+                    onUserMessage(parsed as UserMessagePayload)
+                  } else if (parsed.answer) {
+                    onChunk(parsed.answer)
+                  }
+                } catch (parseError) {
+                  if (parseError instanceof Error && parseError.message.startsWith('请求失败')) {
+                    throw parseError
+                  }
+                  if (jsonStr.startsWith('{') && !jsonStr.includes('"answer"')) {
+                    try { onUserMessage?.(JSON.parse(jsonStr) as UserMessagePayload) } catch {}
+                  } else {
+                    onChunk(jsonStr)
+                  }
                 }
               }
             }
           }
         }
       }
+    } catch (error) {
+      if (error instanceof Error && (error.name === 'AbortError' || error.name === 'TypeError')) {
+        return
+      }
+      throw error
     }
   },
   getMyQuestions: (params: PageRequest): Promise<PageResult<ConsultationQuestion>> => {
@@ -172,6 +188,9 @@ export const consultationApi = {
   },
   transferToHuman: (id: number, data: TransferToHumanRequest): Promise<void> => {
     return request.post(`/consultation/questions/${id}/transfer`, data)
+  },
+  directTransferToHuman: (data: TransferToHumanRequest): Promise<void> => {
+    return request.post('/consultation/transfer', data)
   },
   uploadVoice: (file: File): Promise<string> => {
     const formData = new FormData()

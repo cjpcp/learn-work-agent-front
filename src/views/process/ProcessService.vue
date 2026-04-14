@@ -462,6 +462,15 @@
               <span style="font-weight: 600; color: #52c41a">AI：</span
               ><span style="color: #555">{{ item.aiAnswer }}</span>
             </div>
+            <div v-if="item.files && item.files.length > 0" style="margin-top: 8px">
+              <a-divider orientation="left" style="margin: 8px 0">附件</a-divider>
+              <div v-for="(file, fileIdx) in item.files" :key="fileIdx" style="margin-bottom: 4px">
+                <a :href="file.url" target="_blank" style="display: flex; align-items: center; gap: 4px">
+                  <PaperClipOutlined />
+                  <span>{{ file.name }}</span>
+                </a>
+              </div>
+            </div>
           </div>
         </div>
         <a-form-item label="回复内容">
@@ -664,6 +673,15 @@
             <span style="font-weight: 600; color: #52c41a">AI：</span>
             <span style="white-space: pre-wrap; color: #555">{{ item.aiAnswer }}</span>
           </div>
+          <div v-if="item.files && item.files.length > 0" style="margin-top: 8px">
+            <a-divider orientation="left" style="margin: 8px 0">附件</a-divider>
+            <div v-for="(file, fileIdx) in item.files" :key="fileIdx" style="margin-bottom: 4px">
+              <a :href="file.url" target="_blank" style="display: flex; align-items: center; gap: 4px">
+                <PaperClipOutlined />
+                <span>{{ file.name }}</span>
+              </a>
+            </div>
+          </div>
         </div>
       </div>
     </a-modal>
@@ -690,6 +708,7 @@ interface TransferHistoryItem {
   questionText: string
   aiAnswer?: string
   time?: string
+  files?: { url: string; name: string; type: string }[]
 }
 
 interface ApprovalStepDisplay {
@@ -1313,6 +1332,7 @@ const handleViewTransfer = async (record: HumanTransfer) => {
       questionText: h.questionText || '',
       aiAnswer: h.answer,
       time: h.createTime,
+      files: h.files || [],
     }))
     transferDetailVisible.value = true
   } catch (error) {
@@ -1336,6 +1356,7 @@ const handleViewTransferDetail = async (record: HumanTransfer) => {
       questionText: h.questionText || '',
       aiAnswer: h.answer,
       time: h.createTime,
+      files: h.files || [],
     }))
     transferDetailVisible.value = true
   } catch (error) {

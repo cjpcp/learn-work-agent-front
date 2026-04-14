@@ -54,8 +54,10 @@
         <div class="form-row">
           <a-form-item label="问题类型">
             <a-select v-model:value="form.businessType" placeholder="请选择问题类型或兜底规则">
-              <a-select-option value="LEAVE">LEAVE（请假）</a-select-option>
-              <a-select-option value="AWARD">AWARD（奖助）</a-select-option>
+              <a-select-option value="SCHOLARSHIP">SCHOLARSHIP（奖助勤贷）</a-select-option>
+              <a-select-option value="DORMITORY">DORMITORY（宿舍管理）</a-select-option>
+              <a-select-option value="DISCIPLINE">DISCIPLINE（违纪申诉）</a-select-option>
+              <a-select-option value="MENTAL">MENTAL（心理健康）</a-select-option>
               <a-select-option value="DEFAULT">DEFAULT（兜底）</a-select-option>
             </a-select>
           </a-form-item>

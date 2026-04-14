@@ -362,6 +362,7 @@ const state = ref('welcome') // welcome, chat, transfer, manual
 const questionText = ref('')
 const currentQuestion = ref('')
 const currentQuestionFiles = ref<{ url: string; type: string; name: string }[]>([])
+const currentQuestionId = ref<number | null>(null)
 const aiAnswer = ref('')
 const isStreaming = ref(false) // 是否正在流式接收
 const conversationHistory = ref<Conversation[]>([])
@@ -452,7 +453,9 @@ const handleSubmit = async () => {
       },
       token,
       (userMsg) => {
-        if (userMsg.files && userMsg.files.length > 0) {
+        if (userMsg.messageType === 'init' && userMsg.questionId) {
+          currentQuestionId.value = userMsg.questionId
+        } else if (userMsg.files && userMsg.files.length > 0) {
           currentQuestionFiles.value = userMsg.files
         }
       }
@@ -474,10 +477,18 @@ const cancelTransfer = () => {
 }
 
 const confirmTransfer = () => {
+  if (isStreaming.value) {
+    message.warning('AI正在回答中，请等待回答完成后再申请转人工')
+    return
+  }
   state.value = 'manual'
 }
 
 const showManualForm = () => {
+  if (isStreaming.value) {
+    message.warning('AI正在回答中，请等待回答完成后再申请转人工')
+    return
+  }
   state.value = 'manual'
 }
 
@@ -495,8 +506,11 @@ const removeSelectedFile = (index: number) => {
 }
 
 const cancelManual = () => {
-  state.value = 'welcome'
-  // 重置表单
+  if (currentQuestion.value) {
+    state.value = 'chat'
+  } else {
+    state.value = 'welcome'
+  }
   manualForm.questionType = ''
   manualForm.questionDescription = ''
   selectedFiles.value = []
@@ -523,8 +537,6 @@ const submitManual = async () => {
   try {
     const attachmentUrls: { transferMethod: string; url: string; type: string }[] = []
 
-    // 上传所有文件（如果有）
-    // 注意：request.ts 响应拦截器已解包，返回的直接是 string URL（不是 Result<string>）
     if (selectedFiles.value.length > 0) {
       for (const file of selectedFiles.value) {
         const result = await consultationApi.uploadFile(file)
@@ -542,28 +554,22 @@ const submitManual = async () => {
       }
     }
 
-    // 创建问题（响应拦截器已解包，直接是 ConsultationQuestion 对象）
-    const question = await consultationApi.submitQuestion({
-      questionText: manualForm.questionDescription,
-      questionType: 'TEXT',
-      category: manualForm.questionType,
-      sessionId: sessionId.value,
-      files: attachmentUrls.length > 0 ? attachmentUrls : undefined,
-    })
+    let questionId = currentQuestionId.value
 
-    const questionId = (question as unknown as ConsultationQuestion)?.id
-    if (!questionId) {
-      message.error('创建问题失败，请重试')
-      return
-    }
-
-    // 转移给人工处理，只传真实原因，历史对话通过 questionId 在后端查询
     const attachmentInfo = attachmentUrls.length > 0
       ? '\n附件: ' + attachmentUrls.map(a => a.url.split('/').pop()).join(', ')
       : ''
-    await consultationApi.transferToHuman(questionId, {
+    const transferData = {
       reason: `问题类型: ${manualForm.questionType}\n问题描述: ${manualForm.questionDescription}${attachmentInfo}`,
-    })
+      questionType: manualForm.questionType,
+      questionText: manualForm.questionDescription,
+    }
+
+    if (questionId) {
+      await consultationApi.transferToHuman(questionId, transferData)
+    } else {
+      await consultationApi.directTransferToHuman(transferData)
+    }
 
     message.success('申请提交成功，我们将尽快为您处理')
     cancelManual()
