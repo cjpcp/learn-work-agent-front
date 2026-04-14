@@ -398,6 +398,14 @@
           <a-descriptions-item label="创建时间">
             {{ awardDetail?.createTime }}
           </a-descriptions-item>
+          <a-descriptions-item v-if="getAwardFiles(awardDetail?.attachmentUrls).length > 0" label="附件" :span="2">
+            <template v-for="(url, idx) in getAwardFiles(awardDetail?.attachmentUrls)" :key="idx">
+              <a :href="url" target="_blank" rel="noopener">
+                <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
+              </a>
+              <br v-if="idx < getAwardFiles(awardDetail?.attachmentUrls).length - 1" />
+            </template>
+          </a-descriptions-item>
         </a-descriptions>
 
         <!-- 销假详情 -->
@@ -567,14 +575,12 @@
             <a-descriptions-item label="申请原因" :span="2">{{
               approveAwardDetail?.reason || '无'
             }}</a-descriptions-item>
-            <a-descriptions-item v-if="approveAwardDetail?.attachmentUrls" label="附件" :span="2">
-              <template v-for="(url, idx) in approveAwardDetail?.attachmentUrls || []" :key="idx">
-                <a :href="url" target="_blank" rel="noopener" download>
+            <a-descriptions-item v-if="getAwardFiles(approveAwardDetail?.attachmentUrls).length > 0" label="附件" :span="2">
+              <template v-for="(url, idx) in getAwardFiles(approveAwardDetail?.attachmentUrls)" :key="idx">
+                <a :href="url" target="_blank" rel="noopener">
                   <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
                 </a>
-                <br
-                  v-if="idx < (approveAwardDetail?.attachmentUrls || []).filter(Boolean).length - 1"
-                />
+                <br v-if="idx < getAwardFiles(approveAwardDetail?.attachmentUrls).length - 1" />
               </template>
             </a-descriptions-item>
           </a-descriptions>
@@ -965,6 +971,11 @@ const getTransferFiles = (fileUrls?: string) => {
   } catch {
     return []
   }
+}
+
+const getAwardFiles = (attachmentUrls?: string) => {
+  if (!attachmentUrls) return []
+  return attachmentUrls.split(',').map((url) => url.trim()).filter(Boolean)
 }
 
 // 加载流程数据

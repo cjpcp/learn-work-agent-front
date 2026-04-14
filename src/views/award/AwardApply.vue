@@ -49,37 +49,23 @@
           />
         </a-form-item>
 
+        <a-form-item name="awardName" label="奖助名称">
+          <a-input
+            v-model:value="form.awardName"
+            placeholder="请输入奖助名称，如：国家奖学金"
+            size="large"
+          />
+        </a-form-item>
+
         <a-form-item name="studentName" label="姓名">
           <a-input v-model:value="form.studentName" placeholder="输入姓名" size="large" />
         </a-form-item>
 
-        <a-form-item name="dateRange" label="时间">
-          <div class="date-range-wrapper">
-            <a-date-picker
-              v-model:value="startDate"
-              show-time
-              format="YYYY-MM-DD HH:mm:ss"
-              size="large"
-              placeholder="开始时间"
-              style="width: 200px"
-            />
-            <span class="date-separator">至</span>
-            <a-date-picker
-              v-model:value="endDate"
-              show-time
-              format="YYYY-MM-DD HH:mm:ss"
-              size="large"
-              placeholder="结束时间"
-              style="width: 200px"
-            />
-          </div>
-        </a-form-item>
-
-        <a-form-item name="reason" label="问题说明">
+        <a-form-item name="reason" label="申请理由">
           <a-textarea
             v-model:value="form.reason"
             :rows="5"
-            placeholder="输入请假说明"
+            placeholder="输入申请理由"
             size="large"
             class="reason-textarea"
           />
@@ -123,7 +109,6 @@ import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { PaperClipOutlined, FileTextOutlined } from '@ant-design/icons-vue'
-import type { Dayjs } from 'dayjs'
 import { awardApi, consultationApi } from '@/api'
 import type { Rule } from 'ant-design-vue/es/form'
 import type { UploadFile } from 'ant-design-vue'
@@ -132,8 +117,6 @@ import { useUserStore } from '@/stores/user'
 const router = useRouter()
 const loading = ref(false)
 const fileList = ref<UploadFile[]>([])
-const startDate = ref<Dayjs | null>(null)
-const endDate = ref<Dayjs | null>(null)
 const userStore = useUserStore()
 
 const form = reactive({
@@ -154,6 +137,7 @@ onMounted(() => {
 
 const rules: Record<string, Rule[]> = {
   applicationType: [{ required: true, message: '请选择申请类型', trigger: 'change' }],
+  awardName: [{ required: true, message: '请输入奖助名称', trigger: 'blur' }],
   studentName: [{ required: true, message: '请输入姓名', trigger: 'blur' }],
   departmentName: [{ required: true, message: '请输入院系', trigger: 'blur' }],
   grade: [{ required: true, message: '请输入年级', trigger: 'blur' }],
@@ -262,20 +246,8 @@ const handleSubmit = async () => {
 }
 
 .apply-card :deep(.ant-input),
-.apply-card :deep(.ant-select-selector),
-.apply-card :deep(.ant-picker) {
+.apply-card :deep(.ant-select-selector) {
   border-radius: 6px;
-}
-
-.date-range-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.date-separator {
-  color: #999;
-  font-size: 14px;
 }
 
 .reason-textarea {

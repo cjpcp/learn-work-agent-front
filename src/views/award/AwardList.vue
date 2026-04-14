@@ -198,7 +198,7 @@ const formatDateTime = (time?: string) => {
 
 const getContentText = (record: AwardApplication) => {
   const typeName = getApplicationTypeName(record.applicationType)
-  const reason = record.reason ? `用于${record.reason.slice(0, 15)}...` : ''
+  const reason = record.reason ? `申请理由为：${record.reason.slice(0, 15)}...` : ''
   return `申请${typeName}${record.awardName}，${reason}`
 }
 
