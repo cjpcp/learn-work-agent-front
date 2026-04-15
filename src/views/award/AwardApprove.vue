@@ -15,7 +15,13 @@
           <a-tag v-else-if="record.applicationType === 'SUBSIDY'" color="blue">困难补助</a-tag>
         </template>
         <template v-else-if="column.key === 'action'">
-          <a-button type="link" @click="handleApprove(record, 'APPROVED')">批准</a-button>
+          <a-button
+            type="link"
+            :disabled="record.materialStatus !== 'PASSED'"
+            @click="handleApprove(record, 'APPROVED')"
+          >
+            批准
+          </a-button>
           <a-button type="link" danger @click="handleApprove(record, 'REJECTED')">拒绝</a-button>
           <a-button type="link" @click="handleView(record)">查看详情</a-button>
         </template>
@@ -57,6 +63,22 @@
         <a-descriptions-item label="申请原因" :span="2">
           {{ currentRecord.reason || '无' }}
         </a-descriptions-item>
+        <a-descriptions-item v-if="currentRecord.materialStatus" label="材料预审状态">
+          <a-tag v-if="currentRecord.materialStatus === 'PENDING'" color="processing">待预审</a-tag>
+          <a-tag v-else-if="currentRecord.materialStatus === 'PASSED'" color="success">通过</a-tag>
+          <a-tag v-else-if="currentRecord.materialStatus === 'FAILED'" color="error">不通过</a-tag>
+        </a-descriptions-item>
+        <a-descriptions-item v-if="currentRecord.materialComment" label="材料预审意见" :span="2">
+          {{ currentRecord.materialComment }}
+        </a-descriptions-item>
+        <a-descriptions-item v-if="currentRecord.attachmentUrls" label="附件" :span="2">
+          <template v-for="(url, index) in getAttachmentList(currentRecord)" :key="index">
+            <a :href="url" target="_blank" class="attachment-link">
+              {{ getFileName(url) }}
+            </a>
+            <br v-if="index < getAttachmentList(currentRecord).length - 1" />
+          </template>
+        </a-descriptions-item>
         <a-descriptions-item label="创建时间">
           {{ currentRecord.createTime }}
         </a-descriptions-item>
@@ -84,6 +106,23 @@ const approveForm = reactive<ApprovalRequest>({
   approvalStatus: 'APPROVED',
   approvalComment: '',
 })
+
+const getAttachmentList = (record: AwardApplication) => {
+  if (!record?.attachmentUrls) return []
+  if (Array.isArray(record.attachmentUrls)) return record.attachmentUrls
+  return record.attachmentUrls.split(',').map((url: string) => url.trim()).filter((url: string) => url)
+}
+
+const getFileName = (url: string) => {
+  try {
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname
+    const fileName = pathname.substring(pathname.lastIndexOf('/') + 1)
+    return decodeURIComponent(fileName) || url
+  } catch {
+    return url.substring(url.lastIndexOf('/') + 1) || url
+  }
+}
 
 const pagination = reactive({
   current: 1,

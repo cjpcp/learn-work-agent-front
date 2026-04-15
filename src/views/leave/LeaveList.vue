@@ -131,6 +131,11 @@
         <a-descriptions-item label="请假原因" :span="2">
           {{ currentRecord?.reason || '无' }}
         </a-descriptions-item>
+        <a-descriptions-item v-if="currentRecord?.attachmentUrl" label="附件" :span="2">
+          <a :href="currentRecord.attachmentUrl" target="_blank" class="attachment-link">
+            {{ getFileName(currentRecord.attachmentUrl) }}
+          </a>
+        </a-descriptions-item>
         <a-descriptions-item v-if="currentRecord?.approvalComment" label="审批意见" :span="2">
           {{ currentRecord.approvalComment }}
         </a-descriptions-item>
@@ -245,6 +250,17 @@ const calculateDays = (start?: string, end?: string) => {
   const endDate = new Date(end)
   const diffTime = Math.abs(endDate.getTime() - startDate.getTime())
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+}
+
+const getFileName = (url: string) => {
+  try {
+    const urlObj = new URL(url)
+    const pathname = urlObj.pathname
+    const fileName = pathname.substring(pathname.lastIndexOf('/') + 1)
+    return decodeURIComponent(fileName) || url
+  } catch {
+    return url.substring(url.lastIndexOf('/') + 1) || url
+  }
 }
 
 const loadData = async () => {
