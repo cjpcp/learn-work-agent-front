@@ -175,11 +175,11 @@ const beforeUpload = async (file: File) => {
     const url = result
     if (url) {
       const uploadedFile: UploadFile = {
-        uid: String(Date.now()),
+        uid: String(Date.now()) + '-' + file.name,
         name: file.name,
         status: 'done',
-        url: url,
-        thumbUrl: url,
+        url: url.trim(),
+        thumbUrl: url.trim(),
       }
       fileList.value = [...fileList.value, uploadedFile]
       message.success(`${file.name} 上传成功`)

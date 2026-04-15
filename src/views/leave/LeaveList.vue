@@ -132,9 +132,12 @@
           {{ currentRecord?.reason || '无' }}
         </a-descriptions-item>
         <a-descriptions-item v-if="currentRecord?.attachmentUrl" label="附件" :span="2">
-          <a :href="currentRecord.attachmentUrl" target="_blank" class="attachment-link">
-            {{ getFileName(currentRecord.attachmentUrl) }}
-          </a>
+          <template v-for="(url, idx) in (currentRecord?.attachmentUrl || '').split(',').filter(Boolean)" :key="idx">
+            <a :href="url.trim()" target="_blank" class="attachment-link">
+              {{ getFileName(url.trim()) }}
+            </a>
+            <br v-if="idx < (currentRecord?.attachmentUrl || '').split(',').filter(Boolean).length - 1" />
+          </template>
         </a-descriptions-item>
         <a-descriptions-item v-if="currentRecord?.approvalComment" label="审批意见" :span="2">
           {{ currentRecord.approvalComment }}

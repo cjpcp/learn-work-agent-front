@@ -319,8 +319,8 @@
               v-for="(url, idx) in (leaveDetail?.attachmentUrl || '').split(',').filter(Boolean)"
               :key="idx"
             >
-              <a :href="url" target="_blank" rel="noopener" download>
-                <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
+              <a :href="url.trim()" target="_blank" rel="noopener" download>
+                <PaperClipOutlined /> {{ idx + 1 }}. {{ url.trim().split('/').pop() || '下载附件' }}
               </a>
               <br
                 v-if="
@@ -405,6 +405,17 @@
               </a>
               <br v-if="idx < getAwardFiles(awardDetail?.attachmentUrls).length - 1" />
             </template>
+          </a-descriptions-item>
+          <a-descriptions-item v-if="awardDetail?.materialStatus" label="材料预审状态">
+            <a-tag v-if="awardDetail?.materialStatus === 'PENDING'" color="processing">待预审</a-tag>
+            <a-tag v-else-if="awardDetail?.materialStatus === 'PASSED'" color="success">通过</a-tag>
+            <a-tag v-else-if="awardDetail?.materialStatus === 'FAILED'" color="error">不通过</a-tag>
+          </a-descriptions-item>
+          <a-descriptions-item v-if="awardDetail?.materialComment" label="材料预审意见" :span="2">
+            {{ awardDetail?.materialComment }}
+          </a-descriptions-item>
+          <a-descriptions-item v-if="awardDetail?.approvalComment" label="审批意见" :span="2">
+            {{ awardDetail?.approvalComment }}
           </a-descriptions-item>
         </a-descriptions>
 
@@ -530,8 +541,8 @@
                   .filter(Boolean)"
                 :key="idx"
               >
-                <a :href="url" target="_blank" rel="noopener" download>
-                  <PaperClipOutlined /> {{ idx + 1 }}. {{ url.split('/').pop() || '下载附件' }}
+                <a :href="url.trim()" target="_blank" rel="noopener" download>
+                  <PaperClipOutlined /> {{ idx + 1 }}. {{ url.trim().split('/').pop() || '下载附件' }}
                 </a>
                 <br
                   v-if="
@@ -582,6 +593,14 @@
                 </a>
                 <br v-if="idx < getAwardFiles(approveAwardDetail?.attachmentUrls).length - 1" />
               </template>
+            </a-descriptions-item>
+            <a-descriptions-item v-if="approveAwardDetail?.materialStatus" label="材料预审状态">
+              <a-tag v-if="approveAwardDetail?.materialStatus === 'PENDING'" color="processing">待预审</a-tag>
+              <a-tag v-else-if="approveAwardDetail?.materialStatus === 'PASSED'" color="success">通过</a-tag>
+              <a-tag v-else-if="approveAwardDetail?.materialStatus === 'FAILED'" color="error">不通过</a-tag>
+            </a-descriptions-item>
+            <a-descriptions-item v-if="approveAwardDetail?.materialComment" label="材料预审意见" :span="2">
+              {{ approveAwardDetail?.materialComment }}
             </a-descriptions-item>
           </a-descriptions>
         </template>
@@ -687,6 +706,10 @@
             <span style="font-weight: 600; color: #52c41a">AI：</span>
             <span style="white-space: pre-wrap; color: #555">{{ item.aiAnswer }}</span>
           </div>
+          <div v-if="item.humanReply">
+            <span style="font-weight: 600; color: #faad14">人工：</span>
+            <span style="white-space: pre-wrap; color: #555">{{ item.humanReply }}</span>
+          </div>
           <div v-if="item.files && item.files.length > 0" style="margin-top: 8px">
             <a-divider orientation="left" style="margin: 8px 0">附件</a-divider>
             <div v-for="(file, fileIdx) in item.files" :key="fileIdx" style="margin-bottom: 4px">
@@ -721,6 +744,8 @@ import type {
 interface TransferHistoryItem {
   questionText: string
   aiAnswer?: string
+  humanReply?: string
+  answerSource?: string
   time?: string
   files?: { url: string; name: string; type: string }[]
 }
@@ -1298,6 +1323,8 @@ const handleProcess = async (record: HumanTransfer) => {
     transferHistory.value = response.history.map((h) => ({
       questionText: h.questionText || '',
       aiAnswer: h.answer,
+      humanReply: h.humanReply,
+      answerSource: h.answerSource,
       time: h.createTime,
     }))
   } catch {
@@ -1318,6 +1345,8 @@ const handleReply = async (record: HumanTransfer) => {
     transferHistory.value = response.history.map((h) => ({
       questionText: h.questionText || '',
       aiAnswer: h.answer,
+      humanReply: h.humanReply,
+      answerSource: h.answerSource,
       time: h.createTime,
     }))
   } catch {
@@ -1359,6 +1388,8 @@ const handleViewTransfer = async (record: HumanTransfer) => {
     transferHistory.value = response.history.map((h) => ({
       questionText: h.questionText || '',
       aiAnswer: h.answer,
+      humanReply: h.humanReply,
+      answerSource: h.answerSource,
       time: h.createTime,
       files: h.files || [],
     }))
@@ -1383,6 +1414,8 @@ const handleViewTransferDetail = async (record: HumanTransfer) => {
     transferHistory.value = response.history.map((h) => ({
       questionText: h.questionText || '',
       aiAnswer: h.answer,
+      humanReply: h.humanReply,
+      answerSource: h.answerSource,
       time: h.createTime,
       files: h.files || [],
     }))
