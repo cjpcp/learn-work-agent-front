@@ -1,5 +1,6 @@
 import type { LeaveApplication, LeaveApplicationRequest, PageResult } from '@/types'
 import request from '@/utils/request'
+import { apiConfig } from '@/utils/request'
 
 export const leaveApi = {
   submitApplication: (data: LeaveApplicationRequest): Promise<LeaveApplication> =>
@@ -10,7 +11,7 @@ export const leaveApi = {
   getApplication: (id: number): Promise<LeaveApplication> =>
     request.get(`/leave/applications/${id}`),
   downloadLeaveSlip: (id: number): void => {
-    window.open(`/api/v1/leave/applications/${id}/download-slip`)
+    window.open(apiConfig.getFullUrl(`/leave/applications/${id}/download-slip`))
   },
   cancelLeave: (id: number): Promise<void> => request.post(`/leave/applications/${id}/cancel`),
   withdrawApplication: (id: number): Promise<void> =>

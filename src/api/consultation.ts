@@ -1,5 +1,6 @@
 import type { ConsultationQuestion, ConversationMessage, PageRequest, PageResult } from '@/types'
 import request from '@/utils/request'
+import { apiConfig } from '@/utils/request'
 
 export interface ConsultationRequest {
   questionText?: string
@@ -60,7 +61,7 @@ export const consultationApi = {
     token: string
   ): Promise<void> => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/consultation/questions/stream`,
+      apiConfig.getFullUrl('/consultation/questions/stream'),
       {
         method: 'POST',
         headers: {
@@ -115,7 +116,7 @@ export const consultationApi = {
     onUserMessage?: (msg: UserMessagePayload) => void
   ): Promise<void> => {
     const response = await fetch(
-      `${import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'}/api/v1/consultation/questions/stream/multipart`,
+      apiConfig.getFullUrl('/consultation/questions/stream/multipart'),
       {
         method: 'POST',
         headers: {
@@ -165,7 +166,7 @@ export const consultationApi = {
                     throw parseError
                   }
                   if (jsonStr.startsWith('{') && !jsonStr.includes('"answer"')) {
-                    try { onUserMessage?.(JSON.parse(jsonStr) as UserMessagePayload) } catch {}
+                    try { onUserMessage?.(JSON.parse(jsonStr) as UserMessagePayload) } catch { /* empty */ }
                   } else {
                     onChunk(jsonStr)
                   }
