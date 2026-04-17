@@ -3,19 +3,13 @@ import { message } from 'ant-design-vue'
 import { Result } from '@/types'
 import { useUserStore } from '@/stores/user'
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080'
-const API_PREFIX = '/api/v1'
-
 export const apiConfig = {
-  baseURL: API_PREFIX,
-  fullBaseURL: API_BASE_URL + API_PREFIX,
-  wsURL: API_BASE_URL.replace(/^http/, 'ws') + '/ws',
-  getFullUrl: (path: string) => `${API_BASE_URL}${API_PREFIX}${path}`,
+  baseURL: '/api/v1',
 }
 
 const service: AxiosInstance = axios.create({
-  baseURL: API_PREFIX,
-  timeout: 30000,
+  baseURL: '/api/v1',
+  timeout: 120000,
 })
 
 service.interceptors.request.use(

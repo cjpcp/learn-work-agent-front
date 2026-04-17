@@ -1,7 +1,6 @@
 import { Client, IMessage } from '@stomp/stompjs'
 import SockJS from 'sockjs-client/dist/sockjs.min.js'
 import { useUserStore } from '@/stores/user'
-import { apiConfig } from '@/utils/request'
 
 export interface Notification {
   id: number
@@ -30,7 +29,7 @@ class WebSocketService {
         return
       }
 
-      const socket = new SockJS(`${apiConfig.wsURL}?token=${token}`)
+      const socket = new SockJS(`/ws?token=${token}`)
 
       this.client = new Client({
         webSocketFactory: () => socket as unknown as WebSocket,

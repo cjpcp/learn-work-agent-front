@@ -1,6 +1,5 @@
 import type { ConsultationQuestion, ConversationMessage, PageRequest, PageResult } from '@/types'
 import request from '@/utils/request'
-import { apiConfig } from '@/utils/request'
 
 export interface ConsultationRequest {
   questionText?: string
@@ -61,7 +60,7 @@ export const consultationApi = {
     token: string
   ): Promise<void> => {
     const response = await fetch(
-      apiConfig.getFullUrl('/consultation/questions/stream'),
+      '/api/v1/consultation/questions/stream',
       {
         method: 'POST',
         headers: {
@@ -116,7 +115,7 @@ export const consultationApi = {
     onUserMessage?: (msg: UserMessagePayload) => void
   ): Promise<void> => {
     const response = await fetch(
-      apiConfig.getFullUrl('/consultation/questions/stream/multipart'),
+      '/api/v1/consultation/questions/stream/multipart',
       {
         method: 'POST',
         headers: {

@@ -8,7 +8,7 @@ RUN npm install
 
 COPY learn-work-agent-front/ ./
 
-RUN npm run build
+RUN node node_modules/vite/bin/vite.js build --mode production
 
 FROM nginx:alpine
 
