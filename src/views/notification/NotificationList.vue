@@ -136,11 +136,20 @@ const handleMarkAsRead = async (notification: Notification) => {
 }
 
 const goToDetail = (notification: Notification) => {
-  // 跳转到对应列表页面
-  if (notification.businessType === 'AWARD_APPLICATION') {
-    router.push('/award')
-  } else if (notification.businessType === 'LEAVE_APPLICATION') {
-    router.push('/leave')
+  if (!notification.businessId || !notification.businessType) return
+  
+  // 标记已读
+  if (!notification.isRead && notification.id) {
+    notificationApi.markAsRead(notification.id).catch(() => {})
+    notification.isRead = true
+    unreadCount.value = Math.max(0, unreadCount.value - 1)
+  }
+  
+  // 跳转到对应列表页面并自动打开详情
+  if (notification.businessType === 'AWARD') {
+    router.push({ path: '/award', query: { viewId: notification.businessId } })
+  } else if (notification.businessType === 'LEAVE') {
+    router.push({ path: '/leave', query: { viewId: notification.businessId } })
   }
 }
 

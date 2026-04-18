@@ -161,10 +161,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { message, Modal } from 'ant-design-vue'
 import { leaveApi } from '@/api'
 import { formatDateTime } from '@/utils/format'
 import type { LeaveApplication, PageRequest } from '@/types'
+
+const route = useRoute()
 
 const loading = ref(false)
 const dataSource = ref<LeaveApplication[]>([])
@@ -337,8 +340,17 @@ const handleCancel = (record: LeaveApplication) => {
   })
 }
 
-onMounted(() => {
-  loadData()
+onMounted(async () => {
+  await loadData()
+  
+  // 检查是否有viewId参数，自动打开详情
+  const viewId = route.query.viewId
+  if (viewId) {
+    const record = dataSource.value.find(item => item.id === Number(viewId))
+    if (record) {
+      handleView(record)
+    }
+  }
 })
 </script>
 
