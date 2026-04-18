@@ -1,5 +1,7 @@
 import type { LeaveApplication, LeaveApplicationRequest, PageResult } from '@/types'
 import request from '@/utils/request'
+import axios from 'axios'
+import { useUserStore } from '@/stores/user'
 
 export const leaveApi = {
   submitApplication: (data: LeaveApplicationRequest): Promise<LeaveApplication> =>
@@ -24,4 +26,23 @@ export const leaveApi = {
     request.get('/leave/applications/pending-cancel', { params }),
   generateLeaveSlip: (id: number): Promise<void> =>
     request.post(`/leave/applications/${id}/generate-slip`),
+  previewLeaveSlip: async (data: object): Promise<void> => {
+    const userStore = useUserStore()
+    const response = await axios.post('/api/v1/leave/slip-preview', data, {
+      headers: {
+        'Content-Type': 'application/json',
+        ...(userStore.token ? { Authorization: `Bearer ${userStore.token}` } : {}),
+      },
+      responseType: 'blob',
+    })
+    const blob = new Blob([response.data], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' })
+    const url = window.URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `请假条_${Date.now()}.docx`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  },
 }

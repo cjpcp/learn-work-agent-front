@@ -427,13 +427,13 @@
         >
           <a-descriptions-item label="销假状态" :span="2">
             <a-tag v-if="leaveDetail?.cancelApprovalStatus === 'PENDING'" color="processing"
-              >待审批</a-tag
+              >销假待审批</a-tag
             >
             <a-tag v-else-if="leaveDetail?.cancelApprovalStatus === 'APPROVED'" color="success"
-              >已批准</a-tag
+              >销假已批准</a-tag
             >
             <a-tag v-else-if="leaveDetail?.cancelApprovalStatus === 'REJECTED'" color="error"
-              >已拒绝</a-tag
+              >销假已拒绝</a-tag
             >
             <span v-else>{{ leaveDetail?.cancelApprovalStatus }}</span>
           </a-descriptions-item>

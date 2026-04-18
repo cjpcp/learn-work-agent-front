@@ -214,32 +214,22 @@ const handleGenerateSlip = async () => {
 
   generating.value = true
   try {
-    const request = {
+    const previewRequest = {
+      studentName: form.studentName,
+      cardNumber: '',
+      grade: form.grade,
+      className: form.className,
+      phone: '',
       leaveType: form.leaveType as 'PERSONAL' | 'OFFICIAL',
       startDate: startDate.value?.format('YYYY-MM-DD'),
       endDate: endDate.value?.format('YYYY-MM-DD'),
       reason: form.reason,
-      attachmentUrl: fileList.value.map((file) => file.thumbUrl || '').join(','),
-      studentName: form.studentName,
-      departmentName: form.departmentName,
-      grade: form.grade,
-      className: form.className,
     }
-    const application = await leaveApi.submitApplication(request)
-    if (application && application.id !== undefined) {
-      message.loading({ content: '正在生成请假条...', key: 'generateSlip' })
-      try {
-        await leaveApi.generateLeaveSlip(application.id)
-        message.success({ content: '请假条生成成功，正在下载...', key: 'generateSlip' })
-        leaveApi.downloadLeaveSlip(application.id)
-      } catch {
-        message.warning({ content: '请假条生成失败，请稍后在申请详情中重试', key: 'generateSlip' })
-      }
-    } else {
-      message.error('申请提交失败')
-    }
-  } catch (error) {
-    message.error(error instanceof Error ? error.message : '申请提交失败')
+    message.loading({ content: '正在生成请假条...', key: 'generateSlip' })
+    await leaveApi.previewLeaveSlip(previewRequest)
+    message.success({ content: '请假条生成成功，正在下载...', key: 'generateSlip' })
+  } catch {
+    message.error({ content: '请假条生成失败', key: 'generateSlip' })
   } finally {
     generating.value = false
   }
