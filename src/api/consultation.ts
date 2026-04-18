@@ -189,10 +189,10 @@ export const consultationApi = {
     return request.get(`/consultation/questions/${id}/history`)
   },
   transferToHuman: (id: number, data: TransferToHumanRequest): Promise<void> => {
-    return request.post(`/consultation/questions/${id}/transfer`, data)
+    return request.post(`/transfer/questions/${id}`, data)
   },
   directTransferToHuman: (data: TransferToHumanRequest): Promise<void> => {
-    return request.post('/consultation/transfer', data)
+    return request.post('/transfer', data)
   },
   uploadVoice: (file: File): Promise<string> => {
     const formData = new FormData()
@@ -209,26 +209,26 @@ export const consultationApi = {
     })
   },
   getUserTransfers: (params: PageRequest): Promise<PageResult<HumanTransfer>> => {
-    return request.get('/consultation/transfers', { params })
+    return request.get('/transfer/my', { params })
   },
   getTransferDetail: (id: number): Promise<TransferDetail> =>
-    request.get(`/consultation/transfers/${id}`),
+    request.get(`/transfer/${id}`),
   assignStaff: (id: number, staffId: number): Promise<void> => {
-    return request.post(`/consultation/transfers/${id}/assign`, null, { params: { staffId } })
+    return request.post(`/transfer/${id}/assign`, null, { params: { staffId } })
   },
   replyToTransfer: (id: number, reply: string): Promise<void> => {
-    return request.post(`/consultation/transfers/${id}/reply`, null, { params: { reply } })
+    return request.post(`/transfer/${id}/reply`, null, { params: { reply } })
   },
   processTransfer: (id: number, reply: string): Promise<void> => {
-    return request.post(`/consultation/transfers/${id}/process`, null, { params: { reply } })
+    return request.post(`/transfer/${id}/process`, null, { params: { reply } })
   },
   getStaffTransfers: (params: PageRequest): Promise<PageResult<HumanTransfer>> => {
-    return request.get('/consultation/transfers/staff', { params })
+    return request.get('/transfer/staff/pending', { params })
   },
   getCompletedTransfers: (params: PageRequest): Promise<PageResult<HumanTransfer>> => {
-    return request.get('/consultation/transfers/completed', { params })
+    return request.get('/transfer/staff/completed', { params })
   },
   checkTransferConfigPermission: (): Promise<boolean> => {
-    return request.get('/consultation/transfer-config/permission')
+    return request.get('/transfer/permission')
   },
 }
