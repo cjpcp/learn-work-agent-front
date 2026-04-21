@@ -113,8 +113,15 @@
           <div class="submit-btn-wrapper">
             <a-space :size="16">
               <a-button size="large" class="cancel-btn" @click="$router.back()">取消</a-button>
-              <a-button type="primary" html-type="submit" :loading="loading" size="large" class="submit-btn">
-                提交
+              <a-button
+                type="primary"
+                :loading="loading"
+                :disabled="hasUploadingFiles"
+                size="large"
+                class="submit-btn"
+                @click="handleSubmit"
+              >
+                {{ hasUploadingFiles ? '文件上传中...' : '提交' }}
               </a-button>
             </a-space>
           </div>
@@ -125,7 +132,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { message } from 'ant-design-vue'
 import { PaperClipOutlined, FileTextOutlined, ThunderboltOutlined } from '@ant-design/icons-vue'
@@ -139,9 +146,12 @@ const router = useRouter()
 const loading = ref(false)
 const generating = ref(false)
 const fileList = ref<UploadFile[]>([])
+const uploadingCount = ref(0)
 const startDate = ref<Dayjs | null>(null)
 const endDate = ref<Dayjs | null>(null)
 const userStore = useUserStore()
+
+const hasUploadingFiles = computed(() => uploadingCount.value > 0)
 
 const form = reactive({
   leaveType: 'PERSONAL',
@@ -170,6 +180,7 @@ const handleRemove = (file: UploadFile) => {
 }
 
 const beforeUpload = async (file: File) => {
+  uploadingCount.value++
   try {
     const result = await consultationApi.uploadFile(file, file.name)
     const url = result
@@ -186,6 +197,8 @@ const beforeUpload = async (file: File) => {
     }
   } catch (error) {
     message.error(`${file.name} 上传失败`)
+  } finally {
+    uploadingCount.value--
   }
   return false
 }
@@ -236,6 +249,10 @@ const handleGenerateSlip = async () => {
 }
 
 const handleSubmit = async () => {
+  if (hasUploadingFiles.value) {
+    message.warning('文件正在上传中，请等待上传完成后再提交')
+    return
+  }
   if (!startDate.value || !endDate.value) {
     message.warning('请选择开始和结束时间')
     return

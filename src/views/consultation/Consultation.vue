@@ -187,6 +187,9 @@
             <div v-if="selectedFiles.length > 0" class="selected-files-list">
               <div v-for="(file, index) in selectedFiles" :key="index" class="selected-file-item">
                 <span class="file-name">{{ file.name }}</span>
+                <span v-if="fileUploadStatus[index] === 'uploading'" class="upload-status uploading">上传中...</span>
+                <span v-else-if="fileUploadStatus[index] === 'success'" class="upload-status success">✓</span>
+                <span v-else-if="fileUploadStatus[index] === 'error'" class="upload-status error">✗</span>
                 <button class="remove-file-btn" @click.stop="removeSelectedFile(index)">×</button>
               </div>
             </div>
@@ -194,7 +197,9 @@
           </div>
           <div class="form-buttons">
             <button type="button" class="cancel-button" @click="cancelManual">取消</button>
-            <button type="button" class="submit-button" @click="submitManual">提交</button>
+            <button type="button" class="submit-button" :disabled="submitting || hasUploadingFiles" @click="submitManual">
+              {{ submitting ? '提交中...' : (hasUploadingFiles ? '文件上传中...' : '提交') }}
+            </button>
           </div>
         </form>
       </div>
@@ -344,7 +349,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { message } from 'ant-design-vue'
 import { consultationApi } from '@/api'
 import { useUserStore } from '@/stores/user'
@@ -382,6 +387,7 @@ const manualForm = reactive({
   questionDescription: '',
 })
 const selectedFiles = ref<File[]>([])
+const fileUploadStatus = ref<Record<number, 'pending' | 'uploading' | 'success' | 'error'>>({})
 const manualFileInputRef = ref<HTMLInputElement | null>(null)
 
 // 已选择文件列表（暂存在前端，提交时一起上传）
@@ -497,12 +503,26 @@ const handleFileUpload = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
     const newFiles = Array.from(target.files)
+    const startIndex = selectedFiles.value.length
     selectedFiles.value.push(...newFiles)
+    
+    for (let i = 0; i < newFiles.length; i++) {
+      fileUploadStatus.value[startIndex + i] = 'pending'
+    }
   }
 }
 
 const removeSelectedFile = (index: number) => {
   selectedFiles.value.splice(index, 1)
+  
+  const newStatus: Record<number, 'pending' | 'uploading' | 'success' | 'error'> = {}
+  let newIndex = 0
+  for (let i = 0; i < selectedFiles.value.length; i++) {
+    if (i === index) continue
+    newStatus[newIndex] = fileUploadStatus.value[i] || 'pending'
+    newIndex++
+  }
+  fileUploadStatus.value = newStatus
 }
 
 const cancelManual = () => {
@@ -514,7 +534,14 @@ const cancelManual = () => {
   manualForm.questionType = ''
   manualForm.questionDescription = ''
   selectedFiles.value = []
+  fileUploadStatus.value = {}
 }
+
+const submitting = ref(false)
+
+const hasUploadingFiles = computed(() => {
+  return Object.values(fileUploadStatus.value).some(status => status === 'uploading')
+})
 
 const submitManual = async () => {
   if (!manualForm.questionType) {
@@ -523,6 +550,12 @@ const submitManual = async () => {
   }
   if (!manualForm.questionDescription.trim()) {
     message.warning('请填写问题说明')
+    return
+  }
+  
+  const hasUploading = Object.values(fileUploadStatus.value).some(status => status === 'uploading')
+  if (hasUploading) {
+    message.warning('文件正在上传中，请等待上传完成后再提交')
     return
   }
 
@@ -534,21 +567,44 @@ const submitManual = async () => {
     return
   }
 
+  submitting.value = true
+  const loadingMsg = message.loading('正在提交申请，文件上传中...', 0)
+
   try {
     const attachmentUrls: { transferMethod: string; url: string; type: string }[] = []
 
     if (selectedFiles.value.length > 0) {
-      for (const file of selectedFiles.value) {
-        const result = await consultationApi.uploadFile(file)
-        const fileUrl = result
-        if (fileUrl) {
+      const uploadPromises = selectedFiles.value.map(async (file, index) => {
+        fileUploadStatus.value[index] = 'uploading'
+        try {
+          const result = await consultationApi.uploadFile(file)
+          fileUploadStatus.value[index] = result ? 'success' : 'error'
+          return {
+            file,
+            url: result,
+          }
+        } catch {
+          fileUploadStatus.value[index] = 'error'
+          return {
+            file,
+            url: null,
+          }
+        }
+      })
+
+      const uploadResults = await Promise.all(uploadPromises)
+
+      for (const { file, url } of uploadResults) {
+        if (url) {
           attachmentUrls.push({
             transferMethod: 'remote_url',
-            url: fileUrl,
+            url,
             type: file.type.startsWith('image/') ? 'image' : 'document',
           })
         } else {
+          loadingMsg()
           message.error(`文件 ${file.name} 上传失败，请重试`)
+          submitting.value = false
           return
         }
       }
@@ -573,11 +629,15 @@ const submitManual = async () => {
       await consultationApi.directTransferToHuman(transferData)
     }
 
+    loadingMsg()
     message.success('申请提交成功，我们将尽快为您处理')
     cancelManual()
   } catch (error) {
+    loadingMsg()
     console.error('提交人工帮助申请失败:', error)
     message.error('提交申请失败: ' + (error instanceof Error ? error.message : '未知错误'))
+  } finally {
+    submitting.value = false
   }
 }
 
@@ -1102,6 +1162,29 @@ const removeUploadedFile = (index: number) => {
   color: #333;
 }
 
+.upload-status {
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.upload-status.uploading {
+  color: #1890ff;
+  animation: blink 1s infinite;
+}
+
+.upload-status.success {
+  color: #52c41a;
+}
+
+.upload-status.error {
+  color: #ff4d4f;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
 .remove-file-btn {
   width: 18px;
   height: 18px;
@@ -1162,6 +1245,12 @@ const removeUploadedFile = (index: number) => {
 
 .submit-button:hover {
   background-color: #096dd9;
+}
+
+.submit-button:disabled {
+  background-color: #d9d9d9;
+  color: #999;
+  cursor: not-allowed;
 }
 
 /* 输入区域 */
