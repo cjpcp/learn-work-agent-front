@@ -83,7 +83,7 @@
                   class="small-avatar"
                 />
               </div>
-              <div class="ai-content-plain">{{ conversation.answer }}</div>
+              <div class="ai-content-plain" v-html="conversation.answer"></div>
             </div>
           </div>
         </div>
@@ -128,7 +128,7 @@
                   class="small-avatar"
                 />
               </div>
-              <div class="ai-content-plain">{{ aiAnswer }}</div>
+              <div class="ai-content-plain" v-html="aiAnswer"></div>
             </div>
           </div>
         </div>
@@ -997,6 +997,22 @@ const removeUploadedFile = (index: number) => {
   word-wrap: break-word;
   font-family:
     -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.ai-content-plain :deep(a) {
+  color: #1890ff;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.ai-content-plain :deep(a:hover) {
+  color: #40a9ff;
+  background-color: #e6f7ff;
+  text-decoration: underline;
 }
 
 /* 转人工确认 */
