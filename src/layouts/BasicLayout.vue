@@ -46,7 +46,7 @@
               </a-menu>
             </template>
           </a-dropdown>
-          <a-dropdown placement="bottom">
+          <!-- <a-dropdown placement="bottom">
             <a class="nav-item" @click.prevent>
               教务AI
               <span class="dropdown-arrow">▼</span>
@@ -102,7 +102,7 @@
                 <a-menu-item key="4">知识库动态管理</a-menu-item>
               </a-menu>
             </template>
-          </a-dropdown>
+          </a-dropdown> -->
           <a-dropdown placement="bottom">
             <a class="nav-item" @click.prevent>
               系统
@@ -111,7 +111,7 @@
             <template #overlay>
               <a-menu>
                 <a-menu-item key="1" @click="$router.push('/notifications')">通知中心</a-menu-item>
-                <a-menu-item key="2">系统设置</a-menu-item>
+                <!-- <a-menu-item key="2">系统设置</a-menu-item> -->
               </a-menu>
             </template>
           </a-dropdown>
